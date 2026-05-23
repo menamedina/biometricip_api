@@ -13,7 +13,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'admin' => \App\Http\Middleware\AdminMiddleware::class,
+            'admin'           => \App\Http\Middleware\AdminMiddleware::class,
+            'tenancy'         => \App\Http\Middleware\InitializeTenancyByToken::class,
+            'tenancy.session' => \App\Http\Middleware\InitializeTenancyBySession::class,
+            'superadmin'      => \App\Http\Middleware\SuperAdminMiddleware::class,
         ]);
         $middleware->redirectGuestsTo('/admin/login');
     })

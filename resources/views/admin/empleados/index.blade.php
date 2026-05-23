@@ -141,8 +141,8 @@ async function loadEmpleados(page = 1) {
             tbody.innerHTML = data.data.map(e => `
                 <tr>
                     <td><span class="badge bg-primary">${e.codigo_empleado}</span></td>
-                    <td><strong>${e.user?.name || 'N/A'}</strong></td>
-                    <td>${e.user?.email || 'N/A'}</td>
+                    <td><strong>${e.name || 'N/A'}</strong></td>
+                    <td>${e.email || 'N/A'}</td>
                     <td>${e.departamento || '—'}</td>
                     <td>${e.cargo || '—'}</td>
                     <td><span class="badge ${e.is_active ? 'bg-success' : 'bg-danger'}">${e.is_active ? 'Activo' : 'Inactivo'}</span></td>
@@ -175,8 +175,8 @@ async function editEmpleado(id) {
         const data = await res.json();
         const e = data.data;
         document.getElementById('empleadoId').value = e.id;
-        document.getElementById('empName').value = e.user?.name || '';
-        document.getElementById('empEmail').value = e.user?.email || '';
+        document.getElementById('empName').value = e.name || '';
+        document.getElementById('empEmail').value = e.email || '';
         document.getElementById('empPassword').value = '';
         document.getElementById('empPassword').required = false;
         document.getElementById('empCodigo').value = e.codigo_empleado;

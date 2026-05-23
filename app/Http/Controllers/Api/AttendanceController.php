@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AttendancePhoto;
 use App\Models\AttendanceRecord;
 use App\Models\Sede;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -13,7 +14,7 @@ class AttendanceController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = AttendanceRecord::with(['empleado.user', 'sede'])
+        $query = AttendanceRecord::with(['user', 'sede'])
             ->whereDate('fecha_hora', $request->date ?? today());
 
         if ($request->filled('tipo')) {
@@ -24,8 +25,8 @@ class AttendanceController extends Controller
             $query->where('sede_id', $request->sede_id);
         }
 
-        if ($request->filled('empleado_id')) {
-            $query->where('empleado_id', $request->empleado_id);
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
         }
 
         $records = $query->with('photo')->orderBy('fecha_hora', 'desc')->paginate($request->per_page ?? 50);
@@ -45,10 +46,9 @@ class AttendanceController extends Controller
         ]);
 
         $user = $request->user();
-        $empleado = $user->empleado;
 
-        if (!$empleado || !$empleado->is_active) {
-            return response()->json(['message' => 'Empleado no encontrado o inactivo.'], 403);
+        if (!$user->is_active) {
+            return response()->json(['message' => 'Usuario inactivo.'], 403);
         }
 
         $qrValidado = false;
@@ -109,7 +109,7 @@ class AttendanceController extends Controller
         }
 
         $record = AttendanceRecord::create([
-            'empleado_id' => $empleado->id,
+            'user_id' => $user->id,
             'sede_id' => $sede->id,
             'tipo' => $request->tipo,
             'lat' => $request->lat,
@@ -130,7 +130,7 @@ class AttendanceController extends Controller
             ]);
         }
 
-        $record->load(['empleado.user', 'sede']);
+        $record->load(['user', 'sede']);
 
         return response()->json([
             'message' => 'Asistencia registrada correctamente.',
@@ -152,16 +152,10 @@ class AttendanceController extends Controller
     public function myHistory(Request $request): JsonResponse
     {
         $user = $request->user();
-        $empleado = $user->empleado;
-
-        if (!$empleado) {
-            return response()->json(['message' => 'Perfil de empleado no encontrado.'], 404);
-        }
-
         $date = $request->date ?? today();
 
         $records = AttendanceRecord::with('sede')
-            ->where('empleado_id', $empleado->id)
+            ->where('user_id', $user->id)
             ->whereDate('fecha_hora', $date)
             ->orderBy('fecha_hora', 'desc')
             ->get();
@@ -173,12 +167,17 @@ class AttendanceController extends Controller
     {
         $date = $request->date ?? today();
 
-        $totalEmpleados = \App\Models\Empleado::where('is_active', true)->count();
+        $empresaId = $request->user()->empresa_id;
+
+        $totalEmpleados = User::where('empresa_id', $empresaId)
+            ->where('role', 'empleado')
+            ->where('is_active', true)
+            ->count();
 
         $presentes = AttendanceRecord::whereDate('fecha_hora', $date)
             ->whereIn('tipo', ['entrada', 'regreso_almuerzo'])
-            ->distinct('empleado_id')
-            ->count('empleado_id');
+            ->distinct('user_id')
+            ->count('user_id');
 
         $ausentes = $totalEmpleados - $presentes;
 
@@ -199,7 +198,7 @@ class AttendanceController extends Controller
     {
         $limit = $request->limit ?? 20;
 
-        $records = AttendanceRecord::with(['empleado.user', 'sede'])
+        $records = AttendanceRecord::with(['user', 'sede'])
             ->whereDate('fecha_hora', today())
             ->orderBy('fecha_hora', 'desc')
             ->take($limit)

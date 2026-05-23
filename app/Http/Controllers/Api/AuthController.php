@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Helpers\TenantHelper;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -14,95 +15,52 @@ class AuthController extends Controller
 {
     public function login(Request $request): JsonResponse
     {
-        Log::info('API Login attempt', [
-            'email' => $request->email,
-            'ip' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-        ]);
-
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
-
-        $user = User::where('email', $request->email)->first();
-
-        Log::info('API Login user lookup', [
-            'email' => $request->email,
-            'user_found' => $user !== null,
-            'user_id' => $user?->id,
-            'user_name' => $user?->name,
-            'user_role' => $user?->role,
-            'user_active' => $user?->is_active,
-        ]);
-
-        if (!$user) {
-            Log::warning('API Login failed: user not found', ['email' => $request->email]);
-            throw ValidationException::withMessages([
-                'email' => ['Las credenciales proporcionadas son incorrectas.'],
+        try {
+            $request->validate([
+                'email'    => 'required|email',
+                'password' => 'required',
             ]);
-        }
 
-        $passwordOk = Hash::check($request->password, $user->password);
-        Log::info('API Login password check', [
-            'user_id' => $user->id,
-            'password_ok' => $passwordOk,
-        ]);
+            $user = User::where('email', $request->email)->first();
 
-        if (!$passwordOk) {
-            Log::warning('API Login failed: wrong password', [
-                'user_id' => $user->id,
-                'email' => $request->email,
+            if (!$user || !Hash::check($request->password, $user->password)) {
+                throw ValidationException::withMessages([
+                    'email' => ['Las credenciales proporcionadas son incorrectas.'],
+                ]);
+            }
+
+            if (!$user->is_active) {
+                return response()->json(['message' => 'Tu cuenta ha sido desactivada.'], 403);
+            }
+
+            if ($user->empresa_id !== null) {
+                TenantHelper::switchTenant($user->empresa_id);
+            }
+
+            $token = $user->createToken('auth-token')->plainTextToken;
+
+            return response()->json([
+                'user'  => $this->userData($user),
+                'token' => $token,
             ]);
-            throw ValidationException::withMessages([
-                'email' => ['Las credenciales proporcionadas son incorrectas.'],
+
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            Log::error('API Login exception', [
+                'message' => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+                'email'   => $request->email,
             ]);
+            return response()->json(['message' => 'Error interno: ' . $e->getMessage()], 500);
         }
-
-        if (!$user->is_active) {
-            Log::warning('API Login failed: inactive user', ['user_id' => $user->id]);
-            return response()->json(['message' => 'Tu cuenta ha sido desactivada.'], 403);
-        }
-
-        $empleado = $user->empleado;
-        Log::info('API Login empleado check', [
-            'user_id' => $user->id,
-            'has_empleado' => $empleado !== null,
-            'empleado_id' => $empleado?->id,
-            'empleado_activo' => $empleado?->is_active,
-        ]);
-
-        $token = $user->createToken('auth-token')->plainTextToken;
-
-        Log::info('API Login success', [
-            'user_id' => $user->id,
-            'email' => $user->email,
-            'role' => $user->role,
-        ]);
-
-        return response()->json([
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->role,
-            ],
-            'token' => $token,
-        ]);
     }
 
     public function me(Request $request): JsonResponse
     {
-        $user = $request->user()->load('empleado');
-
         return response()->json([
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->role,
-                'empleado' => $user->empleado,
-            ],
+            'user' => $this->userData($request->user()),
         ]);
     }
 
@@ -111,5 +69,21 @@ class AuthController extends Controller
         $request->user()->currentAccessToken()->delete();
 
         return response()->json(['message' => 'Sesión cerrada correctamente.']);
+    }
+
+    private function userData(User $user): array
+    {
+        return [
+            'id'              => $user->id,
+            'name'            => $user->name,
+            'email'           => $user->email,
+            'role'            => $user->role,
+            'empresa_id'      => $user->empresa_id,
+            'codigo_empleado' => $user->codigo_empleado,
+            'departamento'    => $user->departamento,
+            'cargo'           => $user->cargo,
+            'telefono'        => $user->telefono,
+            'foto_url'        => $user->foto_url,
+        ];
     }
 }

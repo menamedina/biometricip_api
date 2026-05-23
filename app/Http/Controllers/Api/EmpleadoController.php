@@ -3,27 +3,27 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Empleado;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class EmpleadoController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Empleado::with('user');
+        $empresaId = $request->user()->empresa_id;
+
+        $query = User::where('empresa_id', $empresaId)->where('role', 'empleado');
 
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('codigo_empleado', 'like', "%{$search}%")
-                    ->orWhere('departamento', 'like', "%{$search}%")
-                    ->orWhereHas('user', function ($q2) use ($search) {
-                        $q2->where('name', 'like', "%{$search}%")
-                            ->orWhere('email', 'like', "%{$search}%");
-                    });
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('codigo_empleado', 'like', "%{$search}%")
+                    ->orWhere('departamento', 'like', "%{$search}%");
             });
         }
 
@@ -42,85 +42,102 @@ class EmpleadoController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $empresaId = $request->user()->empresa_id;
+
         $data = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6',
-            'codigo_empleado' => 'required|string|unique:empleados,codigo_empleado|max:20',
-            'departamento' => 'nullable|string|max:100',
-            'cargo' => 'nullable|string|max:100',
-            'telefono' => 'nullable|string|max:20',
+            'name'            => 'required|string|max:255',
+            'email'           => 'required|email|unique:users,email',
+            'password'        => 'required|string|min:6',
+            'codigo_empleado' => [
+                'required', 'string', 'max:20',
+                Rule::unique('users', 'codigo_empleado')->where('empresa_id', $empresaId),
+            ],
+            'departamento'    => 'nullable|string|max:100',
+            'cargo'           => 'nullable|string|max:100',
+            'telefono'        => 'nullable|string|max:20',
         ]);
 
         $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
-            'role' => 'empleado',
-        ]);
-
-        $empleado = Empleado::create([
-            'user_id' => $user->id,
+            'name'            => $data['name'],
+            'email'           => $data['email'],
+            'password'        => Hash::make($data['password']),
+            'role'            => 'empleado',
+            'is_active'       => true,
+            'empresa_id'      => $empresaId,
             'codigo_empleado' => $data['codigo_empleado'],
-            'departamento' => $data['departamento'] ?? null,
-            'cargo' => $data['cargo'] ?? null,
-            'telefono' => $data['telefono'] ?? null,
+            'departamento'    => $data['departamento'] ?? null,
+            'cargo'           => $data['cargo'] ?? null,
+            'telefono'        => $data['telefono'] ?? null,
         ]);
 
-        $empleado->load('user');
-
-        return response()->json(['data' => $empleado], 201);
+        return response()->json(['data' => $user], 201);
     }
 
-    public function show(Empleado $empleado): JsonResponse
+    public function show(Request $request, int $id): JsonResponse
     {
-        $empleado->load('user');
+        $empleado = User::where('id', $id)
+            ->where('empresa_id', $request->user()->empresa_id)
+            ->where('role', 'empleado')
+            ->firstOrFail();
 
         return response()->json(['data' => $empleado]);
     }
 
-    public function update(Request $request, Empleado $empleado): JsonResponse
+    public function update(Request $request, int $id): JsonResponse
     {
+        $empresaId = $request->user()->empresa_id;
+
+        $empleado = User::where('id', $id)
+            ->where('empresa_id', $empresaId)
+            ->where('role', 'empleado')
+            ->firstOrFail();
+
         $data = $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'email' => 'sometimes|email|unique:users,email,' . $empleado->user_id,
-            'password' => 'nullable|string|min:6',
-            'codigo_empleado' => 'sometimes|string|unique:empleados,codigo_empleado,' . $empleado->id . '|max:20',
-            'departamento' => 'nullable|string|max:100',
-            'cargo' => 'nullable|string|max:100',
-            'telefono' => 'nullable|string|max:20',
-            'is_active' => 'nullable|boolean',
+            'name'            => 'sometimes|string|max:255',
+            'email'           => 'sometimes|email|unique:users,email,' . $empleado->id,
+            'password'        => 'nullable|string|min:6',
+            'codigo_empleado' => [
+                'sometimes', 'string', 'max:20',
+                Rule::unique('users', 'codigo_empleado')
+                    ->where('empresa_id', $empresaId)
+                    ->ignore($empleado->id),
+            ],
+            'departamento'    => 'nullable|string|max:100',
+            'cargo'           => 'nullable|string|max:100',
+            'telefono'        => 'nullable|string|max:20',
+            'is_active'       => 'nullable|boolean',
         ]);
 
-        if (isset($data['name'])) {
-            $empleado->user->update(['name' => $data['name']]);
-        }
-        if (isset($data['email'])) {
-            $empleado->user->update(['email' => $data['email']]);
-        }
         if (!empty($data['password'])) {
-            $empleado->user->update(['password' => Hash::make($data['password'])]);
+            $data['password'] = Hash::make($data['password']);
+        } else {
+            unset($data['password']);
         }
 
-        $empleado->update(array_filter($data, fn($key) => in_array($key, [
-            'codigo_empleado', 'departamento', 'cargo', 'telefono', 'is_active',
-        ]), ARRAY_FILTER_USE_KEY));
+        $empleado->update($data);
 
-        $empleado->load('user');
-
-        return response()->json(['data' => $empleado]);
+        return response()->json(['data' => $empleado->fresh()]);
     }
 
-    public function destroy(Empleado $empleado): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
+        $empleado = User::where('id', $id)
+            ->where('empresa_id', $request->user()->empresa_id)
+            ->where('role', 'empleado')
+            ->firstOrFail();
+
         $empleado->update(['is_active' => false]);
-        $empleado->user->update(['is_active' => false]);
 
         return response()->json(['message' => 'Empleado desactivado correctamente.']);
     }
 
-    public function updateFaceDescriptor(Request $request, Empleado $empleado): JsonResponse
+    public function updateFaceDescriptor(Request $request, int $id): JsonResponse
     {
+        $empleado = User::where('id', $id)
+            ->where('empresa_id', $request->user()->empresa_id)
+            ->where('role', 'empleado')
+            ->firstOrFail();
+
         $request->validate([
             'face_descriptor' => 'required|array',
         ]);
@@ -130,9 +147,11 @@ class EmpleadoController extends Controller
         return response()->json(['message' => 'Descriptor facial actualizado.']);
     }
 
-    public function departamentos(): JsonResponse
+    public function departamentos(Request $request): JsonResponse
     {
-        $departamentos = Empleado::whereNotNull('departamento')
+        $departamentos = User::where('empresa_id', $request->user()->empresa_id)
+            ->where('role', 'empleado')
+            ->whereNotNull('departamento')
             ->distinct()
             ->orderBy('departamento')
             ->pluck('departamento');

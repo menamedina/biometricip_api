@@ -98,7 +98,27 @@
 </div>
 @endsection
 
+{{-- Modal QR --}}
+<div class="modal fade" id="qrModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa-solid fa-qrcode me-2"></i><span id="qrSedeName"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div id="qrCanvas" class="d-flex justify-content-center mb-3"></div>
+                <div class="d-flex justify-content-center align-items-center gap-2">
+                    <span class="text-muted small">Expira en</span>
+                    <span id="qrCountdown" class="badge bg-warning text-dark fs-6">30s</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 const token = localStorage.getItem('token');
 
@@ -127,6 +147,7 @@ async function loadSedes() {
                 <td>${s.radio_mts}m</td>
                 <td><span class="badge ${s.is_active ? 'bg-success' : 'bg-danger'}">${s.is_active ? 'Activo' : 'Inactivo'}</span></td>
                 <td>
+                    <button class="btn btn-sm btn-outline-success me-1" onclick="showQR(${s.id}, '${s.nombre}')"><i class="fa-solid fa-qrcode"></i></button>
                     <button class="btn btn-sm btn-outline-primary me-1" onclick='editSede(${JSON.stringify(s).replace(/'/g, "&#39;")})'><i class="fa-solid fa-pen"></i></button>
                     <button class="btn btn-sm btn-outline-danger" onclick="deleteSede(${s.id})"><i class="fa-solid fa-trash"></i></button>
                 </td>
@@ -187,5 +208,47 @@ async function deleteSede(id) {
 }
 
 document.addEventListener('DOMContentLoaded', loadSedes);
+
+let qrInterval = null;
+let qrSedeId   = null;
+
+async function showQR(sedeId, sedeName) {
+    qrSedeId = sedeId;
+    document.getElementById('qrSedeName').textContent = sedeName;
+    document.getElementById('qrCanvas').innerHTML = '';
+
+    const modal = new bootstrap.Modal(document.getElementById('qrModal'));
+    modal.show();
+
+    await refreshQR();
+
+    clearInterval(qrInterval);
+    qrInterval = setInterval(async () => {
+        const remaining = 30 - (Math.floor(Date.now() / 1000) % 30);
+        document.getElementById('qrCountdown').textContent = remaining + 's';
+        if (remaining === 30) await refreshQR();
+    }, 1000);
+
+    document.getElementById('qrModal').addEventListener('hidden.bs.modal', () => {
+        clearInterval(qrInterval);
+    }, { once: true });
+}
+
+async function refreshQR() {
+    try {
+        const res  = await fetch(`/api/sedes/${qrSedeId}/qr`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await res.json();
+
+        document.getElementById('qrCanvas').innerHTML = '';
+        new QRCode(document.getElementById('qrCanvas'), {
+            text:   data.qr_value,
+            width:  220,
+            height: 220,
+        });
+
+        const remaining = data.expires_in_seconds;
+        document.getElementById('qrCountdown').textContent = remaining + 's';
+    } catch(e) { console.error('Error generando QR', e); }
+}
 </script>
 @endpush

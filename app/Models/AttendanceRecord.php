@@ -8,10 +8,11 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class AttendanceRecord extends Model
 {
+    protected $connection = 'tenant';
     protected $table = 'tbl_registros_asistencia';
 
     protected $fillable = [
-        'empleado_id',
+        'user_id',
         'sede_id',
         'tipo',
         'lat',
@@ -35,9 +36,9 @@ class AttendanceRecord extends Model
         ];
     }
 
-    public function empleado(): BelongsTo
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(Empleado::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function sede(): BelongsTo

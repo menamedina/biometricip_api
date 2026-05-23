@@ -159,7 +159,7 @@ async function loadDashboard() {
         } else {
             tbody.innerHTML = data.data.map(r => `
                 <tr>
-                    <td><strong>${r.empleado?.user?.name || 'N/A'}</strong><br><small class="text-muted">${r.empleado?.departamento || ''}</small></td>
+                    <td><strong>${r.user?.name || 'N/A'}</strong><br><small class="text-muted">${r.user?.departamento || ''}</small></td>
                     <td>${new Date(r.fecha_hora).toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'})}</td>
                     <td>${r.tipo.replace('_', ' ')}</td>
                     <td><span class="badge bg-info">${r.metodo}</span></td>
@@ -176,27 +176,42 @@ async function loadDashboard() {
                 const m = L.circleMarker([r.lat, r.lng], {
                     radius: 6, fillColor: r.tipo.includes('entrada') ? '#10b981' : '#ef4444',
                     color: '#fff', weight: 2, fillOpacity: 0.9
-                }).addTo(map).bindPopup(`<b>${r.empleado?.user?.name || 'N/A'}</b><br>${r.tipo}`);
+                }).addTo(map).bindPopup(`<b>${r.user?.name || 'N/A'}</b><br>${r.tipo}`);
                 attendanceMarkers.push(m);
             });
         }
     } catch(e) { console.error('Attendance:', e); }
 }
 
-function loadQR() {
-    fetch('/api/sedes/1/qr', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    })
-    .then(r => r.json())
-    .then(data => {
+let qrSedeId = null;
+
+async function loadQR() {
+    try {
+        // Si no tenemos sede cargada, buscar la primera activa
+        if (!qrSedeId) {
+            const res  = await fetch('/api/sedes', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
+            const data = await res.json();
+            const sede = data.data?.find(s => s.is_active) || data.data?.[0];
+            if (!sede) {
+                document.getElementById('qrCodeContainer').innerHTML = '<p class="text-muted small">Sin sedes registradas</p>';
+                return;
+            }
+            qrSedeId = sede.id;
+            document.querySelector('.card-header h5 + button').closest('.card').querySelector('.card-header h5').innerHTML =
+                `<i class="fa-solid fa-qrcode me-1"></i> QR — ${sede.nombre}`;
+        }
+
+        const res  = await fetch(`/api/sedes/${qrSedeId}/qr`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
+        const data = await res.json();
+        if (!data.qr_value) return;
+
         document.getElementById('qrCodeContainer').innerHTML = '';
         new QRCode(document.getElementById('qrCodeContainer'), {
             text: data.qr_value, width: 180, height: 180,
             colorDark: '#1e293b', colorLight: '#ffffff',
             correctLevel: QRCode.CorrectLevel.M
         });
-    })
-    .catch(e => console.error('QR:', e));
+    } catch(e) { console.error('QR:', e); }
 }
 function refreshQR() { loadQR(); }
 
