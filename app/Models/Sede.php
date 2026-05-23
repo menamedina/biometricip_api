@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Sede extends Model
 {
-    protected $table = 'sedes';
+    protected $table = 'tbl_sedes';
 
     protected $fillable = [
         'codigo',

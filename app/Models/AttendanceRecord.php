@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class AttendanceRecord extends Model
 {
-    protected $table = 'attendance_records';
+    protected $table = 'tbl_registros_asistencia';
 
     protected $fillable = [
         'empleado_id',

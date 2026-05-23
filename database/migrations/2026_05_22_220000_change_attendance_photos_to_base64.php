@@ -8,11 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::dropIfExists('attendance_photos');
+        Schema::dropIfExists('tbl_fotos_asistencia');
 
-        Schema::create('attendance_photos', function (Blueprint $table) {
+        Schema::create('tbl_fotos_asistencia', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('attendance_record_id')->constrained('attendance_records')->cascadeOnDelete();
+            $table->foreignId('attendance_record_id')->constrained('tbl_registros_asistencia')->cascadeOnDelete();
             $table->longText('foto_base64');
             $table->text('thumbnail_base64');
             $table->timestamps();
@@ -21,6 +21,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('attendance_photos');
+        Schema::dropIfExists('tbl_fotos_asistencia');
     }
 };

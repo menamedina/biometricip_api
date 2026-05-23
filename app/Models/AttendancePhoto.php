@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AttendancePhoto extends Model
 {
-    protected $table = 'attendance_photos';
+    protected $table = 'tbl_fotos_asistencia';
 
     protected $fillable = [
         'attendance_record_id',

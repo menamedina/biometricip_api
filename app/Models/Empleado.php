@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Empleado extends Model
 {
-    protected $table = 'empleados';
+    protected $table = 'tbl_empleados';
 
     protected $fillable = [
         'user_id',

@@ -8,10 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('attendance_records', function (Blueprint $table) {
+        Schema::create('tbl_registros_asistencia', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('empleado_id')->constrained('empleados')->cascadeOnDelete();
-            $table->foreignId('sede_id')->constrained('sedes')->cascadeOnDelete();
+            $table->foreignId('empleado_id')->constrained('tbl_empleados')->cascadeOnDelete();
+            $table->foreignId('sede_id')->constrained('tbl_sedes')->cascadeOnDelete();
             $table->enum('tipo', ['entrada', 'salida_almuerzo', 'regreso_almuerzo', 'salida']);
             $table->decimal('lat', 10, 7)->nullable();
             $table->decimal('lng', 10, 7)->nullable();
@@ -28,6 +28,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('attendance_records');
+        Schema::dropIfExists('tbl_registros_asistencia');
     }
 };
