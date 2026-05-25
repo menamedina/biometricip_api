@@ -111,7 +111,8 @@
     </div>
 
     <footer class="text-center py-4 text-muted small">
-        BiometricIP v{{ app()->version() }} &mdash; Laravel {{ app()->version() }}
+        BiometricIP &mdash; Innovasoftip SAS &mdash;
+        <a href="{{ route('privacy') }}" class="text-muted">Política de Privacidad</a>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

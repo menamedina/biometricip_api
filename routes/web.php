@@ -9,6 +9,10 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/privacy', function () {
+    return view('privacy');
+})->name('privacy');
+
 Route::get('/admin/login',  [LoginController::class, 'showLogin'])->name('admin.login.show');
 Route::post('/admin/login', [LoginController::class, 'login'])->name('admin.login');
 
