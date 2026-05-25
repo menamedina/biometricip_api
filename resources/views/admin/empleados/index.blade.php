@@ -292,7 +292,15 @@ async function editEmpleado(id) {
         const e = data.data;
         document.getElementById('empleadoId').value      = e.id;
         if (isAdminTenant) {
-            document.getElementById('empEmpresaId').value = e.empresa_id || '';
+            const selEmp = document.getElementById('empEmpresaId');
+            selEmp.value = e.empresa_id || '';
+            if (e.tiene_movimientos) {
+                selEmp.disabled = true;
+                selEmp.title = 'No se puede cambiar: el empleado tiene registros de asistencia';
+            } else {
+                selEmp.disabled = false;
+                selEmp.title = '';
+            }
         } else if (e.empresa) {
             document.getElementById('empEmpresa').value = e.empresa;
             document.getElementById('empEmpresaRow').style.display = '';
@@ -337,8 +345,10 @@ async function saveEmpleado() {
         is_active:        document.getElementById('empActivo').checked,
     };
     if (isAdminTenant) {
-        const empIdVal = document.getElementById('empEmpresaId').value;
-        payload.empresa_id = empIdVal ? parseInt(empIdVal) : null;
+        const selEmp = document.getElementById('empEmpresaId');
+        if (!selEmp.disabled) {
+            payload.empresa_id = selEmp.value ? parseInt(selEmp.value) : null;
+        }
     }
     const pass = document.getElementById('empPassword').value;
     if (pass) payload.password = pass;

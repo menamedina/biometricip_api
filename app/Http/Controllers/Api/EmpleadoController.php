@@ -132,7 +132,17 @@ class EmpleadoController extends Controller
 
         $empleado = $query->firstOrFail();
 
-        return response()->json(['data' => $this->withNames($empleado)]);
+        $data = $this->withNames($empleado);
+
+        // Para admin_tenant: indicar si tiene movimientos (para bloquear cambio de empresa en UI)
+        if ($authUser->admin_tenant && $empleado->empresa_id) {
+            TenantHelper::switchTenant($empleado->empresa_id);
+            $data['tiene_movimientos'] = AttendanceRecord::where('user_id', $empleado->id)->exists();
+        } else {
+            $data['tiene_movimientos'] = false;
+        }
+
+        return response()->json(['data' => $data]);
     }
 
     public function update(Request $request, int $id): JsonResponse
@@ -149,17 +159,17 @@ class EmpleadoController extends Controller
         $empleado = $query->firstOrFail();
 
         // Si admin_tenant intenta cambiar la empresa, verificar que no tenga movimientos
-        $nuevoEmpresaId = $authUser->admin_tenant && $request->has('empresa_id')
-            ? ($request->integer('empresa_id') ?: null)
-            : null;
+        $cambiaEmpresa = $authUser->admin_tenant
+            && $request->filled('empresa_id')
+            && (int) $request->empresa_id !== (int) $empleado->empresa_id;
 
-        if ($nuevoEmpresaId && $nuevoEmpresaId !== $empleado->empresa_id) {
+        if ($cambiaEmpresa) {
             if ($empleado->empresa_id) {
-                TenantHelper::switchTenant($empleado->empresa_id);
+                TenantHelper::switchTenant((int) $empleado->empresa_id);
                 $tieneMovimientos = AttendanceRecord::where('user_id', $empleado->id)->exists();
                 if ($tieneMovimientos) {
                     return response()->json([
-                        'message' => 'No se puede cambiar la empresa del empleado porque tiene registros de asistencia. Debe migrar los datos manualmente.',
+                        'message' => 'No se puede cambiar la empresa porque el empleado tiene registros de asistencia.',
                     ], 422);
                 }
             }
@@ -197,6 +207,11 @@ class EmpleadoController extends Controller
             $data['password'] = Hash::make($data['password']);
         } else {
             unset($data['password']);
+        }
+
+        // empresa_id solo se actualiza si es admin_tenant Y el cambio está permitido
+        if (!$authUser->admin_tenant || !$cambiaEmpresa) {
+            unset($data['empresa_id']);
         }
 
         $empleado->update($data);

@@ -11,6 +11,45 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     @stack('styles')
+    <style>
+        /* ── Logo en sidebar ─────────────────────────────── */
+        .sidenav-menu > a.logo {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            padding: 14px 16px;
+            min-height: 70px;
+            text-decoration: none;
+        }
+        /* Mostrar solo la variante light (modo por defecto) */
+        .sidenav-menu > a.logo .logo-light { display: block !important; }
+        .sidenav-menu > a.logo .logo-dark  { display: none  !important; }
+
+        /* Dentro de logo-light: mostrar logo-lg, ocultar logo-sm */
+        .sidenav-menu > a.logo .logo-light .logo-lg { display: block !important; }
+        .sidenav-menu > a.logo .logo-light .logo-sm { display: none  !important; }
+
+        /* Cuando el sidebar está contraído mostrar logo-sm */
+        .sidenav-menu-condensed .sidenav-menu > a.logo .logo-light .logo-lg { display: none  !important; }
+        .sidenav-menu-condensed .sidenav-menu > a.logo .logo-light .logo-sm { display: block !important; }
+
+        /* Tamaño del logo — alta especificidad para ganarle al tema */
+        html body .wrapper .sidenav-menu a.logo span img,
+        html body .wrapper .sidenav-menu a.logo span span img {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            height: 56px !important;
+            width: auto !important;
+            max-width: 200px !important;
+            object-fit: contain !important;
+        }
+        /* Logo-sm (sidebar contraído) */
+        html body .wrapper .sidenav-menu a.logo .logo-sm img {
+            height: 36px !important;
+            max-width: 36px !important;
+        }
+    </style>
 </head>
 <body>
     <div class="wrapper">
@@ -56,12 +95,12 @@
         <div class="sidenav-menu">
             <a href="{{ url('/') }}" class="logo">
                 <span class="logo logo-light">
-                    <span class="logo-lg"><img src="{{ asset('logos/logo.png') }}" alt="Logo" style="max-height:48px; max-width:160px; object-fit:contain;"></span>
-                    <span class="logo-sm"><img src="{{ asset('logos/logo_menu.png') }}" alt="Logo" style="max-height:36px; max-width:40px; object-fit:contain;"></span>
+                    <span class="logo-lg"><img src="{{ asset('logos/logo.png') }}" alt="Logo"></span>
+                    <span class="logo-sm"><img src="{{ asset('logos/logo_menu.png') }}" alt="Logo"></span>
                 </span>
                 <span class="logo logo-dark">
-                    <span class="logo-lg"><img src="{{ asset('logos/logo.png') }}" alt="Logo" style="max-height:48px; max-width:160px; object-fit:contain;"></span>
-                    <span class="logo-sm"><img src="{{ asset('logos/logo_menu.png') }}" alt="Logo" style="max-height:36px; max-width:40px; object-fit:contain;"></span>
+                    <span class="logo-lg"><img src="{{ asset('logos/logo.png') }}" alt="Logo"></span>
+                    <span class="logo-sm"><img src="{{ asset('logos/logo_menu.png') }}" alt="Logo"></span>
                 </span>
             </a>
             <button class="button-on-hover"><span class="btn-on-hover-icon"></span></button>
