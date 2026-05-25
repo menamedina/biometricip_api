@@ -10,11 +10,7 @@ class AttendancePhoto extends Model
     protected $connection = 'tenant';
     protected $table = 'tbl_fotos_asistencia';
 
-    protected $fillable = [
-        'attendance_record_id',
-        'foto_base64',
-        'thumbnail_base64',
-    ];
+    protected $guarded = [];
 
     public function attendanceRecord(): BelongsTo
     {

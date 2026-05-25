@@ -9,13 +9,7 @@ class Horario extends Model
     protected $connection = 'tenant';
     protected $table      = 'tbl_horarios';
 
-    protected $fillable = [
-        'nombre',
-        'hora_entrada',
-        'hora_salida',
-        'duracion_almuerzo_min',
-        'is_active',
-    ];
+    protected $guarded = [];
 
     protected function casts(): array
     {

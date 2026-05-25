@@ -9,7 +9,7 @@ class Cargo extends Model
     protected $connection = 'tenant';
     protected $table      = 'tbl_cargos';
 
-    protected $fillable = ['nombre', 'descripcion', 'is_active'];
+    protected $guarded = [];
 
     protected $casts = ['is_active' => 'boolean'];
 }

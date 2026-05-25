@@ -11,21 +11,7 @@ class AttendanceRecord extends Model
     protected $connection = 'tenant';
     protected $table = 'tbl_registros_asistencia';
 
-    protected $fillable = [
-        'user_id',
-        'sede_id',
-        'horario_id',
-        'tipo',
-        'lat',
-        'lng',
-        'foto_evidencia',
-        'metodo',
-        'qr_validado',
-        'geocerca_validada',
-        'distancia_oficina_mts',
-        'notas',
-        'fecha_hora',
-    ];
+    protected $guarded = [];
 
     protected function casts(): array
     {
@@ -34,6 +20,7 @@ class AttendanceRecord extends Model
             'geocerca_validada' => 'boolean',
             'distancia_oficina_mts' => 'float',
             'fecha_hora' => 'datetime',
+            'es_sincronizacion_offline' => 'boolean',
         ];
     }
 

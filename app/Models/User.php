@@ -27,6 +27,7 @@ class User extends Authenticatable
         'departamento_id',
         'cargo_id',
         'horario_id',
+        'sede_id',
         'telefono',
         'foto_url',
         'face_descriptor',

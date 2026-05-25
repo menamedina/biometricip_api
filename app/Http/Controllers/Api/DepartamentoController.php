@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Cargo;
 use App\Models\Departamento;
 use App\Models\Horario;
+use App\Models\Sede;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -18,6 +19,7 @@ class DepartamentoController extends Controller
             'departamentos' => Departamento::orderBy('nombre')->get(),
             'cargos'        => Cargo::orderBy('nombre')->get(),
             'horarios'      => Horario::where('is_active', true)->orderBy('nombre')->get(),
+            'sedes'         => Sede::where('is_active', true)->orderBy('nombre')->get(),
         ]);
     }
 

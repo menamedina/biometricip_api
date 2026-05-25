@@ -10,16 +10,7 @@ class Sede extends Model
     protected $connection = 'tenant';
     protected $table = 'tbl_sedes';
 
-    protected $fillable = [
-        'codigo',
-        'nombre',
-        'direccion',
-        'lat',
-        'lng',
-        'radio_mts',
-        'secret_key',
-        'is_active',
-    ];
+    protected $guarded = [];
 
     protected function casts(): array
     {
@@ -40,14 +31,22 @@ class Sede extends Model
     {
         $hash = substr(base64_encode($this->codigo . $this->secret_key . $timeSlot), 0, 12);
         return json_encode([
-            's' => $this->codigo,
-            'n' => $this->nombre,
-            't' => $timeSlot,
-            'h' => $hash,
+            's'   => $this->codigo,
+            'n'   => $this->nombre,
+            't'   => $timeSlot,
+            'h'   => $hash,
+            'lat' => $this->lat,
+            'lng' => $this->lng,
+            'r'   => $this->radio_mts,
         ]);
     }
 
     public function validateQRValue(string $qrValue): bool
+    {
+        return $this->validateQRValueAtTime($qrValue, time());
+    }
+
+    public function validateQRValueAtTime(string $qrValue, int $timestamp): bool
     {
         $data = json_decode($qrValue, true);
         if (!$data || !isset($data['s'], $data['t'], $data['h'])) {
@@ -58,8 +57,8 @@ class Sede extends Model
             return false;
         }
 
-        $currentSlot = (int) floor(time() / 30);
-        if (abs($currentSlot - (int) $data['t']) > 1) {
+        $slot = (int) floor($timestamp / 30);
+        if (abs($slot - (int) $data['t']) > 1) {
             return false;
         }
 

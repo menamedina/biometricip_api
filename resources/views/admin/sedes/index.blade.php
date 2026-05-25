@@ -66,7 +66,7 @@
                         </div>
                         <div class="col-12 mb-3">
                             <label class="form-label">Dirección</label>
-                            <input type="text" id="sedeDireccion" class="form-control" placeholder="Av. Reforma 222, CDMX">
+                            <input type="text" id="sedeDireccion" class="form-control" placeholder="Bogotá">
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Latitud</label>

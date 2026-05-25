@@ -101,9 +101,9 @@ VALUES
   VALUES (
       'SEDE-001',
       'Sede Principal',
-      'Av. Reforma 222, CDMX',
-      19.4326077,
-      -99.1331785,
+      'Bogotá',
+      4.6840,
+      -74.0960,
       150,
       '4c31ddabc377c81fa57d666f361f48e0',
       1,

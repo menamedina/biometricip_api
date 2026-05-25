@@ -8,7 +8,7 @@ class Departamento extends Model
     protected $connection = 'tenant';
     protected $table      = 'tbl_departamentos';
 
-    protected $fillable = ['nombre', 'descripcion', 'is_active'];
+    protected $guarded = [];
 
     protected $casts = ['is_active' => 'boolean'];
 }

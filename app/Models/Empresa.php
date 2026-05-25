@@ -8,16 +8,10 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Empresa extends Model
 {
+    protected $connection = 'mysql';
     protected $table = 'tbl_empresas';
 
-    protected $fillable = [
-        'nombre',
-        'ruc',
-        'email',
-        'telefono',
-        'logo_url',
-        'is_active',
-    ];
+    protected $guarded = [];
 
     protected function casts(): array
     {

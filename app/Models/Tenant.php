@@ -16,13 +16,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     protected $keyType = 'int';
     public $incrementing = true;
 
-    protected $fillable = [
-        'empresa_id',
-        'db_name',
-        'db_user',
-        'db_pass',
-        'data',
-    ];
+    protected $guarded = [];
 
     protected function casts(): array
     {

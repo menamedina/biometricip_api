@@ -9,15 +9,7 @@ class Permiso extends Model
     protected $connection = 'tenant';
     protected $table      = 'tbl_permisos';
 
-    protected $fillable = [
-        'user_id',
-        'fecha',
-        'tipo',
-        'horas_permiso',
-        'motivo',
-        'estado',
-        'aprobado_por',
-    ];
+    protected $guarded = [];
 
     protected function casts(): array
     {

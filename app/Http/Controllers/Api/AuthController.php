@@ -6,7 +6,9 @@ use App\Helpers\TenantHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Cargo;
 use App\Models\Departamento;
+use App\Models\Empresa;
 use App\Models\Horario;
+use App\Models\Sede;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -78,10 +80,12 @@ class AuthController extends Controller
     {
         $departamentoNombre = null;
         $cargoNombre        = null;
+        $empresaNombre      = null;
 
         $horarioData = null;
 
         if ($user->empresa_id !== null) {
+            $empresaNombre = Empresa::find($user->empresa_id)?->nombre;
             if ($user->departamento_id) {
                 $departamentoNombre = Departamento::find($user->departamento_id)?->nombre;
             }
@@ -105,21 +109,39 @@ class AuthController extends Controller
             }
         }
 
+        $sedeData = null;
+        if ($user->sede_id) {
+            $sede = Sede::find($user->sede_id);
+            if ($sede) {
+                $sedeData = [
+                    'id'        => $sede->id,
+                    'nombre'    => $sede->nombre,
+                    'lat'       => $sede->lat,
+                    'lng'       => $sede->lng,
+                    'radio_mts' => $sede->radio_mts,
+                ];
+            }
+        }
+
         return [
             'id'              => $user->id,
             'name'            => $user->name,
             'email'           => $user->email,
             'role'            => $user->role,
             'empresa_id'      => $user->empresa_id,
+            'empresa'         => $empresaNombre,
             'codigo_empleado' => $user->codigo_empleado,
             'departamento_id' => $user->departamento_id,
             'cargo_id'        => $user->cargo_id,
             'horario_id'      => $user->horario_id,
+            'sede_id'         => $user->sede_id,
             'departamento'    => $departamentoNombre,
             'cargo'           => $cargoNombre,
             'horario'         => $horarioData,
+            'sede'            => $sedeData,
             'telefono'        => $user->telefono,
             'foto_url'        => $user->foto_url,
+            'is_active'       => $user->is_active,
         ];
     }
 }

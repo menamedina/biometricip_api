@@ -10,9 +10,14 @@
                     <h4 class="mb-1"><i class="fa-solid fa-calendar-check me-2 text-primary"></i>Resumen Marcación</h4>
                     <p class="text-muted mb-0">Entradas y salidas agrupadas por empleado y día</p>
                 </div>
-                <button class="btn btn-success" onclick="exportar()">
-                    <i class="fa-solid fa-file-csv me-1"></i> Exportar CSV
-                </button>
+                <div>
+                    <button class="btn btn-primary btn-sm me-2" onclick="abrirModalManual()">
+                        <i class="fa-solid fa-plus me-1"></i> Registro Manual
+                    </button>
+                    <button class="btn btn-success btn-sm" onclick="exportar()">
+                        <i class="fa-solid fa-file-csv me-1"></i> Exportar CSV
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -69,11 +74,11 @@
                         <th>Entrada 4</th>
                         <th>Salida 4</th>
                         <th class="text-end">Total Horas</th>
-
+                        <th class="text-center">Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="resumenTbody">
-                    <tr><td colspan="13" class="text-center text-muted py-4">Selecciona un rango de fechas y presiona Buscar</td></tr>
+                    <tr><td colspan="14" class="text-center text-muted py-4">Cargando...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -83,12 +88,88 @@
         </div>
     </div>
 </div>
+
+{{-- Modal Editar Tipo --}}
+<div class="modal fade" id="modalEditar" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title">Editar Registro</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editId">
+                <div class="mb-3">
+                    <label class="form-label">Empleado</label>
+                    <input type="text" id="editEmpleado" class="form-control form-control-sm" readonly>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Fecha/Hora</label>
+                    <input type="text" id="editFechaHora" class="form-control form-control-sm" readonly>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Tipo</label>
+                    <select id="editTipo" class="form-select form-select-sm">
+                        <option value="entrada">Entrada</option>
+                        <option value="salida">Salida</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="guardarEdicion()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Modal Registro Manual --}}
+<div class="modal fade" id="modalManual" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title">Crear Registro Manual</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Empleado</label>
+                    <select id="manualEmpleado" class="form-select form-select-sm" required>
+                        <option value="">Seleccionar...</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Tipo</label>
+                    <select id="manualTipo" class="form-select form-select-sm">
+                        <option value="entrada">Entrada</option>
+                        <option value="salida">Salida</option>
+                    </select>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Fecha</label>
+                        <input type="date" id="manualFecha" class="form-control form-control-sm" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Hora</label>
+                        <input type="time" id="manualHora" class="form-control form-control-sm" required>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="guardarManual()">Crear Registro</button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
 <script>
 const token = localStorage.getItem('token');
-let deptoMap = {};  // id → nombre, para resolver en la tabla
+let deptoMap = {};
+let allRegistros = []; // guardar todos los registros para acceder al editar
 
 // ── Inicialización ────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -98,6 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('dateTo').value   = hoy;
 
     cargarFiltros();
+    cargarResumen();
 });
 
 function inicioSemana() {
@@ -108,7 +190,6 @@ function inicioSemana() {
 }
 
 async function cargarFiltros() {
-    // Una sola llamada para empleados + catálogos en paralelo
     const [resE, resCat] = await Promise.all([
         fetch('/api/empleados?per_page=500', { headers: { 'Authorization': `Bearer ${token}` } }),
         fetch('/api/catalogos',              { headers: { 'Authorization': `Bearer ${token}` } }),
@@ -119,9 +200,14 @@ async function cargarFiltros() {
     const deptos = dataCat.departamentos || [];
     deptoMap = Object.fromEntries(deptos.map(d => [d.id, d.nombre]));
 
+    const empleados = dataE.data || [];
+
     const selE = document.getElementById('filterEmpleado');
-    (dataE.data || []).forEach(e => {
-        selE.innerHTML += `<option value="${e.id}">${e.name} (${e.codigo_empleado})</option>`;
+    const selManual = document.getElementById('manualEmpleado');
+    empleados.forEach(e => {
+        const opt = `<option value="${e.id}">${e.name} (${e.codigo_empleado || ''})</option>`;
+        selE.innerHTML += opt;
+        selManual.innerHTML += opt;
     });
 
     const selD = document.getElementById('filterDepto');
@@ -143,20 +229,25 @@ async function cargarResumen() {
     if (userId)  url += `&user_id=${userId}`;
 
     const tbody = document.getElementById('resumenTbody');
-    tbody.innerHTML = '<tr><td colspan="13" class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div> Cargando...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="14" class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div> Cargando...</td></tr>';
 
     try {
-        const res  = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+        const res  = await fetch(url, { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' } });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.message || `HTTP ${res.status}`);
+        }
         const data = await res.json();
         let registros = data.data || [];
 
-        // Filtrar por departamento en el cliente si se seleccionó
         if (deptoId) {
             registros = registros.filter(r => r.user?.departamento_id == deptoId);
         }
 
+        allRegistros = registros;
+
         if (!registros.length) {
-            tbody.innerHTML = '<tr><td colspan="13" class="text-center text-muted py-4">Sin registros para el período seleccionado</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="14" class="text-center text-muted py-4">Sin registros para el período seleccionado</td></tr>';
             document.getElementById('resumenInfo').textContent  = '';
             document.getElementById('resumenTotal').textContent = '';
             return;
@@ -182,7 +273,6 @@ async function cargarResumen() {
         }).forEach(g => {
             const sorted = g.registros.sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora));
 
-            // Emparejar cronológicamente: entrada abre sesión, salida la cierra
             const sessions = [];
             let openEntrada = null;
             for (const r of sorted) {
@@ -196,7 +286,6 @@ async function cargarResumen() {
             }
             if (openEntrada) sessions.push({ e: openEntrada, s: null });
 
-            // Calcular minutos trabajados
             let totalMin = 0;
             for (const s of sessions) {
                 if (s.e && s.s) {
@@ -204,18 +293,25 @@ async function cargarResumen() {
                 }
             }
 
-            // Auto-descuento si el horario tiene duracion_almuerzo_min
             const horario = sorted.find(r => r.horario)?.horario;
             if (horario?.duracion_almuerzo_min) {
                 totalMin = Math.max(0, totalMin - horario.duracion_almuerzo_min);
             }
 
-            // Construir celdas (hasta 4 pares entrada/salida)
+            // Construir celdas clickeables (hasta 4 pares entrada/salida)
             const celdas = [];
             for (let i = 0; i < 4; i++) {
                 const s = sessions[i];
-                celdas.push(s?.e ? `<span class="text-success fw-semibold">${s.e.fecha_hora.slice(11,16)}</span>` : '<span class="text-muted">—</span>');
-                celdas.push(s?.s ? `<span class="text-danger fw-semibold">${s.s.fecha_hora.slice(11,16)}</span>` : '<span class="text-muted">—</span>');
+                if (s?.e) {
+                    celdas.push(`<span class="text-success fw-semibold cursor-pointer" onclick="editarRegistro(${s.e.id})" title="Click para editar">${s.e.fecha_hora.slice(11,16)} <i class="fa-solid fa-pen fa-xs text-muted"></i></span>`);
+                } else {
+                    celdas.push('<span class="text-muted">—</span>');
+                }
+                if (s?.s) {
+                    celdas.push(`<span class="text-danger fw-semibold cursor-pointer" onclick="editarRegistro(${s.s.id})" title="Click para editar">${s.s.fecha_hora.slice(11,16)} <i class="fa-solid fa-pen fa-xs text-muted"></i></span>`);
+                } else {
+                    celdas.push('<span class="text-muted">—</span>');
+                }
             }
 
             totalMinGlobal += totalMin;
@@ -228,6 +324,9 @@ async function cargarResumen() {
             const deptoNombre = deptoMap[g.user?.departamento_id] || g.user?.departamento || '—';
             const fechaFmt    = g.fecha.split('-').reverse().join('/');
 
+            // Botón para agregar registro en ese día para ese usuario
+            const btnAdd = `<button class="btn btn-outline-primary btn-sm py-0 px-1" onclick="abrirModalManualPre(${g.user?.id}, '${g.fecha}')" title="Agregar registro"><i class="fa-solid fa-plus fa-xs"></i></button>`;
+
             filas += `<tr>
                 <td>${g.user?.name ?? 'N/A'}</td>
                 <td><span class="badge bg-primary">${g.user?.codigo_empleado ?? '—'}</span></td>
@@ -235,6 +334,7 @@ async function cargarResumen() {
                 <td>${fechaFmt}</td>
                 ${celdas.map(c => `<td>${c}</td>`).join('')}
                 <td class="text-end">${totalStr}</td>
+                <td class="text-center">${btnAdd}</td>
             </tr>`;
         });
 
@@ -246,8 +346,101 @@ async function cargarResumen() {
         document.getElementById('resumenTotal').textContent = `Total período: ${th}h ${String(tm).padStart(2,'0')}m`;
 
     } catch(e) {
-        tbody.innerHTML = `<tr><td colspan="13" class="text-center text-danger py-3">Error al cargar datos</td></tr>`;
-        console.error(e);
+        tbody.innerHTML = `<tr><td colspan="14" class="text-center text-danger py-3">Error al cargar datos: ${e.message}</td></tr>`;
+        console.error('cargarResumen error:', e);
+    }
+}
+
+// ── Editar registro (cambiar tipo) ───────────────────────────────────────────
+function editarRegistro(id) {
+    const reg = allRegistros.find(r => r.id === id);
+    if (!reg) return;
+
+    document.getElementById('editId').value = id;
+    document.getElementById('editEmpleado').value = reg.user?.name || 'N/A';
+    document.getElementById('editFechaHora').value = reg.fecha_hora;
+    document.getElementById('editTipo').value = reg.tipo;
+
+    new bootstrap.Modal(document.getElementById('modalEditar')).show();
+}
+
+async function guardarEdicion() {
+    const id   = document.getElementById('editId').value;
+    const tipo = document.getElementById('editTipo').value;
+
+    try {
+        const res = await fetch(`/api/attendance/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({ tipo }),
+        });
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.message || `HTTP ${res.status}`);
+        }
+
+        bootstrap.Modal.getInstance(document.getElementById('modalEditar')).hide();
+        cargarResumen();
+    } catch(e) {
+        alert('Error al guardar: ' + e.message);
+    }
+}
+
+// ── Registro Manual ──────────────────────────────────────────────────────────
+function abrirModalManual() {
+    document.getElementById('manualEmpleado').value = '';
+    document.getElementById('manualTipo').value = 'entrada';
+    document.getElementById('manualFecha').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('manualHora').value = '';
+    new bootstrap.Modal(document.getElementById('modalManual')).show();
+}
+
+function abrirModalManualPre(userId, fecha) {
+    document.getElementById('manualEmpleado').value = userId;
+    document.getElementById('manualTipo').value = 'entrada';
+    document.getElementById('manualFecha').value = fecha;
+    document.getElementById('manualHora').value = '';
+    new bootstrap.Modal(document.getElementById('modalManual')).show();
+}
+
+async function guardarManual() {
+    const userId = document.getElementById('manualEmpleado').value;
+    const tipo   = document.getElementById('manualTipo').value;
+    const fecha  = document.getElementById('manualFecha').value;
+    const hora   = document.getElementById('manualHora').value;
+
+    if (!userId || !fecha || !hora) {
+        alert('Completa todos los campos.');
+        return;
+    }
+
+    const fechaHora = `${fecha} ${hora}:00`;
+
+    try {
+        const res = await fetch('/api/attendance/manual', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({ user_id: parseInt(userId), tipo, fecha_hora: fechaHora }),
+        });
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.message || `HTTP ${res.status}`);
+        }
+
+        bootstrap.Modal.getInstance(document.getElementById('modalManual')).hide();
+        cargarResumen();
+    } catch(e) {
+        alert('Error al crear registro: ' + e.message);
     }
 }
 
@@ -262,4 +455,8 @@ function exportar() {
     window.location.href = url;
 }
 </script>
+<style>
+.cursor-pointer { cursor: pointer; }
+.cursor-pointer:hover { opacity: 0.7; }
+</style>
 @endpush

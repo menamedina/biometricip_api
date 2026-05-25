@@ -50,4 +50,9 @@ class AdminController extends Controller
     {
         return view('admin.festivos.index');
     }
+
+    public function empresasIndex(): View
+    {
+        return view('admin.empresas.index');
+    }
 }

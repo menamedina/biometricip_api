@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Helpers\TenantHelper;
 use App\Http\Controllers\Controller;
+use App\Models\AttendanceRecord;
 use App\Models\Cargo;
 use App\Models\Departamento;
+use App\Models\Empresa;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -46,9 +49,41 @@ class EmpleadoController extends Controller
         return response()->json($empleados);
     }
 
+    private function checkMaxUsuarios(int $empresaId, ?int $excludeUserId = null): ?JsonResponse
+    {
+        $empresa = Empresa::find($empresaId);
+        if (!$empresa) return null;
+
+        $maxUsuarios = $empresa->max_usuarios ?? 50;
+        $query = User::where('empresa_id', $empresaId)->where('is_active', true);
+        if ($excludeUserId) {
+            $query->where('id', '!=', $excludeUserId);
+        }
+        $actuales = $query->count();
+
+        if ($actuales >= $maxUsuarios) {
+            return response()->json([
+                'message' => "Límite de usuarios alcanzado ({$actuales}/{$maxUsuarios}). Actualice su plan para agregar más usuarios.",
+            ], 422);
+        }
+
+        return null;
+    }
+
     public function store(Request $request): JsonResponse
     {
-        $empresaId = $request->user()->empresa_id;
+        $authUser  = $request->user();
+        // admin_tenant puede crear en cualquier empresa (empresa_id viene del request)
+        $empresaId = $authUser->admin_tenant
+            ? $request->integer('empresa_id') ?: null
+            : $authUser->empresa_id;
+
+        if (!$empresaId) {
+            return response()->json(['message' => 'Debes seleccionar una empresa.'], 422);
+        }
+
+        // Validar límite de usuarios
+        if ($denied = $this->checkMaxUsuarios($empresaId)) return $denied;
 
         $data = $request->validate([
             'name'            => 'required|string|max:255',
@@ -63,6 +98,7 @@ class EmpleadoController extends Controller
             'departamento_id' => 'nullable|integer',
             'cargo_id'        => 'nullable|integer',
             'horario_id'      => 'nullable|integer',
+            'sede_id'         => 'nullable|integer',
             'telefono'        => 'nullable|string|max:20',
         ]);
 
@@ -78,6 +114,7 @@ class EmpleadoController extends Controller
             'departamento_id' => $data['departamento_id'] ?? null,
             'cargo_id'        => $data['cargo_id'] ?? null,
             'horario_id'      => $data['horario_id'] ?? null,
+            'sede_id'         => $data['sede_id'] ?? null,
             'telefono'        => $data['telefono'] ?? null,
         ]);
 
@@ -86,22 +123,49 @@ class EmpleadoController extends Controller
 
     public function show(Request $request, int $id): JsonResponse
     {
-        $empleado = User::where('id', $id)
-            ->where('empresa_id', $request->user()->empresa_id)
-            ->where('role', 'empleado')
-            ->firstOrFail();
+        $authUser = $request->user();
+        $query = User::where('id', $id);
+
+        if (!$authUser->admin_tenant) {
+            $query->where('empresa_id', $authUser->empresa_id);
+        }
+
+        $empleado = $query->firstOrFail();
 
         return response()->json(['data' => $this->withNames($empleado)]);
     }
 
     public function update(Request $request, int $id): JsonResponse
     {
-        $empresaId = $request->user()->empresa_id;
+        $authUser  = $request->user();
+        $empresaId = $authUser->admin_tenant
+            ? ($request->integer('empresa_id') ?: null)
+            : $authUser->empresa_id;
 
-        $empleado = User::where('id', $id)
-            ->where('empresa_id', $empresaId)
-            ->where('role', 'empleado')
-            ->firstOrFail();
+        $query = User::where('id', $id);
+        if (!$authUser->admin_tenant) {
+            $query->where('empresa_id', $authUser->empresa_id);
+        }
+        $empleado = $query->firstOrFail();
+
+        // Si admin_tenant intenta cambiar la empresa, verificar que no tenga movimientos
+        $nuevoEmpresaId = $authUser->admin_tenant && $request->has('empresa_id')
+            ? ($request->integer('empresa_id') ?: null)
+            : null;
+
+        if ($nuevoEmpresaId && $nuevoEmpresaId !== $empleado->empresa_id) {
+            if ($empleado->empresa_id) {
+                TenantHelper::switchTenant($empleado->empresa_id);
+                $tieneMovimientos = AttendanceRecord::where('user_id', $empleado->id)->exists();
+                if ($tieneMovimientos) {
+                    return response()->json([
+                        'message' => 'No se puede cambiar la empresa del empleado porque tiene registros de asistencia. Debe migrar los datos manualmente.',
+                    ], 422);
+                }
+            }
+        }
+
+        $efectivoEmpresaId = $empresaId ?? $empleado->empresa_id;
 
         $data = $request->validate([
             'name'            => 'sometimes|string|max:255',
@@ -110,17 +174,24 @@ class EmpleadoController extends Controller
             'codigo_empleado' => [
                 'sometimes', 'string', 'max:20',
                 Rule::unique('users', 'codigo_empleado')
-                    ->where('empresa_id', $empresaId)
+                    ->where('empresa_id', $efectivoEmpresaId)
                     ->ignore($empleado->id),
             ],
             'role'            => 'nullable|in:admin,empleado',
             'admin_tenant'    => 'nullable|boolean',
+            'empresa_id'      => 'nullable|integer',
             'departamento_id' => 'nullable|integer',
             'cargo_id'        => 'nullable|integer',
             'horario_id'      => 'nullable|integer',
+            'sede_id'         => 'nullable|integer',
             'telefono'        => 'nullable|string|max:20',
             'is_active'       => 'nullable|boolean',
         ]);
+
+        // Si se está activando un usuario inactivo, validar límite
+        if (isset($data['is_active']) && $data['is_active'] && !$empleado->is_active) {
+            if ($denied = $this->checkMaxUsuarios($empresaId, $empleado->id)) return $denied;
+        }
 
         if (!empty($data['password'])) {
             $data['password'] = Hash::make($data['password']);
@@ -175,6 +246,9 @@ class EmpleadoController extends Controller
             : null;
         $data['cargo'] = $user->cargo_id
             ? Cargo::find($user->cargo_id)?->nombre
+            : null;
+        $data['empresa'] = $user->empresa_id
+            ? Empresa::find($user->empresa_id)?->nombre
             : null;
         return $data;
     }

@@ -92,7 +92,7 @@
                 <div class="card-body text-center">
                     <div id="qrCodeContainer" class="d-inline-block p-3 bg-white rounded-3 border"></div>
                     <p class="text-muted small mt-2 mb-0">
-                        <strong>Sede Principal</strong> — Av. Reforma 222, CDMX<br>
+                        <strong>Sede Principal</strong> — Bogotá<br>
                         Radio: 150m | Se actualiza cada 30s
                     </p>
                 </div>

@@ -42,12 +42,13 @@
                                 <th>Rol</th>
                                 <th>Departamento</th>
                                 <th>Cargo</th>
+                                <th>Sede</th>
                                 <th>Estado</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="empleadosTbody">
-                            <tr><td colspan="8" class="text-center text-muted py-3">Cargando...</td></tr>
+                            <tr><td colspan="9" class="text-center text-muted py-3">Cargando...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -71,6 +72,19 @@
                 <form id="empleadoForm">
                     <input type="hidden" id="empleadoId">
                     <div class="row">
+                        @if(auth()->user()->admin_tenant)
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Empresa <span class="text-danger">*</span></label>
+                            <select id="empEmpresaId" class="form-select" required>
+                                <option value="">— Seleccionar empresa —</option>
+                            </select>
+                        </div>
+                        @else
+                        <div class="col-md-12 mb-3" id="empEmpresaRow" style="display:none">
+                            <label class="form-label">Empresa</label>
+                            <input type="text" id="empEmpresa" class="form-control" readonly disabled style="background-color: #f8f9fa; font-weight: 600;">
+                        </div>
+                        @endif
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Nombre completo</label>
                             <input type="text" id="empName" class="form-control" required>
@@ -109,6 +123,12 @@
                                 <option value="">— Sin horario —</option>
                             </select>
                         </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Sede</label>
+                            <select id="empSede" class="form-select">
+                                <option value="">— Sin sede —</option>
+                            </select>
+                        </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Rol</label>
                             <select id="empRole" class="form-select">
@@ -143,11 +163,13 @@
 @push('scripts')
 <script>
 const token = localStorage.getItem('token');
+const isAdminTenant = {{ auth()->user()->admin_tenant ? 'true' : 'false' }};
 let currentPage = 1;
 
 // Catálogos en memoria para resolver nombres
 let deptoMap  = {};
 let cargoMap  = {};
+let sedeMap   = {};
 
 function resetForm() {
     document.getElementById('empleadoForm').reset();
@@ -157,24 +179,40 @@ function resetForm() {
     document.getElementById('empAdminTenant').checked = false;
     document.getElementById('empActivo').checked = true;
     document.getElementById('empleadoModalTitle').textContent = 'Nuevo Usuario';
+    if (isAdminTenant) {
+        document.getElementById('empEmpresaId').value = '';
+    }
 }
 
 async function loadCatalogos() {
+    // Cargar lista de empresas si es admin_tenant
+    if (isAdminTenant) {
+        const resEmp = await fetch('/api/empresas', { headers: { 'Authorization': `Bearer ${token}` } });
+        const dataEmp = await resEmp.json();
+        const selEmp = document.getElementById('empEmpresaId');
+        (dataEmp.data || []).forEach(e => {
+            selEmp.innerHTML += `<option value="${e.id}">${e.nombre}</option>`;
+        });
+    }
+
     const res  = await fetch('/api/catalogos', { headers: { 'Authorization': `Bearer ${token}` } });
     const data = await res.json();
 
     const deptos   = data.departamentos || [];
     const cargos   = data.cargos        || [];
     const horarios = data.horarios      || [];
+    const sedes    = data.sedes         || [];
 
     // Mapas id → nombre para resolver en tabla
     deptoMap = Object.fromEntries(deptos.map(d => [d.id, d.nombre]));
     cargoMap = Object.fromEntries(cargos.map(c => [c.id, c.nombre]));
+    sedeMap  = Object.fromEntries(sedes.map(s => [s.id, s.nombre]));
 
     // Selects del modal
     const selDepto   = document.getElementById('empDepartamento');
     const selCargo   = document.getElementById('empCargo');
     const selHorario = document.getElementById('empHorario');
+    const selSede    = document.getElementById('empSede');
     deptos.filter(d => d.is_active).forEach(d => {
         selDepto.innerHTML += `<option value="${d.id}">${d.nombre}</option>`;
     });
@@ -183,6 +221,9 @@ async function loadCatalogos() {
     });
     horarios.filter(h => h.is_active).forEach(h => {
         selHorario.innerHTML += `<option value="${h.id}">${h.nombre} (${h.hora_entrada?.slice(0,5)} - ${h.hora_salida?.slice(0,5)})</option>`;
+    });
+    sedes.forEach(s => {
+        selSede.innerHTML += `<option value="${s.id}">${s.nombre}</option>`;
     });
 
     // Select del filtro
@@ -205,7 +246,7 @@ async function loadEmpleados(page = 1) {
         const data = await res.json();
         const tbody = document.getElementById('empleadosTbody');
         if (!data.data || data.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">Sin usuarios</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-3">Sin usuarios</td></tr>';
         } else {
             tbody.innerHTML = data.data.map(e => {
                 const rolBadge = e.role === 'admin'
@@ -219,6 +260,7 @@ async function loadEmpleados(page = 1) {
                     <td>${rolBadge}</td>
                     <td>${e.departamento_id ? (deptoMap[e.departamento_id] || e.departamento_id) : '—'}</td>
                     <td>${e.cargo_id ? (cargoMap[e.cargo_id] || e.cargo_id) : '—'}</td>
+                    <td>${e.sede_id ? (sedeMap[e.sede_id] || e.sede_id) : '—'}</td>
                     <td><span class="badge ${e.is_active ? 'bg-success' : 'bg-danger'}">${e.is_active ? 'Activo' : 'Inactivo'}</span></td>
                     <td>
                         <button class="btn btn-sm btn-outline-primary me-1" onclick="editEmpleado(${e.id})"><i class="fa-solid fa-pen"></i></button>
@@ -249,6 +291,14 @@ async function editEmpleado(id) {
         const data = await res.json();
         const e = data.data;
         document.getElementById('empleadoId').value      = e.id;
+        if (isAdminTenant) {
+            document.getElementById('empEmpresaId').value = e.empresa_id || '';
+        } else if (e.empresa) {
+            document.getElementById('empEmpresa').value = e.empresa;
+            document.getElementById('empEmpresaRow').style.display = '';
+        } else {
+            document.getElementById('empEmpresaRow').style.display = 'none';
+        }
         document.getElementById('empName').value         = e.name || '';
         document.getElementById('empEmail').value        = e.email || '';
         document.getElementById('empPassword').value     = '';
@@ -258,6 +308,7 @@ async function editEmpleado(id) {
         document.getElementById('empDepartamento').value = e.departamento_id || '';
         document.getElementById('empCargo').value        = e.cargo_id || '';
         document.getElementById('empHorario').value      = e.horario_id || '';
+        document.getElementById('empSede').value         = e.sede_id || '';
         document.getElementById('empRole').value         = e.role || 'empleado';
         document.getElementById('empAdminTenant').checked = !!e.admin_tenant;
         document.getElementById('empActivo').checked     = !!e.is_active;
@@ -271,6 +322,7 @@ async function saveEmpleado() {
     const deptoVal   = document.getElementById('empDepartamento').value;
     const cargoVal   = document.getElementById('empCargo').value;
     const horarioVal = document.getElementById('empHorario').value;
+    const sedeVal    = document.getElementById('empSede').value;
     const payload = {
         name:             document.getElementById('empName').value,
         email:            document.getElementById('empEmail').value,
@@ -279,10 +331,15 @@ async function saveEmpleado() {
         departamento_id:  deptoVal   ? parseInt(deptoVal)   : null,
         cargo_id:         cargoVal   ? parseInt(cargoVal)   : null,
         horario_id:       horarioVal ? parseInt(horarioVal) : null,
+        sede_id:          sedeVal    ? parseInt(sedeVal)     : null,
         role:             document.getElementById('empRole').value,
         admin_tenant:     document.getElementById('empAdminTenant').checked,
         is_active:        document.getElementById('empActivo').checked,
     };
+    if (isAdminTenant) {
+        const empIdVal = document.getElementById('empEmpresaId').value;
+        payload.empresa_id = empIdVal ? parseInt(empIdVal) : null;
+    }
     const pass = document.getElementById('empPassword').value;
     if (pass) payload.password = pass;
     if (!id) payload.password = pass || 'password123';

@@ -19,10 +19,10 @@
                 <div class="d-flex align-items-center gap-2">
                     <div class="logo-topbar">
                         <a href="{{ url('/') }}" class="logo-light">
-                            <span class="logo-lg fw-bold text-primary fs-5"><i class="fa-solid fa-qrcode me-1"></i> AsistenciaQR</span>
+                            <img src="{{ asset('logos/logo_menu.png') }}" alt="Logo" style="max-height:36px; object-fit:contain;">
                         </a>
                         <a href="{{ url('/') }}" class="logo-dark">
-                            <span class="logo-lg fw-bold text-primary fs-5"><i class="fa-solid fa-qrcode me-1"></i> AsistenciaQR</span>
+                            <img src="{{ asset('logos/logo_menu.png') }}" alt="Logo" style="max-height:36px; object-fit:contain;">
                         </a>
                     </div>
                     <button class="sidenav-toggle-button btn btn-primary btn-icon">
@@ -56,10 +56,12 @@
         <div class="sidenav-menu">
             <a href="{{ url('/') }}" class="logo">
                 <span class="logo logo-light">
-                    <span class="logo-lg fw-bold text-primary fs-5 ps-3"><i class="fa-solid fa-qrcode me-1"></i> AsistenciaQR</span>
+                    <span class="logo-lg"><img src="{{ asset('logos/logo.png') }}" alt="Logo" style="max-height:48px; max-width:160px; object-fit:contain;"></span>
+                    <span class="logo-sm"><img src="{{ asset('logos/logo_menu.png') }}" alt="Logo" style="max-height:36px; max-width:40px; object-fit:contain;"></span>
                 </span>
                 <span class="logo logo-dark">
-                    <span class="logo-lg fw-bold text-primary fs-5 ps-3"><i class="fa-solid fa-qrcode me-1"></i> AsistenciaQR</span>
+                    <span class="logo-lg"><img src="{{ asset('logos/logo.png') }}" alt="Logo" style="max-height:48px; max-width:160px; object-fit:contain;"></span>
+                    <span class="logo-sm"><img src="{{ asset('logos/logo_menu.png') }}" alt="Logo" style="max-height:36px; max-width:40px; object-fit:contain;"></span>
                 </span>
             </a>
             <button class="button-on-hover"><span class="btn-on-hover-icon"></span></button>
@@ -124,6 +126,14 @@
                             <a href="{{ route('admin.departamentos.index') }}" class="side-nav-link {{ request()->routeIs('admin.departamentos.*') ? 'active' : '' }}">
                                 <span class="menu-icon"><i class="ti ti-sitemap"></i></span>
                                 <span class="menu-text">Deptos. y Cargos</span>
+                            </a>
+                        </li>
+
+                        <li class="side-nav-title mt-2">Empresa</li>
+                        <li class="side-nav-item">
+                            <a href="{{ route('admin.empresas.index') }}" class="side-nav-link {{ request()->routeIs('admin.empresas.*') ? 'active' : '' }}">
+                                <span class="menu-icon"><i class="ti ti-building-skyscraper"></i></span>
+                                <span class="menu-text">Mi Empresa</span>
                             </a>
                         </li>
 

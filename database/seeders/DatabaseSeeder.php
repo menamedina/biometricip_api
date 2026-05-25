@@ -24,9 +24,9 @@ class DatabaseSeeder extends Seeder
         $sede = Sede::create([
             'codigo' => 'SEDE-001',
             'nombre' => 'Sede Principal',
-            'direccion' => 'Av. Reforma 222, CDMX',
-            'lat' => 19.4326,
-            'lng' => -99.1332,
+            'direccion' => 'Bogotá',
+            'lat' => 4.6840,
+            'lng' => -74.0960,
             'radio_mts' => 150,
             'secret_key' => 'asistenciaqr-2025-sede01',
             'is_active' => true,

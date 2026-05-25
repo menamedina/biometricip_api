@@ -21,6 +21,7 @@ Route::middleware(['auth:sanctum', 'tenancy'])->group(function () {
     Route::get('/auth/me',     [AuthController::class, 'me']);
 
     Route::post('/attendance/clock',        [AttendanceController::class, 'clock']);
+    Route::post('/attendance/offline-sync', [AttendanceController::class, 'offlineSync']);
     Route::get('/attendance/my-history',    [AttendanceController::class, 'myHistory']);
 
     Route::middleware('admin')->group(function () {
@@ -32,6 +33,8 @@ Route::middleware(['auth:sanctum', 'tenancy'])->group(function () {
         Route::post('/empleados/{id}/face-descriptor', [EmpleadoController::class, 'updateFaceDescriptor']);
 
         Route::get('/attendance',             [AttendanceController::class, 'index']);
+        Route::put('/attendance/{id}',        [AttendanceController::class, 'update']);
+        Route::post('/attendance/manual',     [AttendanceController::class, 'storeManual']);
         Route::get('/attendance/latest',      [AttendanceController::class, 'latestRecords']);
         Route::get('/attendance/stats',       [AttendanceController::class, 'stats']);
         Route::get('/attendance/{id}/photo',  [AttendanceController::class, 'getPhoto']);
@@ -65,10 +68,18 @@ Route::middleware(['auth:sanctum', 'tenancy'])->group(function () {
 
         // Festivos
         Route::apiResource('festivos', FestivoController::class);
+
+        // Empresa propia (admin normal)
+        Route::get('/mi-empresa',        [EmpresaController::class, 'miEmpresa']);
+        Route::put('/mi-empresa',        [EmpresaController::class, 'updateMiEmpresa']);
+
+        // CRUD Empresas (solo admin_tenant)
+        Route::get('/empresas',           [EmpresaController::class, 'index']);
+        Route::post('/empresas',          [EmpresaController::class, 'store']);
+        Route::get('/empresas/{id}',      [EmpresaController::class, 'showById']);
+        Route::put('/empresas/{id}',      [EmpresaController::class, 'updateById']);
+        Route::delete('/empresas/{id}',   [EmpresaController::class, 'destroyById']);
     });
 });
 
-// Solo superadmin (empresa_id = null)
-Route::middleware(['auth:sanctum', 'superadmin'])->group(function () {
-    Route::apiResource('empresas', EmpresaController::class);
-});
+// Las rutas de empresas ahora están en el grupo admin con verificación admin_tenant

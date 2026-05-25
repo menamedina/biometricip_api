@@ -24,11 +24,11 @@ class TenantHelper
             throw new \Exception("Tenant para empresa {$empresaId} no encontrado.");
         }
 
-        Log::info('TenantHelper: switching tenant', [
-            'empresa_id' => $empresaId,
-            'db_name'    => $tenant->db_name,
-            'db_user'    => $tenant->db_user,
-        ]);
+        // Log::info('TenantHelper: switching tenant', [
+        //     'empresa_id' => $empresaId,
+        //     'db_name'    => $tenant->db_name,
+        //     'db_user'    => $tenant->db_user,
+        // ]);
 
         Config::set('database.connections.tenant.database', $tenant->db_name);
         Config::set('database.connections.tenant.username', $tenant->db_user ?? config('database.connections.mysql.username'));
@@ -37,7 +37,7 @@ class TenantHelper
         DB::purge('tenant');
         DB::reconnect('tenant');
 
-        Log::info('TenantHelper: conexión tenant establecida', ['db_name' => $tenant->db_name]);
+        // Log::info('TenantHelper: conexión tenant establecida', ['db_name' => $tenant->db_name]);
     }
 
     /**

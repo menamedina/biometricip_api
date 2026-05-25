@@ -8,8 +8,10 @@ use App\Models\AttendanceRecord;
 use App\Models\Horario;
 use App\Models\Sede;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class AttendanceController extends Controller
 {
@@ -45,6 +47,14 @@ class AttendanceController extends Controller
 
     public function clock(Request $request): JsonResponse
     {
+        Log::info('=== CLOCK REQUEST RECIBIDO ===', [
+            'lat' => $request->lat,
+            'lng' => $request->lng,
+            'tipo' => $request->tipo,
+            'metodo' => $request->metodo,
+            'user_id' => $request->user()?->id,
+        ]);
+
         $request->validate([
             'qr_value'      => 'nullable|string',
             'lat'           => 'required|numeric|between:-90,90',
@@ -62,24 +72,6 @@ class AttendanceController extends Controller
 
         // Cargar horario del empleado (snapshot para guardar en el registro)
         $horario = $user->horario_id ? Horario::find($user->horario_id) : null;
-
-        // Validar secuencia — sin filtro de fecha para cubrir turnos nocturnos
-        $ultimoTipo = AttendanceRecord::where('user_id', $user->id)
-            ->orderBy('fecha_hora', 'desc')
-            ->value('tipo');
-
-        $permitidos = match ($ultimoTipo) {
-            null, 'salida' => ['entrada'],
-            'entrada'      => ['salida'],
-            default        => ['entrada'],
-        };
-
-        if (!in_array($request->tipo, $permitidos)) {
-            $esperado = $permitidos[0] === 'entrada' ? 'Entrada' : 'Salida';
-            return response()->json([
-                'message' => "Marcación no permitida. El siguiente paso es: {$esperado}.",
-            ], 422);
-        }
 
         $qrValidado = false;
         $sede = null;
@@ -122,6 +114,18 @@ class AttendanceController extends Controller
             (float) $sede->lat,
             (float) $sede->lng
         );
+
+        Log::info('=== GEOCERCA DEBUG ===', [
+            'user_lat' => $request->lat,
+            'user_lng' => $request->lng,
+            'sede_lat' => $sede->lat,
+            'sede_lng' => $sede->lng,
+            'sede_nombre' => $sede->nombre,
+            'distancia_calculada_mts' => round($distancia, 2),
+            'radio_permitido_mts' => $sede->radio_mts,
+            'dentro_de_geocerca' => $distancia <= $sede->radio_mts,
+            'metodo' => $request->metodo,
+        ]);
 
         $geocercaValidada = $distancia <= $sede->radio_mts;
         if (!$geocercaValidada && $request->metodo !== 'foto') {
@@ -166,6 +170,101 @@ class AttendanceController extends Controller
         return response()->json([
             'message' => 'Asistencia registrada correctamente.',
             'data' => $record,
+        ], 201);
+    }
+
+    public function offlineSync(Request $request): JsonResponse
+    {
+        $request->validate([
+            'qr_value' => 'required|string',
+            'tipo'     => 'required|in:entrada,salida',
+        ]);
+
+        $user = $request->user();
+
+        if (!$user->is_active) {
+            return response()->json(['message' => 'Usuario inactivo.'], 403);
+        }
+
+        // Extraer todo del QR: sede, hora, coordenadas, radio
+        $qrData = json_decode($request->qr_value, true);
+        if (!$qrData || !isset($qrData['s'], $qrData['t'], $qrData['h'], $qrData['lat'], $qrData['lng'])) {
+            return response()->json(['message' => 'QR invalido o incompleto.'], 422);
+        }
+
+        $sede = Sede::where('codigo', $qrData['s'])->first();
+        if (!$sede || !$sede->is_active) {
+            return response()->json(['message' => 'Sede no encontrada o inactiva.'], 422);
+        }
+
+        // La hora viene del QR: time slot * 30 = timestamp unix
+        $qrTimestamp = (int) $qrData['t'] * 30;
+        $fechaHoraQr = Carbon::createFromTimestamp($qrTimestamp);
+
+        // Rechazar si el QR tiene mas de 24 horas
+        if ($fechaHoraQr->diffInHours(now(), false) > 24) {
+            return response()->json(['message' => 'Registro offline demasiado antiguo (mayor a 24 horas).'], 422);
+        }
+
+        // Deteccion de duplicados: mismo usuario, tipo y hora del QR dentro de 2 minutos
+        $duplicate = AttendanceRecord::where('user_id', $user->id)
+            ->where('tipo', $request->tipo)
+            ->where('fecha_hora', '>=', $fechaHoraQr->copy()->subMinutes(2))
+            ->where('fecha_hora', '<=', $fechaHoraQr->copy()->addMinutes(2))
+            ->exists();
+
+        if ($duplicate) {
+            return response()->json(['message' => 'Registro duplicado.'], 422);
+        }
+
+        // Validar hash del QR contra el timestamp que trae el propio QR
+        $qrValidado = $sede->validateQRValueAtTime($request->qr_value, $qrTimestamp);
+        if (!$qrValidado) {
+            return response()->json(['message' => 'El codigo QR no es valido.'], 422);
+        }
+
+        // Validar secuencia contra registros anteriores a la hora del QR
+        $ultimoTipo = AttendanceRecord::where('user_id', $user->id)
+            ->where('fecha_hora', '<', $fechaHoraQr)
+            ->orderBy('fecha_hora', 'desc')
+            ->value('tipo');
+
+        $permitidos = match ($ultimoTipo) {
+            null, 'salida' => ['entrada'],
+            'entrada'      => ['salida'],
+            default        => ['entrada'],
+        };
+
+        if (!in_array($request->tipo, $permitidos)) {
+            $esperado = $permitidos[0] === 'entrada' ? 'Entrada' : 'Salida';
+            return response()->json([
+                'message' => "Marcacion no permitida. El siguiente paso era: {$esperado}.",
+            ], 422);
+        }
+
+        $horario = $user->horario_id ? Horario::find($user->horario_id) : null;
+
+        // Coordenadas y geocerca vienen del QR (el empleado estuvo en el kiosco)
+        $record = AttendanceRecord::create([
+            'user_id'                   => $user->id,
+            'sede_id'                   => $sede->id,
+            'horario_id'                => $horario?->id,
+            'tipo'                      => $request->tipo,
+            'lat'                       => $qrData['lat'],
+            'lng'                       => $qrData['lng'],
+            'metodo'                    => 'qr',
+            'qr_validado'               => true,
+            'geocerca_validada'         => true,
+            'distancia_oficina_mts'     => 0,
+            'fecha_hora'                => $fechaHoraQr,
+            'es_sincronizacion_offline' => true,
+        ]);
+
+        $record->load(['user', 'sede']);
+
+        return response()->json([
+            'message' => 'Registro offline sincronizado correctamente.',
+            'data'    => $record,
         ], 201);
     }
 
@@ -223,6 +322,56 @@ class AttendanceController extends Controller
             'ausentes' => max(0, $ausentes),
             'tardanzas' => $tardanzas,
         ]);
+    }
+
+    public function update(Request $request, int $id): JsonResponse
+    {
+        $request->validate([
+            'tipo' => 'required|in:entrada,salida',
+        ]);
+
+        $record = AttendanceRecord::findOrFail($id);
+        $record->update([
+            'tipo' => $request->tipo,
+        ]);
+
+        return response()->json([
+            'message' => 'Registro actualizado correctamente.',
+            'data'    => $record->fresh(['user', 'sede']),
+        ]);
+    }
+
+    public function storeManual(Request $request): JsonResponse
+    {
+        $request->validate([
+            'user_id'    => 'required|integer|exists:users,id',
+            'tipo'       => 'required|in:entrada,salida',
+            'fecha_hora' => 'required|date',
+        ]);
+
+        $empleado = User::findOrFail($request->user_id);
+        $horario = $empleado->horario_id ? Horario::find($empleado->horario_id) : null;
+
+        $record = AttendanceRecord::create([
+            'user_id'               => $empleado->id,
+            'sede_id'               => $empleado->sede_id,
+            'horario_id'            => $horario?->id,
+            'tipo'                  => $request->tipo,
+            'lat'                   => 0,
+            'lng'                   => 0,
+            'metodo'                => 'manual',
+            'qr_validado'           => false,
+            'geocerca_validada'     => false,
+            'distancia_oficina_mts' => 0,
+            'fecha_hora'            => $request->fecha_hora,
+        ]);
+
+        $record->load(['user', 'sede']);
+
+        return response()->json([
+            'message' => 'Registro manual creado correctamente.',
+            'data'    => $record,
+        ], 201);
     }
 
     public function latestRecords(Request $request): JsonResponse
