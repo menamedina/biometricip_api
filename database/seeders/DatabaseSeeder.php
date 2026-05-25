@@ -15,7 +15,7 @@ class DatabaseSeeder extends Seeder
     {
         $admin = User::create([
             'name' => 'Administrador',
-            'email' => 'admin@asistenciaqr.com',
+            'email' => 'admin@biometricip.com',
             'password' => Hash::make('admin123'),
             'role' => 'admin',
             'is_active' => true,
@@ -28,7 +28,7 @@ class DatabaseSeeder extends Seeder
             'lat' => 4.6840,
             'lng' => -74.0960,
             'radio_mts' => 150,
-            'secret_key' => 'asistenciaqr-2025-sede01',
+            'secret_key' => 'biometricip-2025-sede01',
             'is_active' => true,
         ]);
 

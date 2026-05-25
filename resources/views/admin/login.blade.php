@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="utf-8" />
-    <title>Login | AsistenciaQR</title>
+    <title>Login | BiometricIP</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="shortcut icon" href="{{ asset('assets/images/favicon.ico') }}" />
     <link href="{{ asset('assets/css/vendors.min.css') }}" rel="stylesheet" />
@@ -29,7 +29,7 @@
                     @csrf
                     <div class="mb-3">
                         <label class="form-label">Correo electrónico</label>
-                        <input type="email" name="email" class="form-control" placeholder="admin@asistenciaqr.com" value="{{ old('email') }}" required autofocus>
+                        <input type="email" name="email" class="form-control" placeholder="admin@biometricip.com" value="{{ old('email') }}" required autofocus>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Contraseña</label>

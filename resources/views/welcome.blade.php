@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="utf-8" />
-    <title>AsistenciaQR - Sistema de Registro de Personal</title>
+    <title>BiometricIP - Sistema de Registro de Personal</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
@@ -50,7 +50,7 @@
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
         <div class="container">
             <a class="navbar-brand fw-bold text-primary" href="/">
-                <i class="fa-solid fa-qrcode me-2"></i>AsistenciaQR
+                <i class="fa-solid fa-qrcode me-2"></i>BiometricIP
             </a>
             <div class="ms-auto">
                 <a href="{{ route('admin.login.show') }}" class="btn btn-primary">
@@ -62,7 +62,7 @@
 
     <div class="container py-5">
         <div class="hero-card mb-5">
-            <h1 class="mb-3"><i class="fa-solid fa-qrcode me-2"></i>AsistenciaQR</h1>
+            <h1 class="mb-3"><i class="fa-solid fa-qrcode me-2"></i>BiometricIP</h1>
             <p class="mb-4">Sistema inteligente de registro de asistencia con validación QR, geolocalización y reconocimiento facial.</p>
             <a href="{{ route('admin.login.show') }}" class="btn btn-light btn-lg px-4 fw-semibold">
                 <i class="fa-solid fa-arrow-right me-2"></i>Panel de Administración
@@ -110,7 +110,7 @@
     </div>
 
     <footer class="text-center py-4 text-muted small">
-        AsistenciaQR v{{ app()->version() }} &mdash; Laravel {{ app()->version() }}
+        BiometricIP v{{ app()->version() }} &mdash; Laravel {{ app()->version() }}
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

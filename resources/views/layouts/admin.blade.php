@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="utf-8" />
-    <title>@yield('title', 'AsistenciaQR') | Admin Panel</title>
+    <title>@yield('title', 'BiometricIP') | Admin Panel</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <script src="{{ asset('assets/js/config.js') }}"></script>
