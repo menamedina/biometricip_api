@@ -14,8 +14,8 @@
         <div class="card shadow" style="width: 400px; max-width: 90vw;">
             <div class="card-body p-4">
                 <div class="text-center mb-4">
-                    <h3 class="fw-bold text-primary"><i class="fa-solid fa-qrcode me-2"></i>AsistenciaQR</h3>
-                    <p class="text-muted">Panel de Administración</p>
+                    <img src="{{ asset('logos/logo.png') }}" alt="BiometricIP" class="mb-3" style="max-height: 120px; max-width: 280px; object-fit: contain;">
+                    <p class="text-muted mb-0">Panel de Administración</p>
                 </div>
 
                 @if($errors->any())
