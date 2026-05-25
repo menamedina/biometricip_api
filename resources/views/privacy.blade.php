@@ -159,6 +159,9 @@
         <li><strong>Presentar quejas</strong> ante la Superintendencia de Industria y Comercio (SIC) por infracciones a la ley.</li>
     </ul>
     <p>Para ejercer sus derechos, envíe su solicitud a: <strong>gerencia@innovasoftip.com</strong> con asunto "Derechos HABEAS DATA". Responderemos en un plazo máximo de <strong>15 días hábiles</strong>.</p>
+    <a href="{{ route('data-deletion') }}" class="btn btn-outline-danger btn-sm mt-1 mb-2">
+        <i class="fa-solid fa-trash-can me-1"></i> Solicitar eliminación de mis datos
+    </a>
 
     {{-- 6. DERECHOS TITULARES US --}}
     <h2>6. Derechos de los Titulares <span class="badge-law badge-us">EE. UU. – CCPA / Privacy Laws</span></h2>
@@ -172,6 +175,9 @@
         <li><strong>Limitación de uso</strong> de datos sensibles, incluyendo geolocalización precisa y datos biométricos.</li>
     </ul>
     <p>Para ejercer sus derechos CCPA, envíe su solicitud a <strong>gerencia@innovasoftip.com</strong>. Responderemos dentro de los <strong>45 días</strong> establecidos por ley (prorrogables 45 días adicionales con aviso previo).</p>
+    <a href="{{ route('data-deletion') }}" class="btn btn-outline-danger btn-sm mt-1 mb-2">
+        <i class="fa-solid fa-trash-can me-1"></i> Submit a Data Deletion Request
+    </a>
 
     {{-- 7. TRANSFERENCIA --}}
     <h2>7. Transferencia y Transmisión de Datos</h2>

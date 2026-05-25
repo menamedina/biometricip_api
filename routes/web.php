@@ -13,6 +13,65 @@ Route::get('/privacy', function () {
     return view('privacy');
 })->name('privacy');
 
+Route::get('/eliminacion-datos', function () {
+    return view('data-deletion');
+})->name('data-deletion');
+
+Route::post('/eliminacion-datos', function (\Illuminate\Http\Request $request) {
+    $request->validate([
+        'nombre'   => 'required|string|max:255',
+        'documento'=> 'required|string|max:50',
+        'email'    => 'required|email|max:255',
+        'pais'     => 'required|in:CO,US,otro',
+        'tipo'     => 'required|in:eliminacion_total,eliminacion_parcial,eliminacion_gps,revocacion',
+        'motivo'   => 'nullable|string|max:1000',
+        'confirma' => 'required|accepted',
+    ], [
+        'nombre.required'    => 'El nombre es obligatorio.',
+        'documento.required' => 'El número de documento es obligatorio.',
+        'email.required'     => 'El correo electrónico es obligatorio.',
+        'email.email'        => 'Ingrese un correo electrónico válido.',
+        'pais.required'      => 'Seleccione su país de residencia.',
+        'tipo.required'      => 'Seleccione el tipo de solicitud.',
+        'confirma.required'  => 'Debe confirmar que entiende las consecuencias.',
+        'confirma.accepted'  => 'Debe marcar la casilla de confirmación.',
+    ]);
+
+    $ticket = 'DEL-' . date('Y') . '-' . strtoupper(substr(md5($request->email . now()), 0, 6));
+
+    $tipos = [
+        'eliminacion_total'    => 'Eliminar cuenta y todos los datos',
+        'eliminacion_parcial'  => 'Eliminar solo datos biométricos (fotos)',
+        'eliminacion_gps'      => 'Eliminar solo datos de geolocalización',
+        'revocacion'           => 'Revocar autorización de tratamiento',
+    ];
+    $paises = ['CO' => 'Colombia', 'US' => 'Estados Unidos', 'otro' => 'Otro'];
+
+    $cuerpo = "SOLICITUD DE ELIMINACIÓN DE DATOS PERSONALES\n";
+    $cuerpo .= str_repeat('=', 50) . "\n\n";
+    $cuerpo .= "Ticket:     {$ticket}\n";
+    $cuerpo .= "Fecha:      " . now()->format('d/m/Y H:i:s') . "\n\n";
+    $cuerpo .= "Nombre:     {$request->nombre}\n";
+    $cuerpo .= "Documento:  {$request->documento}\n";
+    $cuerpo .= "Correo:     {$request->email}\n";
+    $cuerpo .= "País:       " . ($paises[$request->pais] ?? $request->pais) . "\n";
+    $cuerpo .= "Tipo:       " . ($tipos[$request->tipo] ?? $request->tipo) . "\n";
+    $cuerpo .= "Motivo:     " . ($request->motivo ?: 'No especificado') . "\n";
+    $cuerpo .= "IP origen:  " . $request->ip() . "\n\n";
+    $cuerpo .= "Esta solicitud debe procesarse en el plazo legal establecido.\n";
+    $cuerpo .= "CO: 15 días hábiles | EE. UU.: 45 días\n";
+
+    \Illuminate\Support\Facades\Mail::raw($cuerpo, function ($msg) use ($ticket, $request) {
+        $msg->to(config('mail.from.address'))
+            ->subject("[{$ticket}] Solicitud de Eliminación de Datos – {$request->nombre}");
+    });
+
+    return redirect()->route('data-deletion')->with([
+        'success' => true,
+        'ticket'  => $ticket,
+    ]);
+})->name('data-deletion.submit');
+
 Route::get('/admin/login',  [LoginController::class, 'showLogin'])->name('admin.login.show');
 Route::post('/admin/login', [LoginController::class, 'login'])->name('admin.login');
 
