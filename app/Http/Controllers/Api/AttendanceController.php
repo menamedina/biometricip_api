@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\AttendancePhoto;
 use App\Models\AttendanceRecord;
+use App\Models\Horario;
 use App\Models\Sede;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -14,8 +15,16 @@ class AttendanceController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = AttendanceRecord::with(['user', 'sede'])
-            ->whereDate('fecha_hora', $request->date ?? today());
+        $query = AttendanceRecord::with(['user', 'sede']);
+
+        if ($request->filled('date_from') && $request->filled('date_to')) {
+            $query->whereBetween('fecha_hora', [
+                $request->date_from . ' 00:00:00',
+                $request->date_to   . ' 23:59:59',
+            ]);
+        } else {
+            $query->whereDate('fecha_hora', $request->date ?? today());
+        }
 
         if ($request->filled('tipo')) {
             $query->where('tipo', $request->tipo);
@@ -29,7 +38,7 @@ class AttendanceController extends Controller
             $query->where('user_id', $request->user_id);
         }
 
-        $records = $query->with('photo')->orderBy('fecha_hora', 'desc')->paginate($request->per_page ?? 50);
+        $records = $query->with(['photo', 'horario'])->orderBy('fecha_hora', 'asc')->paginate($request->per_page ?? 50);
 
         return response()->json($records);
     }
@@ -37,18 +46,39 @@ class AttendanceController extends Controller
     public function clock(Request $request): JsonResponse
     {
         $request->validate([
-            'qr_value' => 'nullable|string',
-            'lat' => 'required|numeric|between:-90,90',
-            'lng' => 'required|numeric|between:-180,180',
-            'metodo' => 'required|in:qr,biometrico,reconocimiento_facial,foto',
-            'foto_evidencia' => 'nullable|string',
-            'tipo' => 'required|in:entrada,salida_almuerzo,regreso_almuerzo,salida',
+            'qr_value'      => 'nullable|string',
+            'lat'           => 'required|numeric|between:-90,90',
+            'lng'           => 'required|numeric|between:-180,180',
+            'metodo'        => 'required|in:qr,biometrico,reconocimiento_facial,foto',
+            'foto_evidencia'=> 'nullable|string',
+            'tipo'          => 'required|in:entrada,salida',
         ]);
 
         $user = $request->user();
 
         if (!$user->is_active) {
             return response()->json(['message' => 'Usuario inactivo.'], 403);
+        }
+
+        // Cargar horario del empleado (snapshot para guardar en el registro)
+        $horario = $user->horario_id ? Horario::find($user->horario_id) : null;
+
+        // Validar secuencia — sin filtro de fecha para cubrir turnos nocturnos
+        $ultimoTipo = AttendanceRecord::where('user_id', $user->id)
+            ->orderBy('fecha_hora', 'desc')
+            ->value('tipo');
+
+        $permitidos = match ($ultimoTipo) {
+            null, 'salida' => ['entrada'],
+            'entrada'      => ['salida'],
+            default        => ['entrada'],
+        };
+
+        if (!in_array($request->tipo, $permitidos)) {
+            $esperado = $permitidos[0] === 'entrada' ? 'Entrada' : 'Salida';
+            return response()->json([
+                'message' => "Marcación no permitida. El siguiente paso es: {$esperado}.",
+            ], 422);
         }
 
         $qrValidado = false;
@@ -109,9 +139,10 @@ class AttendanceController extends Controller
         }
 
         $record = AttendanceRecord::create([
-            'user_id' => $user->id,
-            'sede_id' => $sede->id,
-            'tipo' => $request->tipo,
+            'user_id'    => $user->id,
+            'sede_id'    => $sede->id,
+            'horario_id' => $horario?->id,
+            'tipo'       => $request->tipo,
             'lat' => $request->lat,
             'lng' => $request->lng,
             'foto_evidencia' => $fotoBase64 ? 'base64' : null,

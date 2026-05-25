@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceRecord;
+use App\Models\Departamento;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -40,6 +41,7 @@ class ReportController extends Controller
         return response($csv, 200, [
             'Content-Type'        => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="reporte_asistencia_' . $request->date_from . '_' . $request->date_to . '.csv"',
+            'Content-Transfer-Encoding' => 'binary',
         ]);
     }
 
@@ -86,29 +88,67 @@ class ReportController extends Controller
 
     private function generateCSV($records): string
     {
+        // Precargar nombres de departamentos para evitar N+1
+        $deptoMap = Departamento::pluck('nombre', 'id')->all();
+
+        // Agrupar por empleado + fecha
+        $grouped = $records->groupBy(function ($r) {
+            return $r->user_id . '_' . $r->fecha_hora->format('Y-m-d');
+        });
+
         $output = fopen('php://temp', 'r+');
 
-        fputcsv($output, [
-            'Empleado', 'Código', 'Departamento', 'Sede', 'Tipo',
-            'Fecha/Hora', 'Método', 'QR Válido', 'Geocerca',
-            'Distancia (mts)', 'Lat', 'Lng',
-        ]);
+        // BOM UTF-8 para que Excel abra columnas correctamente
+        fwrite($output, "\xEF\xBB\xBF");
 
-        foreach ($records as $record) {
-            fputcsv($output, [
-                $record->user->name ?? 'N/A',
-                $record->user->codigo_empleado ?? 'N/A',
-                $record->user->departamento ?? 'N/A',
-                $record->sede->nombre ?? 'N/A',
-                $record->tipo,
-                $record->fecha_hora->format('Y-m-d H:i:s'),
-                $record->metodo,
-                $record->qr_validado ? 'Sí' : 'No',
-                $record->geocerca_validada ? 'Sí' : 'No',
-                $record->distancia_oficina_mts,
-                $record->lat,
-                $record->lng,
-            ]);
+        fputcsv($output, [
+            'Empleado', 'Código', 'Departamento', 'Sede', 'Fecha',
+            'Entrada 1', 'Salida 1',
+            'Entrada 2', 'Salida 2',
+            'Entrada 3', 'Salida 3',
+            'Entrada 4', 'Salida 4',
+            'Total Horas',
+        ], ';');
+
+        foreach ($grouped as $rows) {
+            $user  = $rows->first()->user;
+            $sede  = $rows->first()->sede;
+            $fecha = $rows->first()->fecha_hora->format('d/m/Y');
+
+            // Ordenar todos los registros cronológicamente
+            $sorted = $rows->sortBy('fecha_hora')->values();
+
+            // Separar entradas y salidas en orden
+            $entradas = $sorted->whereIn('tipo', ['entrada', 'regreso_almuerzo'])->values();
+            $salidas  = $sorted->whereIn('tipo', ['salida', 'salida_almuerzo'])->values();
+
+            $pares = [];
+            $totalMins = 0;
+            for ($i = 0; $i < 4; $i++) {
+                $e = $entradas->get($i);
+                $s = $salidas->get($i);
+                $pares[] = $e ? $e->fecha_hora->format('H:i:s') : '—';
+                $pares[] = $s ? $s->fecha_hora->format('H:i:s') : '—';
+                if ($e && $s) {
+                    $totalMins += $e->fecha_hora->diffInMinutes($s->fecha_hora);
+                }
+            }
+
+            $h = intdiv($totalMins, 60);
+            $m = $totalMins % 60;
+            $total = $totalMins > 0 ? sprintf('%dh %02dm', $h, $m) : '—';
+
+            $deptoNombre = $user->departamento_id
+                ? ($deptoMap[$user->departamento_id] ?? 'N/A')
+                : 'N/A';
+
+            fputcsv($output, array_merge([
+                $user->name ?? 'N/A',
+                $user->codigo_empleado ?? 'N/A',
+                $deptoNombre,
+                $sede->nombre ?? 'N/A',
+                $fecha,
+            ], $pares, [$total]), ';');
         }
 
         rewind($output);

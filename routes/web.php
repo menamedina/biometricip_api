@@ -18,5 +18,10 @@ Route::middleware(['auth', 'admin', 'tenancy.session'])->group(function () {
     Route::get('/admin/sedes', [AdminController::class, 'sedesIndex'])->name('admin.sedes.index');
     Route::get('/admin/empleados', [AdminController::class, 'empleadosIndex'])->name('admin.empleados.index');
     Route::get('/admin/attendance', [AdminController::class, 'attendanceIndex'])->name('admin.attendance.index');
+    Route::get('/admin/resumen', [AdminController::class, 'resumenIndex'])->name('admin.resumen.index');
+    Route::get('/admin/departamentos', [AdminController::class, 'departamentosIndex'])->name('admin.departamentos.index');
+    Route::get('/admin/horarios',      [AdminController::class, 'horariosIndex'])->name('admin.horarios.index');
+    Route::get('/admin/permisos',      [AdminController::class, 'permisosIndex'])->name('admin.permisos.index');
+    Route::get('/admin/festivos',      [AdminController::class, 'festivosIndex'])->name('admin.festivos.index');
     Route::get('/admin/reports/export', [ReportController::class, 'attendance'])->name('admin.reports.export');
 });

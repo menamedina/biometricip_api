@@ -3,7 +3,7 @@
 
 @section('content')
 <div class="container-fluid">
-    <div class="row mb-3">
+    <div class="row mb-3 mt-3">
         <div class="col-12">
             <h4 class="mb-1"><i class="fa-solid fa-chart-line me-2 text-primary"></i>Dashboard</h4>
             <p class="text-muted mb-0">Resumen de asistencia — <span id="dashboardDate">{{ date('d/m/Y') }}</span></p>
@@ -113,27 +113,60 @@
 
 @push('scripts')
 <script>
-let map, officeMarker, geoCircle, attendanceMarkers = [];
+let gMap, officeMarker, geoCircle, attendanceMarkers = [], gmapsReady = false;
 
-function initMap() {
-    map = L.map('dashboardMap').setView([19.4326, -99.1332], 14);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap',
-        maxZoom: 19
-    }).addTo(map);
+function googleMapsReadyDashboard() {
+    gmapsReady = true;
+    initMap();
+    loadDashboard();
+    loadQR();
+    setInterval(loadDashboard, 30000);
+    setInterval(loadQR, 30000);
+}
 
-    officeMarker = L.marker([19.4326, -99.1332], {
-        icon: L.divIcon({
-            html: '<div style="background:#4f46e5;color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 8px rgba(79,70,229,.5);border:2px solid #fff;">🏢</div>',
-            className: '', iconSize: [28,28], iconAnchor: [14,14]
-        })
-    }).addTo(map).bindPopup('<b>Sede Principal</b><br>Av. Reforma 222, CDMX');
+function initMap(lat, lng, radio, nombre, direccion) {
+    lat    = lat    || 4.7110;
+    lng    = lng    || -74.0721;
+    radio  = radio  || 150;
+    nombre = nombre || 'Sede';
 
-    geoCircle = L.circle([19.4326, -99.1332], {
-        radius: 150, color: '#4f46e5', fillColor: '#4f46e5', fillOpacity: 0.08, weight: 2, dashArray: '8 4'
-    }).addTo(map);
+    const center = { lat, lng };
 
-    setTimeout(() => map.invalidateSize(), 200);
+    gMap = new google.maps.Map(document.getElementById('dashboardMap'), {
+        center,
+        zoom: 17,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
+    });
+
+    officeMarker = new google.maps.Marker({
+        position: center,
+        map: gMap,
+        title: nombre,
+        icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 10,
+            fillColor: '#4F46E5',
+            fillOpacity: 1,
+            strokeColor: '#fff',
+            strokeWeight: 2,
+        },
+    });
+    officeMarker.addListener('click', () => {
+        new google.maps.InfoWindow({ content: `<b>${nombre}</b><br>${direccion || ''}` }).open(gMap, officeMarker);
+    });
+
+    geoCircle = new google.maps.Circle({
+        map: gMap,
+        center,
+        radius: radio,
+        strokeColor: '#4F46E5',
+        strokeOpacity: 0.8,
+        strokeWeight: 2,
+        fillColor: '#4F46E5',
+        fillOpacity: 0.08,
+    });
 }
 
 async function loadDashboard() {
@@ -169,14 +202,28 @@ async function loadDashboard() {
         }
 
         // Update map markers
-        attendanceMarkers.forEach(m => map.removeLayer(m));
+        attendanceMarkers.forEach(m => m.setMap(null));
         attendanceMarkers = [];
-        if (data.data) {
+        if (data.data && gMap) {
             data.data.filter(r => r.lat && r.lng).forEach(r => {
-                const m = L.circleMarker([r.lat, r.lng], {
-                    radius: 6, fillColor: r.tipo.includes('entrada') ? '#10b981' : '#ef4444',
-                    color: '#fff', weight: 2, fillOpacity: 0.9
-                }).addTo(map).bindPopup(`<b>${r.user?.name || 'N/A'}</b><br>${r.tipo}`);
+                const isEntrada = r.tipo.includes('entrada');
+                const m = new google.maps.Marker({
+                    position: { lat: parseFloat(r.lat), lng: parseFloat(r.lng) },
+                    map: gMap,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 7,
+                        fillColor: isEntrada ? '#10b981' : '#ef4444',
+                        fillOpacity: 0.9,
+                        strokeColor: '#fff',
+                        strokeWeight: 2,
+                    },
+                });
+                m.addListener('click', () => {
+                    new google.maps.InfoWindow({
+                        content: `<b>${r.user?.name || 'N/A'}</b><br>${r.tipo.replace('_', ' ')}`
+                    }).open(gMap, m);
+                });
                 attendanceMarkers.push(m);
             });
         }
@@ -199,6 +246,9 @@ async function loadQR() {
             qrSedeId = sede.id;
             document.querySelector('.card-header h5 + button').closest('.card').querySelector('.card-header h5').innerHTML =
                 `<i class="fa-solid fa-qrcode me-1"></i> QR — ${sede.nombre}`;
+            if (gmapsReady) {
+                initMap(parseFloat(sede.lat), parseFloat(sede.lng), sede.radio_mts, sede.nombre, sede.direccion);
+            }
         }
 
         const res  = await fetch(`/api/sedes/${qrSedeId}/qr`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
@@ -216,11 +266,14 @@ async function loadQR() {
 function refreshQR() { loadQR(); }
 
 document.addEventListener('DOMContentLoaded', () => {
-    initMap();
-    loadDashboard();
-    loadQR();
-    setInterval(loadDashboard, 30000);
-    setInterval(loadQR, 30000);
+    if (gmapsReady) {
+        initMap();
+        loadDashboard();
+        loadQR();
+        setInterval(loadDashboard, 30000);
+        setInterval(loadQR, 30000);
+    }
 });
 </script>
+<script src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_MAPS_API_KEY') }}&loading=async&callback=googleMapsReadyDashboard"></script>
 @endpush

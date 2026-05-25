@@ -14,6 +14,7 @@ class AttendanceRecord extends Model
     protected $fillable = [
         'user_id',
         'sede_id',
+        'horario_id',
         'tipo',
         'lat',
         'lng',
@@ -44,6 +45,11 @@ class AttendanceRecord extends Model
     public function sede(): BelongsTo
     {
         return $this->belongsTo(Sede::class);
+    }
+
+    public function horario(): BelongsTo
+    {
+        return $this->belongsTo(Horario::class, 'horario_id');
     }
 
     public function photo(): HasOne

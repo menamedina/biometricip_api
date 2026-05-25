@@ -13,16 +13,20 @@ class User extends Authenticatable
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
 
+    protected $connection = 'mysql';
+
     protected $fillable = [
         'name',
         'email',
         'password',
         'role',
+        'admin_tenant',
         'is_active',
         'empresa_id',
         'codigo_empleado',
-        'departamento',
-        'cargo',
+        'departamento_id',
+        'cargo_id',
+        'horario_id',
         'telefono',
         'foto_url',
         'face_descriptor',
@@ -39,6 +43,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password'          => 'hashed',
             'is_active'         => 'boolean',
+            'admin_tenant'      => 'boolean',
             'empresa_id'        => 'integer',
             'face_descriptor'   => 'array',
         ];

@@ -17,7 +17,7 @@
     </div>
 </div>
 <div class="container-fluid">
-    <div class="row mb-3">
+    <div class="row mb-3 mt-3">
         <div class="col-12">
             <h4 class="mb-1"><i class="fa-solid fa-clock me-2 text-primary"></i>Registros de Asistencia</h4>
             <p class="text-muted mb-0">Historial completo de entradas y salidas</p>
@@ -110,7 +110,7 @@ async function loadRecords(page = 1) {
     let url = `/api/attendance?page=${page}&per_page=20`;
     if (date) url += `&date=${date}`;
     if (tipo) url += `&tipo=${tipo}`;
-    if (empId) url += `&empleado_id=${empId}`;
+    if (empId) url += `&user_id=${empId}`;
 
     try {
         const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
@@ -128,8 +128,8 @@ async function loadRecords(page = 1) {
                     : '<span class="text-muted">—</span>';
                 return `
                 <tr>
-                    <td><strong>${r.empleado?.user?.name || 'N/A'}</strong></td>
-                    <td><span class="badge bg-primary">${r.empleado?.codigo_empleado || '—'}</span></td>
+                    <td><strong>${r.user?.name || 'N/A'}</strong></td>
+                    <td><span class="badge bg-primary">${r.user?.codigo_empleado || '—'}</span></td>
                     <td>${r.sede?.nombre || '—'}</td>
                     <td><span class="badge ${r.tipo.includes('entrada') ? 'bg-success' : 'bg-danger'}">${r.tipo.replace(/_/g, ' ')}</span></td>
                     <td>${new Date(r.fecha_hora).toLocaleString('es-MX')}</td>
@@ -163,7 +163,7 @@ async function loadEmpleadosFilter() {
         const data = await res.json();
         const sel = document.getElementById('filterEmpleado');
         (data.data || []).forEach(e => {
-            sel.innerHTML += `<option value="${e.id}">${e.user?.name || ''} (${e.codigo_empleado})</option>`;
+            sel.innerHTML += `<option value="${e.id}">${e.name || ''} (${e.codigo_empleado})</option>`;
         });
     } catch(e) {}
 }

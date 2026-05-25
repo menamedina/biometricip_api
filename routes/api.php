@@ -5,6 +5,10 @@ use App\Http\Controllers\Api\SedeController;
 use App\Http\Controllers\Api\EmpleadoController;
 use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\DepartamentoController;
+use App\Http\Controllers\Api\HorarioController;
+use App\Http\Controllers\Api\PermisoController;
+use App\Http\Controllers\Api\FestivoController;
 use App\Http\Controllers\Api\EmpresaController;
 use Illuminate\Support\Facades\Route;
 
@@ -34,6 +38,33 @@ Route::middleware(['auth:sanctum', 'tenancy'])->group(function () {
 
         Route::get('/reports/attendance',      [ReportController::class, 'attendance']);
         Route::get('/reports/employee-stats',  [ReportController::class, 'employeeStats']);
+
+        // Catálogos combinados
+        Route::get('/catalogos', [DepartamentoController::class, 'catalogos']);
+
+        // Departamentos y Cargos
+        Route::get   ('/departamentos',           [DepartamentoController::class, 'index']);
+        Route::post  ('/departamentos',           [DepartamentoController::class, 'store']);
+        Route::put   ('/departamentos/{id}',      [DepartamentoController::class, 'update']);
+        Route::delete('/departamentos/{id}',      [DepartamentoController::class, 'destroy']);
+        Route::get   ('/cargos',                  [DepartamentoController::class, 'cargos']);
+        Route::post  ('/cargos',                  [DepartamentoController::class, 'storeCargo']);
+        Route::put   ('/cargos/{id}',             [DepartamentoController::class, 'updateCargo']);
+        Route::delete('/cargos/{id}',             [DepartamentoController::class, 'destroyCargo']);
+
+        // Horarios
+        Route::apiResource('horarios', HorarioController::class);
+
+        // Permisos
+        Route::get   ('/permisos',             [PermisoController::class, 'index']);
+        Route::post  ('/permisos',             [PermisoController::class, 'store']);
+        Route::put   ('/permisos/{id}',        [PermisoController::class, 'update']);
+        Route::post  ('/permisos/{id}/aprobar',[PermisoController::class, 'aprobar']);
+        Route::post  ('/permisos/{id}/rechazar',[PermisoController::class, 'rechazar']);
+        Route::delete('/permisos/{id}',        [PermisoController::class, 'destroy']);
+
+        // Festivos
+        Route::apiResource('festivos', FestivoController::class);
     });
 });
 

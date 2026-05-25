@@ -3,7 +3,7 @@
 
 @section('content')
 <div class="container-fluid">
-    <div class="row mb-3">
+    <div class="row mb-3 mt-3">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
@@ -39,6 +39,7 @@
                                 <th>Código</th>
                                 <th>Nombre</th>
                                 <th>Email</th>
+                                <th>Rol</th>
                                 <th>Departamento</th>
                                 <th>Cargo</th>
                                 <th>Estado</th>
@@ -46,7 +47,7 @@
                             </tr>
                         </thead>
                         <tbody id="empleadosTbody">
-                            <tr><td colspan="7" class="text-center text-muted py-3">Cargando...</td></tr>
+                            <tr><td colspan="8" class="text-center text-muted py-3">Cargando...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -92,12 +93,40 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Departamento</label>
-                            <input type="text" id="empDepartamento" class="form-control" list="deptoList">
-                            <datalist id="deptoList"></datalist>
+                            <select id="empDepartamento" class="form-select">
+                                <option value="">— Sin departamento —</option>
+                            </select>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Cargo</label>
-                            <input type="text" id="empCargo" class="form-control">
+                            <select id="empCargo" class="form-select">
+                                <option value="">— Sin cargo —</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Horario</label>
+                            <select id="empHorario" class="form-select">
+                                <option value="">— Sin horario —</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Rol</label>
+                            <select id="empRole" class="form-select">
+                                <option value="empleado">Empleado</option>
+                                <option value="admin">Administrador</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3 d-flex align-items-end">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="empAdminTenant">
+                                <label class="form-check-label">Admin multi-empresa</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3 d-flex align-items-end">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="empActivo" checked>
+                                <label class="form-check-label">Activo</label>
+                            </div>
                         </div>
                     </div>
                 </form>
@@ -116,44 +145,89 @@
 const token = localStorage.getItem('token');
 let currentPage = 1;
 
+// Catálogos en memoria para resolver nombres
+let deptoMap  = {};
+let cargoMap  = {};
+
 function resetForm() {
     document.getElementById('empleadoForm').reset();
     document.getElementById('empleadoId').value = '';
     document.getElementById('empPassword').required = false;
-    document.getElementById('empleadoModalTitle').textContent = 'Nuevo Empleado';
+    document.getElementById('empRole').value = 'empleado';
+    document.getElementById('empAdminTenant').checked = false;
+    document.getElementById('empActivo').checked = true;
+    document.getElementById('empleadoModalTitle').textContent = 'Nuevo Usuario';
+}
+
+async function loadCatalogos() {
+    const res  = await fetch('/api/catalogos', { headers: { 'Authorization': `Bearer ${token}` } });
+    const data = await res.json();
+
+    const deptos   = data.departamentos || [];
+    const cargos   = data.cargos        || [];
+    const horarios = data.horarios      || [];
+
+    // Mapas id → nombre para resolver en tabla
+    deptoMap = Object.fromEntries(deptos.map(d => [d.id, d.nombre]));
+    cargoMap = Object.fromEntries(cargos.map(c => [c.id, c.nombre]));
+
+    // Selects del modal
+    const selDepto   = document.getElementById('empDepartamento');
+    const selCargo   = document.getElementById('empCargo');
+    const selHorario = document.getElementById('empHorario');
+    deptos.filter(d => d.is_active).forEach(d => {
+        selDepto.innerHTML += `<option value="${d.id}">${d.nombre}</option>`;
+    });
+    cargos.filter(c => c.is_active).forEach(c => {
+        selCargo.innerHTML += `<option value="${c.id}">${c.nombre}</option>`;
+    });
+    horarios.filter(h => h.is_active).forEach(h => {
+        selHorario.innerHTML += `<option value="${h.id}">${h.nombre} (${h.hora_entrada?.slice(0,5)} - ${h.hora_salida?.slice(0,5)})</option>`;
+    });
+
+    // Select del filtro
+    const filterSel = document.getElementById('filterDepto');
+    deptos.forEach(d => {
+        filterSel.innerHTML += `<option value="${d.id}">${d.nombre}</option>`;
+    });
 }
 
 async function loadEmpleados(page = 1) {
     currentPage = page;
     const search = document.getElementById('filterSearch').value;
-    const depto = document.getElementById('filterDepto').value;
+    const deptoId = document.getElementById('filterDepto').value;
     let url = `/api/empleados?page=${page}&per_page=15`;
-    if (search) url += `&search=${encodeURIComponent(search)}`;
-    if (depto) url += `&departamento=${encodeURIComponent(depto)}`;
+    if (search)  url += `&search=${encodeURIComponent(search)}`;
+    if (deptoId) url += `&departamento_id=${deptoId}`;
 
     try {
-        const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+        const res  = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
         const data = await res.json();
         const tbody = document.getElementById('empleadosTbody');
         if (!data.data || data.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Sin empleados</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">Sin usuarios</td></tr>';
         } else {
-            tbody.innerHTML = data.data.map(e => `
+            tbody.innerHTML = data.data.map(e => {
+                const rolBadge = e.role === 'admin'
+                    ? `<span class="badge bg-warning text-dark">${e.admin_tenant ? 'Admin multi-empresa' : 'Admin'}</span>`
+                    : '<span class="badge bg-secondary">Empleado</span>';
+                return `
                 <tr>
-                    <td><span class="badge bg-primary">${e.codigo_empleado}</span></td>
+                    <td><span class="badge bg-primary">${e.codigo_empleado || '—'}</span></td>
                     <td><strong>${e.name || 'N/A'}</strong></td>
                     <td>${e.email || 'N/A'}</td>
-                    <td>${e.departamento || '—'}</td>
-                    <td>${e.cargo || '—'}</td>
+                    <td>${rolBadge}</td>
+                    <td>${e.departamento_id ? (deptoMap[e.departamento_id] || e.departamento_id) : '—'}</td>
+                    <td>${e.cargo_id ? (cargoMap[e.cargo_id] || e.cargo_id) : '—'}</td>
                     <td><span class="badge ${e.is_active ? 'bg-success' : 'bg-danger'}">${e.is_active ? 'Activo' : 'Inactivo'}</span></td>
                     <td>
                         <button class="btn btn-sm btn-outline-primary me-1" onclick="editEmpleado(${e.id})"><i class="fa-solid fa-pen"></i></button>
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteEmpleado(${e.id})"><i class="fa-solid fa-trash"></i></button>
                     </td>
-                </tr>
-            `).join('');
+                </tr>`;
+            }).join('');
         }
-        document.getElementById('empleadosInfo').textContent = `${data.total || 0} empleados`;
+        document.getElementById('empleadosInfo').textContent = `${data.total || 0} usuarios`;
         renderPagination(data);
     } catch(e) { console.error(e); }
 }
@@ -171,38 +245,49 @@ function renderPagination(data) {
 
 async function editEmpleado(id) {
     try {
-        const res = await fetch(`/api/empleados/${id}`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const res  = await fetch(`/api/empleados/${id}`, { headers: { 'Authorization': `Bearer ${token}` } });
         const data = await res.json();
         const e = data.data;
-        document.getElementById('empleadoId').value = e.id;
-        document.getElementById('empName').value = e.name || '';
-        document.getElementById('empEmail').value = e.email || '';
-        document.getElementById('empPassword').value = '';
-        document.getElementById('empPassword').required = false;
-        document.getElementById('empCodigo').value = e.codigo_empleado;
-        document.getElementById('empTelefono').value = e.telefono || '';
-        document.getElementById('empDepartamento').value = e.departamento || '';
-        document.getElementById('empCargo').value = e.cargo || '';
-        document.getElementById('empleadoModalTitle').textContent = 'Editar Empleado';
+        document.getElementById('empleadoId').value      = e.id;
+        document.getElementById('empName').value         = e.name || '';
+        document.getElementById('empEmail').value        = e.email || '';
+        document.getElementById('empPassword').value     = '';
+        document.getElementById('empPassword').required  = false;
+        document.getElementById('empCodigo').value       = e.codigo_empleado;
+        document.getElementById('empTelefono').value     = e.telefono || '';
+        document.getElementById('empDepartamento').value = e.departamento_id || '';
+        document.getElementById('empCargo').value        = e.cargo_id || '';
+        document.getElementById('empHorario').value      = e.horario_id || '';
+        document.getElementById('empRole').value         = e.role || 'empleado';
+        document.getElementById('empAdminTenant').checked = !!e.admin_tenant;
+        document.getElementById('empActivo').checked     = !!e.is_active;
+        document.getElementById('empleadoModalTitle').textContent = 'Editar Usuario';
         new bootstrap.Modal(document.getElementById('empleadoModal')).show();
     } catch(e) { console.error(e); }
 }
 
 async function saveEmpleado() {
     const id = document.getElementById('empleadoId').value;
+    const deptoVal   = document.getElementById('empDepartamento').value;
+    const cargoVal   = document.getElementById('empCargo').value;
+    const horarioVal = document.getElementById('empHorario').value;
     const payload = {
-        name: document.getElementById('empName').value,
-        email: document.getElementById('empEmail').value,
-        codigo_empleado: document.getElementById('empCodigo').value,
-        telefono: document.getElementById('empTelefono').value,
-        departamento: document.getElementById('empDepartamento').value,
-        cargo: document.getElementById('empCargo').value,
+        name:             document.getElementById('empName').value,
+        email:            document.getElementById('empEmail').value,
+        codigo_empleado:  document.getElementById('empCodigo').value,
+        telefono:         document.getElementById('empTelefono').value,
+        departamento_id:  deptoVal   ? parseInt(deptoVal)   : null,
+        cargo_id:         cargoVal   ? parseInt(cargoVal)   : null,
+        horario_id:       horarioVal ? parseInt(horarioVal) : null,
+        role:             document.getElementById('empRole').value,
+        admin_tenant:     document.getElementById('empAdminTenant').checked,
+        is_active:        document.getElementById('empActivo').checked,
     };
     const pass = document.getElementById('empPassword').value;
     if (pass) payload.password = pass;
     if (!id) payload.password = pass || 'password123';
 
-    const url = id ? `/api/empleados/${id}` : '/api/empleados';
+    const url    = id ? `/api/empleados/${id}` : '/api/empleados';
     const method = id ? 'PUT' : 'POST';
 
     try {
@@ -228,19 +313,6 @@ async function deleteEmpleado(id) {
     } catch(e) { console.error(e); }
 }
 
-async function loadDeptos() {
-    try {
-        const res = await fetch('/api/empleados/departamentos/list', { headers: { 'Authorization': `Bearer ${token}` } });
-        const data = await res.json();
-        const sel = document.getElementById('filterDepto');
-        const datalist = document.getElementById('deptoList');
-        (data.data || []).forEach(d => {
-            sel.innerHTML += `<option value="${d}">${d}</option>`;
-            datalist.innerHTML += `<option value="${d}">`;
-        });
-    } catch(e) {}
-}
-
-document.addEventListener('DOMContentLoaded', () => { loadEmpleados(); loadDeptos(); });
+document.addEventListener('DOMContentLoaded', () => { loadCatalogos().then(() => loadEmpleados()); });
 </script>
 @endpush

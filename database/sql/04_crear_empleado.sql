@@ -117,3 +117,59 @@ SELECT id, name, email, role, empresa_id, codigo_empleado, departamento, cargo
 FROM users
 WHERE empresa_id = 1 AND role = 'empleado'
 ORDER BY codigo_empleado;
+
+
+
+
+  CREATE TABLE IF NOT EXISTS `tbl_departamentos` (
+      `id`          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `nombre`      VARCHAR(100) NOT NULL UNIQUE,
+      `descripcion` VARCHAR(255) NULL,
+      `is_active`   TINYINT(1) NOT NULL DEFAULT 1,
+      `created_at`  TIMESTAMP NULL,
+      `updated_at`  TIMESTAMP NULL,
+      PRIMARY KEY (`id`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  CREATE TABLE IF NOT EXISTS `tbl_cargos` (
+      `id`               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `departamento_id`  BIGINT UNSIGNED NULL,
+      `nombre`           VARCHAR(100) NOT NULL,
+      `descripcion`      VARCHAR(255) NULL,
+      `is_active`        TINYINT(1) NOT NULL DEFAULT 1,
+      `created_at`       TIMESTAMP NULL,
+      `updated_at`       TIMESTAMP NULL,
+      PRIMARY KEY (`id`),
+      CONSTRAINT `fk_cargos_depto` FOREIGN KEY (`departamento_id`) REFERENCES `tbl_departamentos` (`id`) ON DELETE SET NULL
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+
+-- ══════════════════════════════════════════════════════════════
+  -- 1. INSERTAR DEPARTAMENTOS (en la BD del tenant: biometricip_1)
+  -- ══════════════════════════════════════════════════════════════
+  INSERT INTO tbl_departamentos (nombre, descripcion, is_active, created_at, updated_at) VALUES
+  ('Tecnología',         'Desarrollo de software e infraestructura TI',  1, NOW(), NOW()),
+  ('Recursos Humanos',   'Gestión del talento humano y bienestar',        1, NOW(), NOW()),
+  ('Contabilidad',       'Finanzas, nómina y contabilidad general',       1, NOW(), NOW()),
+  ('Ventas',             'Gestión comercial y relación con clientes',     1, NOW(), NOW()),
+  ('Marketing',          'Publicidad, marca y comunicaciones',            1, NOW(), NOW()),
+  ('Operaciones',        'Logística, procesos y cadena de suministro',    1, NOW(), NOW()),
+  ('Jurídico',           'Asuntos legales y cumplimiento normativo',      1, NOW(), NOW()),
+  ('Gerencia',           'Alta dirección y estrategia corporativa',       1, NOW(), NOW()),
+  ('Soporte',            'Atención al cliente y soporte técnico',         1, NOW(), NOW()),
+  ('Compras',            'Adquisiciones, proveedores y contratos',        1, NOW(), NOW());
+
+
+
+  INSERT INTO biometricip_1.tbl_cargos (nombre, descripcion, is_active, created_at, updated_at) VALUES
+  ('Desarrollador Backend',    'Desarrollo de APIs y servicios web',          1, NOW(), NOW()),
+  ('Desarrollador Frontend',   'Interfaces de usuario y experiencia UX',      1, NOW(), NOW()),
+  ('DevOps / Infraestructura', 'Servidores, CI/CD y redes',                   1, NOW(), NOW()),
+  ('Analista de RRHH',         'Reclutamiento, selección y onboarding',       1, NOW(), NOW()),
+  ('Coordinador de Nómina',    'Liquidación y pago de nómina',                1, NOW(), NOW()),
+  ('Contador General',         'Elaboración de estados financieros',          1, NOW(), NOW()),
+  ('Auxiliar Contable',        'Registro de transacciones y conciliaciones',  1, NOW(), NOW()),
+  ('Ejecutivo de Ventas',      'Captación y cierre de clientes',              1, NOW(), NOW()),
+  ('Gerente General',          'Dirección y toma de decisiones estratégicas', 1, NOW(), NOW()),
+  ('Técnico de Soporte',       'Resolución de incidentes nivel 1 y 2',        1, NOW(), NOW());

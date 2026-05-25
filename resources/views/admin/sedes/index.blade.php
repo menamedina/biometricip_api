@@ -3,7 +3,7 @@
 
 @section('content')
 <div class="container-fluid">
-    <div class="row mb-3">
+    <div class="row mb-3 mt-3">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
@@ -46,7 +46,7 @@
 </div>
 
 <div class="modal fade" id="sedeModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="sedeModalTitle">Nueva Sede</h5>
@@ -68,19 +68,19 @@
                             <label class="form-label">Dirección</label>
                             <input type="text" id="sedeDireccion" class="form-control" placeholder="Av. Reforma 222, CDMX">
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label class="form-label">Latitud</label>
-                            <input type="number" step="0.0000001" id="sedeLat" class="form-control" placeholder="19.4326" required>
+                            <input type="number" step="0.0000001" id="sedeLat" class="form-control" placeholder="19.4326" required oninput="syncMapFromInputs()">
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label class="form-label">Longitud</label>
-                            <input type="number" step="0.0000001" id="sedeLng" class="form-control" placeholder="-99.1332" required>
+                            <input type="number" step="0.0000001" id="sedeLng" class="form-control" placeholder="-99.1332" required oninput="syncMapFromInputs()">
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Radio (metros)</label>
-                            <input type="number" id="sedeRadio" class="form-control" value="150" min="10" max="5000">
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label">Radio (m)</label>
+                            <input type="number" id="sedeRadio" class="form-control" value="150" min="10" max="5000" oninput="syncMapFromInputs()">
                         </div>
-                        <div class="col-md-6 mb-3 d-flex align-items-end">
+                        <div class="col-md-2 mb-3 d-flex align-items-end">
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" id="sedeActivo" checked>
                                 <label class="form-check-label">Activo</label>
@@ -88,6 +88,11 @@
                         </div>
                     </div>
                 </form>
+                <!-- Mapa -->
+                <div class="mb-1">
+                    <small class="text-muted"><i class="fa-solid fa-hand-pointer me-1"></i>Haz clic en el mapa para colocar la ubicación. Puedes arrastrar el marcador.</small>
+                </div>
+                <div id="sedeMap" style="height: 320px; border-radius: 10px; border: 1px solid #dee2e6;"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -96,7 +101,6 @@
         </div>
     </div>
 </div>
-@endsection
 
 {{-- Modal QR --}}
 <div class="modal fade" id="qrModal" tabindex="-1">
@@ -116,17 +120,119 @@
         </div>
     </div>
 </div>
+@endsection
 
 @push('scripts')
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 const token = localStorage.getItem('token');
 
+// ── Mapa Google Maps ──────────────────────────────────────────────────────────
+let gMap = null, gMarker = null, gCircle = null;
+const DEFAULT_LAT = 4.7110, DEFAULT_LNG = -74.0721;
+
+function initMap(lat, lng, radio) {
+    lat   = lat   || DEFAULT_LAT;
+    lng   = lng   || DEFAULT_LNG;
+    radio = radio || 150;
+
+    const center = { lat, lng };
+
+    if (gMap) {
+        gMap = null; gMarker = null; gCircle = null;
+        document.getElementById('sedeMap').innerHTML = '';
+    }
+
+    gMap = new google.maps.Map(document.getElementById('sedeMap'), {
+        center,
+        zoom: 6,
+        mapTypeControl: true,
+        streetViewControl: false,
+        fullscreenControl: true,
+    });
+
+    gMarker = new google.maps.Marker({
+        position: center,
+        map: gMap,
+        draggable: true,
+        title: 'Sede',
+    });
+
+    gCircle = new google.maps.Circle({
+        map: gMap,
+        center,
+        radius: radio,
+        strokeColor: '#4F46E5',
+        strokeOpacity: 0.8,
+        strokeWeight: 2,
+        fillColor: '#4F46E5',
+        fillOpacity: 0.1,
+    });
+
+    gMarker.addListener('dragend', function () {
+        const pos = gMarker.getPosition();
+        setCoords(pos.lat(), pos.lng());
+        gCircle.setCenter(pos);
+    });
+
+    gMap.addListener('click', function (e) {
+        const pos = e.latLng;
+        gMarker.setPosition(pos);
+        gCircle.setCenter(pos);
+        setCoords(pos.lat(), pos.lng());
+    });
+}
+
+function setCoords(lat, lng) {
+    document.getElementById('sedeLat').value = lat.toFixed(7);
+    document.getElementById('sedeLng').value = lng.toFixed(7);
+}
+
+function syncMapFromInputs() {
+    if (!gMap) return;
+    const lat   = parseFloat(document.getElementById('sedeLat').value);
+    const lng   = parseFloat(document.getElementById('sedeLng').value);
+    const radio = parseInt(document.getElementById('sedeRadio').value) || 150;
+    gCircle.setRadius(radio);
+    if (!isNaN(lat) && !isNaN(lng)) {
+        const pos = { lat, lng };
+        gMarker.setPosition(pos);
+        gCircle.setCenter(pos);
+        gMap.setCenter(pos);
+    }
+}
+
+let googleMapsLoaded = false;
+let pendingMapInit = null;
+
+function googleMapsReady() {
+    googleMapsLoaded = true;
+    if (pendingMapInit) {
+        const { lat, lng, radio } = pendingMapInit;
+        pendingMapInit = null;
+        initMap(lat, lng, radio);
+    }
+}
+
+document.getElementById('sedeModal').addEventListener('shown.bs.modal', function () {
+    const lat   = parseFloat(document.getElementById('sedeLat').value) || DEFAULT_LAT;
+    const lng   = parseFloat(document.getElementById('sedeLng').value) || DEFAULT_LNG;
+    const radio = parseInt(document.getElementById('sedeRadio').value) || 150;
+    if (googleMapsLoaded) {
+        initMap(lat, lng, radio);
+    } else {
+        pendingMapInit = { lat, lng, radio };
+    }
+});
+// ─────────────────────────────────────────────────────────────────────────────
+
 function resetForm() {
     document.getElementById('sedeForm').reset();
     document.getElementById('sedeId').value = '';
     document.getElementById('sedeModalTitle').textContent = 'Nueva Sede';
     document.getElementById('sedeActivo').checked = true;
+    document.getElementById('sedeRadio').value = 150;
+    clearSedeError();
 }
 
 async function loadSedes() {
@@ -170,20 +276,28 @@ function editSede(sede) {
 }
 
 async function saveSede() {
-    const id = document.getElementById('sedeId').value;
+    const id     = document.getElementById('sedeId').value;
+    const codigo = document.getElementById('sedeCodigo').value.trim();
+
+    if (!codigo) {
+        showSedeError('El código de la sede es obligatorio.');
+        return;
+    }
+
     const payload = {
-        codigo: document.getElementById('sedeCodigo').value,
-        nombre: document.getElementById('sedeNombre').value,
+        codigo,
+        nombre:    document.getElementById('sedeNombre').value,
         direccion: document.getElementById('sedeDireccion').value,
-        lat: parseFloat(document.getElementById('sedeLat').value),
-        lng: parseFloat(document.getElementById('sedeLng').value),
+        lat:       parseFloat(document.getElementById('sedeLat').value),
+        lng:       parseFloat(document.getElementById('sedeLng').value),
         radio_mts: parseInt(document.getElementById('sedeRadio').value) || 150,
         is_active: document.getElementById('sedeActivo').checked,
     };
 
-    const url = id ? `/api/sedes/${id}` : '/api/sedes';
+    const url    = id ? `/api/sedes/${id}` : '/api/sedes';
     const method = id ? 'PUT' : 'POST';
 
+    clearSedeError();
     try {
         const res = await fetch(url, {
             method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -194,9 +308,29 @@ async function saveSede() {
             loadSedes();
         } else {
             const err = await res.json();
-            alert(err.message || 'Error al guardar');
+            const msg = err.errors
+                ? Object.values(err.errors).flat().join('\n')
+                : (err.message || 'Error al guardar');
+            showSedeError(msg);
         }
-    } catch(e) { console.error(e); }
+    } catch(e) { console.error(e); showSedeError('Error de conexión.'); }
+}
+
+function showSedeError(msg) {
+    let el = document.getElementById('sedeFormError');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'sedeFormError';
+        el.className = 'alert alert-danger py-2 mt-2 mb-0';
+        document.getElementById('sedeForm').appendChild(el);
+    }
+    el.textContent = msg;
+    el.style.display = 'block';
+}
+
+function clearSedeError() {
+    const el = document.getElementById('sedeFormError');
+    if (el) el.style.display = 'none';
 }
 
 async function deleteSede(id) {
@@ -251,4 +385,5 @@ async function refreshQR() {
     } catch(e) { console.error('Error generando QR', e); }
 }
 </script>
+<script src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_MAPS_API_KEY') }}&loading=async&callback=googleMapsReady"></script>
 @endpush

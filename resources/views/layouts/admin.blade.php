@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <title>@yield('title', 'AsistenciaQR') | Admin Panel</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="shortcut icon" href="{{ asset('assets/images/favicon.ico') }}" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <script src="{{ asset('assets/js/config.js') }}"></script>
     <link href="{{ asset('assets/css/vendors.min.css') }}" rel="stylesheet" />
     <link id="app-style" href="{{ asset('assets/css/app.min.css') }}" rel="stylesheet" />
@@ -106,6 +106,40 @@
                                 <span class="menu-text">Registros</span>
                             </a>
                         </li>
+                        <li class="side-nav-item">
+                            <a href="{{ route('admin.resumen.index') }}" class="side-nav-link {{ request()->routeIs('admin.resumen.*') ? 'active' : '' }}">
+                                <span class="menu-icon"><i class="ti ti-calendar-stats"></i></span>
+                                <span class="menu-text">Resumen Marcación</span>
+                            </a>
+                        </li>
+                        <li class="side-nav-item">
+                            <a href="{{ route('admin.permisos.index') }}" class="side-nav-link {{ request()->routeIs('admin.permisos.*') ? 'active' : '' }}">
+                                <span class="menu-icon"><i class="ti ti-file-certificate"></i></span>
+                                <span class="menu-text">Permisos</span>
+                            </a>
+                        </li>
+
+                        <li class="side-nav-title mt-2">Organización</li>
+                        <li class="side-nav-item">
+                            <a href="{{ route('admin.departamentos.index') }}" class="side-nav-link {{ request()->routeIs('admin.departamentos.*') ? 'active' : '' }}">
+                                <span class="menu-icon"><i class="ti ti-sitemap"></i></span>
+                                <span class="menu-text">Deptos. y Cargos</span>
+                            </a>
+                        </li>
+
+                        <li class="side-nav-title mt-2">Configuración</li>
+                        <li class="side-nav-item">
+                            <a href="{{ route('admin.horarios.index') }}" class="side-nav-link {{ request()->routeIs('admin.horarios.*') ? 'active' : '' }}">
+                                <span class="menu-icon"><i class="ti ti-clock-play"></i></span>
+                                <span class="menu-text">Horarios</span>
+                            </a>
+                        </li>
+                        <li class="side-nav-item">
+                            <a href="{{ route('admin.festivos.index') }}" class="side-nav-link {{ request()->routeIs('admin.festivos.*') ? 'active' : '' }}">
+                                <span class="menu-icon"><i class="ti ti-calendar-x"></i></span>
+                                <span class="menu-text">Festivos</span>
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -118,6 +152,19 @@
         </div>
     </div>
 
+    <script>
+        // Interceptar fetch de traducciones para evitar 404
+        const _fetch = window.fetch;
+        window.fetch = function(url, ...args) {
+            if (typeof url === 'string' && url.includes('/translations/')) {
+                return Promise.resolve(new Response('{}', {
+                    status: 200,
+                    headers: { 'Content-Type': 'application/json' }
+                }));
+            }
+            return _fetch(url, ...args);
+        };
+    </script>
     <script src="{{ asset('assets/js/vendors.min.js') }}"></script>
     <script src="{{ asset('assets/js/app.js') }}"></script>
     <script>

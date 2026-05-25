@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Helpers\TenantHelper;
 use App\Http\Controllers\Controller;
+use App\Models\Cargo;
+use App\Models\Departamento;
+use App\Models\Horario;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -73,6 +76,35 @@ class AuthController extends Controller
 
     private function userData(User $user): array
     {
+        $departamentoNombre = null;
+        $cargoNombre        = null;
+
+        $horarioData = null;
+
+        if ($user->empresa_id !== null) {
+            if ($user->departamento_id) {
+                $departamentoNombre = Departamento::find($user->departamento_id)?->nombre;
+            }
+            if ($user->cargo_id) {
+                $cargoNombre = Cargo::find($user->cargo_id)?->nombre;
+            }
+            if ($user->horario_id) {
+                $h = Horario::find($user->horario_id);
+                if ($h) {
+                    $horarioData = [
+                        'id'                     => $h->id,
+                        'nombre'                 => $h->nombre,
+                        'hora_entrada'           => $h->hora_entrada,
+                        'hora_salida'            => $h->hora_salida,
+                        'tiene_almuerzo_marcado' => (bool) $h->tiene_almuerzo_marcado,
+                        'duracion_almuerzo_min'  => $h->duracion_almuerzo_min,
+                        'hora_almuerzo_inicio'   => $h->hora_almuerzo_inicio,
+                        'hora_almuerzo_fin'      => $h->hora_almuerzo_fin,
+                    ];
+                }
+            }
+        }
+
         return [
             'id'              => $user->id,
             'name'            => $user->name,
@@ -80,8 +112,12 @@ class AuthController extends Controller
             'role'            => $user->role,
             'empresa_id'      => $user->empresa_id,
             'codigo_empleado' => $user->codigo_empleado,
-            'departamento'    => $user->departamento,
-            'cargo'           => $user->cargo,
+            'departamento_id' => $user->departamento_id,
+            'cargo_id'        => $user->cargo_id,
+            'horario_id'      => $user->horario_id,
+            'departamento'    => $departamentoNombre,
+            'cargo'           => $cargoNombre,
+            'horario'         => $horarioData,
             'telefono'        => $user->telefono,
             'foto_url'        => $user->foto_url,
         ];
