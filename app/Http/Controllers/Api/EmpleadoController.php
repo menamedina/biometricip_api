@@ -8,6 +8,7 @@ use App\Models\AttendanceRecord;
 use App\Models\Cargo;
 use App\Models\Departamento;
 use App\Models\Empresa;
+use App\Models\ImagenRostro;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -94,6 +95,7 @@ class EmpleadoController extends Controller
                 Rule::unique('users', 'codigo_empleado')->where('empresa_id', $empresaId),
             ],
             'role'            => 'nullable|in:admin,empleado',
+            'tipo'            => 'nullable|in:usuario,kiosco',
             'admin_tenant'    => 'nullable|boolean',
             'departamento_id' => 'nullable|integer',
             'cargo_id'        => 'nullable|integer',
@@ -107,6 +109,7 @@ class EmpleadoController extends Controller
             'email'           => $data['email'],
             'password'        => Hash::make($data['password']),
             'role'            => $data['role'] ?? 'empleado',
+            'tipo'            => $data['tipo'] ?? 'usuario',
             'admin_tenant'    => $data['admin_tenant'] ?? false,
             'is_active'       => true,
             'empresa_id'      => $empresaId,
@@ -188,6 +191,7 @@ class EmpleadoController extends Controller
                     ->ignore($empleado->id),
             ],
             'role'            => 'nullable|in:admin,empleado',
+            'tipo'            => 'nullable|in:usuario,kiosco',
             'admin_tenant'    => 'nullable|boolean',
             'empresa_id'      => 'nullable|integer',
             'departamento_id' => 'nullable|integer',
@@ -251,6 +255,137 @@ class EmpleadoController extends Controller
     {
         $deptos = Departamento::where('is_active', true)->orderBy('nombre')->get(['id', 'nombre']);
         return response()->json(['data' => $deptos]);
+    }
+
+    // ─── Imágenes de rostro ──────────────────────────────────────────────────
+
+    public function getImagenesRostro(Request $request, int $id): JsonResponse
+    {
+        $this->resolveEmpleado($request, $id);
+
+        $imagenes = ImagenRostro::where('user_id', $id)
+            ->orderBy('orden')
+            ->get(['id', 'orden', 'created_at']);
+
+        return response()->json(['data' => $imagenes]);
+    }
+
+    public function storeImagenRostro(Request $request, int $id): JsonResponse
+    {
+        $this->resolveEmpleado($request, $id);
+
+        $total = ImagenRostro::where('user_id', $id)->count();
+        if ($total >= 5) {
+            return response()->json(['message' => 'Máximo 5 imágenes de rostro por empleado.'], 422);
+        }
+
+        $request->validate([
+            'imagen_base64' => 'required|string',
+            'descriptor'    => 'nullable|array',
+        ]);
+
+        // Redimensionar a 400x400 con GD
+        $imagenBase64 = $this->redimensionarRostro($request->imagen_base64);
+
+        $imagen = ImagenRostro::create([
+            'user_id'       => $id,
+            'imagen_base64' => $imagenBase64,
+            'descriptor'    => $request->descriptor,
+            'orden'         => $total + 1,
+        ]);
+
+        // Recalcular descriptor promedio en users
+        $this->actualizarDescriptorPromedio($id);
+
+        return response()->json(['data' => ['id' => $imagen->id, 'orden' => $imagen->orden]], 201);
+    }
+
+    public function destroyImagenRostro(Request $request, int $id, int $imageId): JsonResponse
+    {
+        $this->resolveEmpleado($request, $id);
+
+        $imagen = ImagenRostro::where('id', $imageId)->where('user_id', $id)->firstOrFail();
+        $imagen->delete();
+
+        // Reordenar
+        ImagenRostro::where('user_id', $id)
+            ->orderBy('orden')
+            ->get()
+            ->each(function ($img, $index) {
+                $img->update(['orden' => $index + 1]);
+            });
+
+        // Recalcular descriptor promedio
+        $this->actualizarDescriptorPromedio($id);
+
+        return response()->json(['message' => 'Imagen eliminada.']);
+    }
+
+    private function resolveEmpleado(Request $request, int $id): User
+    {
+        $authUser = $request->user();
+        $query    = User::where('id', $id);
+        if (!$authUser->admin_tenant) {
+            $query->where('empresa_id', $authUser->empresa_id);
+        }
+        return $query->firstOrFail();
+    }
+
+    private function actualizarDescriptorPromedio(int $userId): void
+    {
+        $descriptores = ImagenRostro::where('user_id', $userId)
+            ->whereNotNull('descriptor')
+            ->pluck('descriptor')
+            ->toArray();
+
+        if (empty($descriptores)) {
+            User::where('id', $userId)->update(['face_descriptor' => null]);
+            return;
+        }
+
+        $longitud = count($descriptores[0]);
+        $promedio = array_fill(0, $longitud, 0.0);
+
+        foreach ($descriptores as $desc) {
+            for ($i = 0; $i < $longitud; $i++) {
+                $promedio[$i] += $desc[$i];
+            }
+        }
+
+        $total = count($descriptores);
+        $promedio = array_map(fn($v) => $v / $total, $promedio);
+
+        User::where('id', $userId)->update(['face_descriptor' => json_encode($promedio)]);
+    }
+
+    private function redimensionarRostro(string $base64Input): string
+    {
+        // Extraer datos del data URI (acepta data:image/...;base64,... o base64 puro)
+        if (str_contains($base64Input, ',')) {
+            [, $data] = explode(',', $base64Input, 2);
+        } else {
+            $data = $base64Input;
+        }
+
+        $bytes = base64_decode($data);
+        $src   = @imagecreatefromstring($bytes);
+
+        if (!$src) {
+            // Si GD no puede procesarla, retornar tal cual
+            return $base64Input;
+        }
+
+        $dst = imagecreatetruecolor(400, 400);
+        imagecopyresampled($dst, $src, 0, 0, 0, 0, 400, 400, imagesx($src), imagesy($src));
+
+        ob_start();
+        imagejpeg($dst, null, 85);
+        $jpegBytes = ob_get_clean();
+
+        imagedestroy($src);
+        imagedestroy($dst);
+
+        return 'data:image/jpeg;base64,' . base64_encode($jpegBytes);
     }
 
     private function withNames(User $user): array

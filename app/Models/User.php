@@ -20,6 +20,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'tipo',
         'admin_tenant',
         'is_active',
         'empresa_id',
@@ -54,6 +55,7 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Empresa::class, 'empresa_id');
     }
+
 
     public function isAdmin(): bool
     {

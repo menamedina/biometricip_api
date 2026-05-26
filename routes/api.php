@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\SedeController;
 use App\Http\Controllers\Api\EmpleadoController;
 use App\Http\Controllers\Api\AttendanceController;
+use App\Http\Controllers\Api\KioscoController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\DepartamentoController;
 use App\Http\Controllers\Api\HorarioController;
@@ -26,13 +27,20 @@ Route::middleware(['auth:sanctum', 'tenancy'])->group(function () {
     Route::get('/attendance/my-history',    [AttendanceController::class, 'myHistory']);
     Route::get('/attendance/my-report',     [AttendanceController::class, 'myReport']);
 
+    // Kiosco (cualquier usuario autenticado tipo kiosco)
+    Route::post('/kiosco/identificar',              [KioscoController::class, 'identificar']);
+    Route::get ('/kiosco/empleados-descriptores',   [KioscoController::class, 'empleadosDescriptores']);
+
     Route::middleware('admin')->group(function () {
         Route::apiResource('sedes', SedeController::class);
         Route::get('/sedes/{sede}/qr', [SedeController::class, 'qr']);
 
         Route::get('/empleados/departamentos/list', [EmpleadoController::class, 'departamentos']);
         Route::apiResource('empleados', EmpleadoController::class);
-        Route::post('/empleados/{id}/face-descriptor', [EmpleadoController::class, 'updateFaceDescriptor']);
+        Route::post  ('/empleados/{id}/face-descriptor',           [EmpleadoController::class, 'updateFaceDescriptor']);
+        Route::get   ('/empleados/{id}/imagenes-rostro',           [EmpleadoController::class, 'getImagenesRostro']);
+        Route::post  ('/empleados/{id}/imagenes-rostro',           [EmpleadoController::class, 'storeImagenRostro']);
+        Route::delete('/empleados/{id}/imagenes-rostro/{imageId}', [EmpleadoController::class, 'destroyImagenRostro']);
 
         Route::get('/attendance',             [AttendanceController::class, 'index']);
         Route::put('/attendance/{id}',        [AttendanceController::class, 'update']);

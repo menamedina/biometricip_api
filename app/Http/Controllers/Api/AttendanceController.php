@@ -56,15 +56,27 @@ class AttendanceController extends Controller
         ]);
 
         $request->validate([
-            'qr_value'      => 'nullable|string',
-            'lat'           => 'required|numeric|between:-90,90',
-            'lng'           => 'required|numeric|between:-180,180',
-            'metodo'        => 'required|in:qr,biometrico,reconocimiento_facial,foto',
-            'foto_evidencia'=> 'nullable|string',
-            'tipo'          => 'required|in:entrada,salida',
+            'qr_value'       => 'nullable|string',
+            'lat'            => 'nullable|numeric|between:-90,90',
+            'lng'            => 'nullable|numeric|between:-180,180',
+            'metodo'         => 'required|in:qr,biometrico,reconocimiento_facial,foto',
+            'foto_evidencia' => 'nullable|string',
+            'tipo'           => 'required|in:entrada,salida',
+            'kiosco_user_id' => 'nullable|integer',
         ]);
 
-        $user = $request->user();
+        $authUser = $request->user();
+
+        // En modo kiosco: el usuario autenticado es el kiosco, pero registra
+        // la asistencia del empleado identificado por reconocimiento facial.
+        if ($authUser->tipo === 'kiosco' && $request->filled('kiosco_user_id')) {
+            $user = User::where('id', $request->kiosco_user_id)
+                ->where('empresa_id', $authUser->empresa_id)
+                ->where('is_active', true)
+                ->firstOrFail();
+        } else {
+            $user = $authUser;
+        }
 
         if (!$user->is_active) {
             return response()->json(['message' => 'Usuario inactivo.'], 403);
@@ -76,7 +88,21 @@ class AttendanceController extends Controller
         $qrValidado = false;
         $sede = null;
 
-        if ($request->metodo === 'foto') {
+        if ($request->metodo === 'reconocimiento_facial') {
+            // En modo kiosco: usar la sede asignada al kiosco o al empleado
+            $sedeId = $authUser->sede_id ?? $user->sede_id;
+            if ($sedeId) {
+                $sede = Sede::where('id', $sedeId)->where('is_active', true)->first();
+            }
+            if (!$sede) {
+                // Fallback: primera sede activa de la empresa
+                $sede = Sede::where('is_active', true)->first();
+            }
+            if (!$sede) {
+                return response()->json(['message' => 'No hay sedes activas registradas.'], 422);
+            }
+            $qrValidado = false;
+        } elseif ($request->metodo === 'foto') {
             // Buscar la sede activa más cercana a las coordenadas del usuario
             $sedes = Sede::where('is_active', true)->get();
             $menorDistancia = PHP_INT_MAX;
