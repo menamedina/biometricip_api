@@ -443,7 +443,7 @@ async function cargarRostros() {
                 <div class="card h-100 border">
                     <div class="position-relative">
                         ${src
-                            ? `<img src="${src}" class="card-img-top" style="height:180px;object-fit:cover;border-radius:4px 4px 0 0;" alt="Rostro ${img.orden}">`
+                            ? `<img src="${src}" class="card-img-top" style="height:180px;object-fit:cover;border-radius:4px 4px 0 0;image-orientation:from-image;" alt="Rostro ${img.orden}">`
                             : `<div class="d-flex align-items-center justify-content-center bg-light" style="height:180px;">
                                    <i class="fa-solid fa-image fa-3x text-muted"></i>
                                </div>`
