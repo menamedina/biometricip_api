@@ -17,12 +17,14 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 
 // Autenticadas con tenancy (switch automático al tenant del usuario)
 Route::middleware(['auth:sanctum', 'tenancy'])->group(function () {
-    Route::post('/auth/logout', [AuthController::class, 'logout']);
-    Route::get('/auth/me',     [AuthController::class, 'me']);
+    Route::post('/auth/logout',          [AuthController::class, 'logout']);
+    Route::get('/auth/me',               [AuthController::class, 'me']);
+    Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
 
     Route::post('/attendance/clock',        [AttendanceController::class, 'clock']);
     Route::post('/attendance/offline-sync', [AttendanceController::class, 'offlineSync']);
     Route::get('/attendance/my-history',    [AttendanceController::class, 'myHistory']);
+    Route::get('/attendance/my-report',     [AttendanceController::class, 'myReport']);
 
     Route::middleware('admin')->group(function () {
         Route::apiResource('sedes', SedeController::class);

@@ -279,6 +279,105 @@ class AttendanceController extends Controller
         return response()->json(['foto_base64' => $photo->foto_base64]);
     }
 
+    public function myReport(Request $request): JsonResponse
+    {
+        $user  = $request->user();
+        $year  = (int) ($request->year  ?? now()->year);
+        $month = (int) ($request->month ?? now()->month);
+
+        $start = Carbon::create($year, $month, 1)->startOfDay();
+        $end   = $start->copy()->endOfMonth()->endOfDay();
+
+        // Mes anterior para comparativas
+        $prevStart = $start->copy()->subMonth()->startOfDay();
+        $prevEnd   = $start->copy()->subMonth()->endOfMonth()->endOfDay();
+
+        $records = AttendanceRecord::where('user_id', $user->id)
+            ->whereBetween('fecha_hora', [$start, $end])
+            ->orderBy('fecha_hora')
+            ->get();
+
+        $prevRecords = AttendanceRecord::where('user_id', $user->id)
+            ->whereBetween('fecha_hora', [$prevStart, $prevEnd])
+            ->get();
+
+        // Días laborados (días con al menos una entrada)
+        $diasLaborados = $records->where('tipo', 'entrada')
+            ->groupBy(fn($r) => Carbon::parse($r->fecha_hora)->toDateString())
+            ->count();
+
+        $prevDiasLaborados = $prevRecords->where('tipo', 'entrada')
+            ->groupBy(fn($r) => Carbon::parse($r->fecha_hora)->toDateString())
+            ->count();
+
+        // Entradas y salidas
+        $entradas     = $records->where('tipo', 'entrada')->count();
+        $salidas      = $records->where('tipo', 'salida')->count();
+        $prevEntradas = $prevRecords->where('tipo', 'entrada')->count();
+        $prevSalidas  = $prevRecords->where('tipo', 'salida')->count();
+
+        // Horas trabajadas (entrada+salida por día)
+        $totalMinutos = 0;
+        $horasPorDia  = [];
+
+        $byDay = $records->groupBy(fn($r) => Carbon::parse($r->fecha_hora)->toDateString());
+        foreach ($byDay as $day => $dayRecords) {
+            $entrada = $dayRecords->where('tipo', 'entrada')->sortBy('fecha_hora')->first();
+            $salida  = $dayRecords->where('tipo', 'salida')->sortByDesc('fecha_hora')->first();
+            if ($entrada && $salida) {
+                $mins = Carbon::parse($entrada->fecha_hora)->diffInMinutes(Carbon::parse($salida->fecha_hora));
+                $totalMinutos += $mins;
+                $horasPorDia[Carbon::parse($day)->day] = round($mins / 60, 1);
+            } else {
+                $horasPorDia[Carbon::parse($day)->day] = 0;
+            }
+        }
+
+        // Tardanzas (entrada después de la hora configurada, por defecto 09:00)
+        $horaEntrada = '09:00:00';
+        if ($user->horario_id) {
+            $horario = \App\Models\Horario::find($user->horario_id);
+            if ($horario) $horaEntrada = $horario->hora_entrada;
+        }
+
+        $tardanzas     = $records->where('tipo', 'entrada')->filter(fn($r) => Carbon::parse($r->fecha_hora)->format('H:i:s') > $horaEntrada)->count();
+        $prevTardanzas = $prevRecords->where('tipo', 'entrada')->filter(fn($r) => Carbon::parse($r->fecha_hora)->format('H:i:s') > $horaEntrada)->count();
+
+        // Faltas (días hábiles sin entrada)
+        $diasHabiles   = 0;
+        $cursor = $start->copy();
+        while ($cursor->lte($end) && $cursor->lte(now())) {
+            if (!$cursor->isWeekend()) $diasHabiles++;
+            $cursor->addDay();
+        }
+        $faltas     = max(0, $diasHabiles - $diasLaborados);
+        $prevFaltas = max(0, (int) $prevRecords->where('tipo','entrada')->groupBy(fn($r)=>Carbon::parse($r->fecha_hora)->toDateString())->count() > 0
+            ? ($diasHabiles - $prevDiasLaborados) : 0);
+
+        $pct = fn($cur, $prev) => $prev > 0 ? round((($cur - $prev) / $prev) * 100) : ($cur > 0 ? 100 : 0);
+
+        return response()->json([
+            'year'  => $year,
+            'month' => $month,
+            'dias_laborados'  => $diasLaborados,
+            'horas_trabajadas' => [
+                'horas'   => intdiv($totalMinutos, 60),
+                'minutos' => $totalMinutos % 60,
+            ],
+            'tardanzas' => $tardanzas,
+            'faltas'    => $faltas,
+            'entradas'  => $entradas,
+            'salidas'   => $salidas,
+            'horas_por_dia' => empty($horasPorDia) ? new \stdClass() : $horasPorDia,
+            'comparativa' => [
+                'entradas_pct'   => $pct($entradas, $prevEntradas),
+                'salidas_pct'    => $pct($salidas, $prevSalidas),
+                'tardanzas_pct'  => $pct($tardanzas, $prevTardanzas),
+                'faltas_pct'     => $pct($faltas, $prevFaltas),
+            ],
+        ]);
+    }
+
     public function myHistory(Request $request): JsonResponse
     {
         $user = $request->user();

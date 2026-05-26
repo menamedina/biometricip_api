@@ -76,6 +76,23 @@ class AuthController extends Controller
         return response()->json(['message' => 'Sesión cerrada correctamente.']);
     }
 
+    public function changePassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'new_password' => 'required|string|min:8|confirmed',
+        ], [
+            'new_password.required'  => 'La nueva contraseña es obligatoria.',
+            'new_password.min'       => 'La nueva contraseña debe tener al menos 8 caracteres.',
+            'new_password.confirmed' => 'Las contraseñas no coinciden.',
+        ]);
+
+        $user = $request->user();
+
+        $user->update(['password' => Hash::make($request->new_password)]);
+
+        return response()->json(['message' => 'Contraseña actualizada correctamente.']);
+    }
+
     private function userData(User $user): array
     {
         $departamentoNombre = null;
