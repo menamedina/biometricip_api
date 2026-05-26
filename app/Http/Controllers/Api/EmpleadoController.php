@@ -263,9 +263,14 @@ class EmpleadoController extends Controller
     {
         $this->resolveEmpleado($request, $id);
 
+        // con_imagen=true incluye base64 (usado por el panel admin web)
+        $campos = $request->boolean('con_imagen', false)
+            ? ['id', 'orden', 'imagen_base64', 'created_at']
+            : ['id', 'orden', 'created_at'];
+
         $imagenes = ImagenRostro::where('user_id', $id)
             ->orderBy('orden')
-            ->get(['id', 'orden', 'created_at']);
+            ->get($campos);
 
         return response()->json(['data' => $imagenes]);
     }

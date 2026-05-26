@@ -44,6 +44,7 @@
                                 <th>Cargo</th>
                                 <th>Sede</th>
                                 <th>Estado</th>
+                                <th>Rostros</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -158,6 +159,20 @@
         </div>
     </div>
 </div>
+{{-- Modal Rostros --}}
+<div class="modal fade" id="rostrosModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa-solid fa-face-smile me-2 text-primary"></i>Rostros registrados — <span id="rostrosNombre"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="rostrosContent" class="text-center text-muted py-3">Cargando...</div>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -262,6 +277,12 @@ async function loadEmpleados(page = 1) {
                     <td>${e.cargo_id ? (cargoMap[e.cargo_id] || e.cargo_id) : '—'}</td>
                     <td>${e.sede_id ? (sedeMap[e.sede_id] || e.sede_id) : '—'}</td>
                     <td><span class="badge ${e.is_active ? 'bg-success' : 'bg-danger'}">${e.is_active ? 'Activo' : 'Inactivo'}</span></td>
+                    <td>
+                        <button class="btn btn-sm ${e.face_descriptor ? 'btn-success' : 'btn-outline-secondary'}" onclick="verRostros(${e.id}, '${(e.name||'').replace(/'/g,'')}')">
+                            <i class="fa-solid fa-face-smile"></i>
+                            <span class="ms-1">${e.face_descriptor ? '✓' : '—'}</span>
+                        </button>
+                    </td>
                     <td>
                         <button class="btn btn-sm btn-outline-primary me-1" onclick="editEmpleado(${e.id})"><i class="fa-solid fa-pen"></i></button>
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteEmpleado(${e.id})"><i class="fa-solid fa-trash"></i></button>
@@ -378,6 +399,86 @@ async function deleteEmpleado(id) {
         await fetch(`/api/empleados/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
         loadEmpleados(currentPage);
     } catch(e) { console.error(e); }
+}
+
+// ── Rostros ──────────────────────────────────────────────────────────────────
+let rostrosEmpleadoId = null;
+
+async function verRostros(empleadoId, nombre) {
+    rostrosEmpleadoId = empleadoId;
+    document.getElementById('rostrosNombre').textContent = nombre;
+    document.getElementById('rostrosContent').innerHTML = '<div class="py-3">Cargando...</div>';
+    new bootstrap.Modal(document.getElementById('rostrosModal')).show();
+    await cargarRostros();
+}
+
+async function cargarRostros() {
+    try {
+        const res  = await fetch(`/api/empleados/${rostrosEmpleadoId}/imagenes-rostro?con_imagen=true`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        const imgs = data.data || [];
+        const container = document.getElementById('rostrosContent');
+
+        if (imgs.length === 0) {
+            container.innerHTML = `
+                <div class="py-4 text-muted">
+                    <i class="fa-solid fa-face-meh fa-2x mb-2 d-block"></i>
+                    No hay rostros registrados para este empleado.
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = `
+            <p class="text-muted mb-3">${imgs.length}/5 imágenes registradas</p>
+            <div class="row g-3" id="rostrosGrid"></div>`;
+
+        const grid = document.getElementById('rostrosGrid');
+        imgs.forEach(img => {
+            const src = img.imagen_base64 || '';
+            const col = document.createElement('div');
+            col.className = 'col-6 col-md-4';
+            col.innerHTML = `
+                <div class="card h-100 border">
+                    <div class="position-relative">
+                        ${src
+                            ? `<img src="${src}" class="card-img-top" style="height:180px;object-fit:cover;border-radius:4px 4px 0 0;" alt="Rostro ${img.orden}">`
+                            : `<div class="d-flex align-items-center justify-content-center bg-light" style="height:180px;">
+                                   <i class="fa-solid fa-image fa-3x text-muted"></i>
+                               </div>`
+                        }
+                        <span class="badge bg-primary position-absolute top-0 start-0 m-2">#${img.orden}</span>
+                    </div>
+                    <div class="card-body p-2 text-center">
+                        <button class="btn btn-sm btn-outline-danger w-100" onclick="eliminarRostro(${img.id})">
+                            <i class="fa-solid fa-trash me-1"></i> Eliminar
+                        </button>
+                    </div>
+                </div>`;
+            grid.appendChild(col);
+        });
+    } catch(e) {
+        document.getElementById('rostrosContent').innerHTML =
+            `<div class="text-danger py-3">Error al cargar: ${e.message}</div>`;
+    }
+}
+
+async function eliminarRostro(imageId) {
+    if (!confirm('¿Eliminar esta imagen de rostro?')) return;
+    try {
+        const res = await fetch(`/api/empleados/${rostrosEmpleadoId}/imagenes-rostro/${imageId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            await cargarRostros();
+            loadEmpleados(currentPage); // actualizar badge en tabla
+        } else {
+            const err = await res.json();
+            alert(err.message || 'Error al eliminar');
+        }
+    } catch(e) { alert('Error: ' + e.message); }
 }
 
 document.addEventListener('DOMContentLoaded', () => { loadCatalogos().then(() => loadEmpleados()); });
