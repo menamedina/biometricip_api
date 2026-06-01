@@ -62,8 +62,8 @@
 
     <div class="container py-5">
         <div class="hero-card mb-5">
-            <img src="{{ asset('logos/logo.png') }}" alt="BiometricIP" style="height:90px; object-fit:contain; margin-bottom:1rem; display:block; margin-left:auto; margin-right:auto;">
-            <h1 class="mb-3">BiometricIP</h1>
+            <img src="{{ asset('logos/logo_blanco.png') }}" alt="BiometricIP" style="height:90px; object-fit:contain; margin-bottom:1rem; display:block; margin-left:auto; margin-right:auto;">
+
             <p class="mb-4">Sistema inteligente de registro de asistencia con validación QR, geolocalización y reconocimiento facial.</p>
             <a href="{{ route('admin.login.show') }}" class="btn btn-light btn-lg px-4 fw-semibold">
                 <i class="fa-solid fa-arrow-right me-2"></i>Panel de Administración

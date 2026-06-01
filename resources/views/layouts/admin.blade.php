@@ -30,8 +30,8 @@
         .sidenav-menu > a.logo .logo-light .logo-sm { display: none  !important; }
 
         /* Cuando el sidebar está contraído mostrar logo-sm */
-        .sidenav-menu-condensed .sidenav-menu > a.logo .logo-light .logo-lg { display: none  !important; }
-        .sidenav-menu-condensed .sidenav-menu > a.logo .logo-light .logo-sm { display: block !important; }
+        html[data-sidenav-size=condensed] .sidenav-menu > a.logo .logo-light .logo-lg { display: none  !important; }
+        html[data-sidenav-size=condensed] .sidenav-menu > a.logo .logo-light .logo-sm { display: block !important; }
 
         /* Tamaño del logo — alta especificidad para ganarle al tema */
         html body .wrapper .sidenav-menu a.logo span img,
@@ -68,9 +68,20 @@
                         <i class="ti ti-menu-4"></i>
                     </button>
                 </div>
-                <ul class="list-unstyled topbar-nav float-end mb-0">
+                <ul class="list-unstyled topbar-nav float-end mb-0 d-flex align-items-center">
+
+                    <li class="topbar-item">
+                        <a class="topbar-link" href="javascript:void(0)" data-bs-toggle="offcanvas" data-bs-target="#theme-settings-offcanvas" title="Personalizar">
+                            <i class="ti ti-settings topbar-link-icon"></i>
+                        </a>
+                    </li>
+                    <div class="topbar-item d-none d-sm-flex">
+                        <button class="topbar-link" id="light-dark-mode" type="button">
+                            <i class="ti ti-moon topbar-link-icon"></i>
+                        </button>
+                    </div>
                     <li class="nav-item dropdown pe-3">
-                        <a class="nav-link dropdown-toggle arrow-none nav-user px-2" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="false" aria-expanded="false">
+                        <a class="nav-link dropdown-toggle arrow-none nav-user px-3" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="false" aria-expanded="false">
                             <span class="account-user-avatar">
                                 <span class="avatar-title bg-primary rounded-circle fw-bold">{{ substr(auth()->user()->name ?? 'A', 0, 2) }}</span>
                             </span>
@@ -95,11 +106,11 @@
         <div class="sidenav-menu">
             <a href="{{ url('/') }}" class="logo">
                 <span class="logo logo-light">
-                    <span class="logo-lg"><img src="{{ asset('logos/logo.png') }}" alt="Logo"></span>
+                    <span class="logo-lg"><img src="{{ asset('logos/logo_blanco.png') }}" alt="Logo"></span>
                     <span class="logo-sm"><img src="{{ asset('logos/logo_menu.png') }}" alt="Logo"></span>
                 </span>
                 <span class="logo logo-dark">
-                    <span class="logo-lg"><img src="{{ asset('logos/logo.png') }}" alt="Logo"></span>
+                    <span class="logo-lg"><img src="{{ asset('logos/logo_blanco.png') }}" alt="Logo"></span>
                     <span class="logo-sm"><img src="{{ asset('logos/logo_menu.png') }}" alt="Logo"></span>
                 </span>
             </a>
@@ -200,14 +211,6 @@
             </div>
         </div>
     </div>
-
-    {{-- Botón flotante para abrir el customizer --}}
-    <button data-bs-toggle="offcanvas" data-bs-target="#theme-settings-offcanvas"
-            style="position:fixed;top:50%;right:0;transform:translateY(-50%);z-index:1040;
-                   width:36px;height:36px;border:none;border-radius:4px 0 0 4px;
-                   background:#1abc9c;color:#fff;cursor:pointer;box-shadow:-2px 0 6px rgba(0,0,0,.2)">
-        <i class="ti ti-settings"></i>
-    </button>
 
     {{-- ===== ADMIN CUSTOMIZER ===== --}}
     <div class="offcanvas offcanvas-end" tabindex="-1" id="theme-settings-offcanvas" style="width:300px">
