@@ -128,7 +128,11 @@ class AttendanceController extends Controller
                 return response()->json(['message' => 'Sede no encontrada o inactiva.'], 422);
             }
 
-            $qrValidado = $sede->validateQRValue($request->qr_value);
+            $qrData2 = json_decode($request->qr_value, true);
+            $isStatic = ($qrData2['v'] ?? 1) === 2;
+            $qrValidado = $isStatic
+                ? $sede->validateStaticQRValue($request->qr_value)
+                : $sede->validateQRValue($request->qr_value);
             if (!$qrValidado) {
                 return response()->json(['message' => 'El código QR no es válido o ha expirado.'], 422);
             }
@@ -202,8 +206,11 @@ class AttendanceController extends Controller
     public function offlineSync(Request $request): JsonResponse
     {
         $request->validate([
-            'qr_value' => 'required|string',
-            'tipo'     => 'required|in:entrada,salida',
+            'qr_value'         => 'required|string',
+            'tipo'             => 'required|in:entrada,salida',
+            'client_timestamp' => 'nullable|integer',
+            'client_lat'       => 'nullable|numeric',
+            'client_lng'       => 'nullable|numeric',
         ]);
 
         $user = $request->user();
@@ -212,9 +219,16 @@ class AttendanceController extends Controller
             return response()->json(['message' => 'Usuario inactivo.'], 403);
         }
 
-        // Extraer todo del QR: sede, hora, coordenadas, radio
+        // Extraer datos del QR
         $qrData = json_decode($request->qr_value, true);
-        if (!$qrData || !isset($qrData['s'], $qrData['t'], $qrData['h'], $qrData['lat'], $qrData['lng'])) {
+        if (!$qrData || !isset($qrData['s'])) {
+            return response()->json(['message' => 'QR invalido o incompleto.'], 422);
+        }
+
+        $isStatic = ($qrData['v'] ?? 1) === 2;
+
+        // Para QR dinámico se requieren los campos de tiempo y hash
+        if (!$isStatic && !isset($qrData['t'], $qrData['h'], $qrData['lat'], $qrData['lng'])) {
             return response()->json(['message' => 'QR invalido o incompleto.'], 422);
         }
 
@@ -223,8 +237,16 @@ class AttendanceController extends Controller
             return response()->json(['message' => 'Sede no encontrada o inactiva.'], 422);
         }
 
-        // La hora viene del QR: time slot * 30 = timestamp unix
-        $qrTimestamp = (int) $qrData['t'] * 30;
+        // Determinar timestamp del registro
+        if ($isStatic) {
+            if (!$request->filled('client_timestamp')) {
+                return response()->json(['message' => 'client_timestamp requerido para QR estático.'], 422);
+            }
+            $qrTimestamp = (int) $request->client_timestamp;
+        } else {
+            $qrTimestamp = (int) $qrData['t'] * 30;
+        }
+
         $fechaHoraQr = Carbon::createFromTimestamp($qrTimestamp);
 
         // Rechazar si el QR tiene mas de 24 horas
@@ -243,8 +265,12 @@ class AttendanceController extends Controller
             return response()->json(['message' => 'Registro duplicado.'], 422);
         }
 
-        // Validar hash del QR contra el timestamp que trae el propio QR
-        $qrValidado = $sede->validateQRValueAtTime($request->qr_value, $qrTimestamp);
+        // Validar QR según su tipo
+        if ($isStatic) {
+            $qrValidado = $sede->validateStaticQRValue($request->qr_value);
+        } else {
+            $qrValidado = $sede->validateQRValueAtTime($request->qr_value, $qrTimestamp);
+        }
         if (!$qrValidado) {
             return response()->json(['message' => 'El codigo QR no es valido.'], 422);
         }
@@ -270,14 +296,22 @@ class AttendanceController extends Controller
 
         $horario = $user->horario_id ? Horario::find($user->horario_id) : null;
 
-        // Coordenadas y geocerca vienen del QR (el empleado estuvo en el kiosco)
+        // Para QR estático: usar coordenadas del cliente si vienen, si no las de la sede
+        // Para QR dinámico: las coordenadas vienen en el propio QR (kiosco)
+        $recordLat = $isStatic
+            ? ($request->filled('client_lat') ? (float) $request->client_lat : (float) $qrData['lat'])
+            : (float) $qrData['lat'];
+        $recordLng = $isStatic
+            ? ($request->filled('client_lng') ? (float) $request->client_lng : (float) $qrData['lng'])
+            : (float) $qrData['lng'];
+
         $record = AttendanceRecord::create([
             'user_id'                   => $user->id,
             'sede_id'                   => $sede->id,
             'horario_id'                => $horario?->id,
             'tipo'                      => $request->tipo,
-            'lat'                       => $qrData['lat'],
-            'lng'                       => $qrData['lng'],
+            'lat'                       => $recordLat,
+            'lng'                       => $recordLng,
             'metodo'                    => 'qr',
             'qr_validado'               => true,
             'geocerca_validada'         => true,

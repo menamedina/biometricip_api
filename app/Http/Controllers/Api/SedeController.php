@@ -86,4 +86,45 @@ class SedeController extends Controller
             'expires_in_seconds' => 30 - (time() % 30),
         ]);
     }
+
+    public function qrStatic(int $id): JsonResponse
+    {
+        $sede = Sede::findOrFail($id);
+
+        if (!$sede->qr_static_token) {
+            return response()->json(['message' => 'QR estático no habilitado para esta sede.'], 404);
+        }
+
+        return response()->json([
+            'sede' => [
+                'id'     => $sede->id,
+                'codigo' => $sede->codigo,
+                'nombre' => $sede->nombre,
+            ],
+            'qr_value' => $sede->generateStaticQRValue(),
+            'tipo'     => 'estatico',
+        ]);
+    }
+
+    public function enableStaticQR(int $id): JsonResponse
+    {
+        $sede = Sede::findOrFail($id);
+        $sede->update(['qr_static_token' => bin2hex(random_bytes(16))]);
+
+        return response()->json([
+            'message'  => 'QR estático habilitado.',
+            'qr_value' => $sede->generateStaticQRValue(),
+        ]);
+    }
+
+    public function regenerateStaticQR(int $id): JsonResponse
+    {
+        $sede = Sede::findOrFail($id);
+        $sede->update(['qr_static_token' => bin2hex(random_bytes(16))]);
+
+        return response()->json([
+            'message'  => 'QR estático regenerado. Los QR impresos anteriores ya no son válidos.',
+            'qr_value' => $sede->generateStaticQRValue(),
+        ]);
+    }
 }

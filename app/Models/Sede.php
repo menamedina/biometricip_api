@@ -65,4 +65,37 @@ class Sede extends Model
         $expectedHash = substr(base64_encode($this->codigo . $this->secret_key . $data['t']), 0, 12);
         return hash_equals($expectedHash, $data['h']);
     }
+
+    public function generateStaticQRValue(): string
+    {
+        $tok = substr(hash_hmac('sha256', $this->codigo . $this->secret_key, $this->qr_static_token), 0, 32);
+        return json_encode([
+            'v'   => 2,
+            's'   => $this->codigo,
+            'n'   => $this->nombre,
+            'lat' => $this->lat,
+            'lng' => $this->lng,
+            'r'   => $this->radio_mts,
+            'tok' => $tok,
+        ]);
+    }
+
+    public function validateStaticQRValue(string $qrValue): bool
+    {
+        if (!$this->qr_static_token) {
+            return false;
+        }
+
+        $data = json_decode($qrValue, true);
+        if (!$data || ($data['v'] ?? null) !== 2 || !isset($data['s'], $data['tok'])) {
+            return false;
+        }
+
+        if ($data['s'] !== $this->codigo) {
+            return false;
+        }
+
+        $expected = substr(hash_hmac('sha256', $this->codigo . $this->secret_key, $this->qr_static_token), 0, 32);
+        return hash_equals($expected, $data['tok']);
+    }
 }

@@ -102,6 +102,42 @@
     </div>
 </div>
 
+{{-- Modal QR estático (imprimible) --}}
+<div class="modal fade" id="staticQrModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa-solid fa-print me-2"></i>QR Estático — <span id="staticQrSedeName"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="staticQrNotEnabled" class="text-center py-4 d-none">
+                    <p class="text-muted">Esta sede no tiene QR estático habilitado.</p>
+                    <button class="btn btn-primary" onclick="enableStaticQR()">
+                        <i class="fa-solid fa-toggle-on me-1"></i> Habilitar QR Estático
+                    </button>
+                </div>
+                <div id="staticQrContent" class="d-none">
+                    <div class="alert alert-info py-2 mb-3">
+                        <i class="fa-solid fa-info-circle me-1"></i>
+                        Este QR es <strong>permanente</strong> — imprímelo y pégalo en la pared.
+                        La seguridad depende de la <strong>geocerca</strong>. Si el QR se compromete, usa "Regenerar" para invalidar los impresos anteriores.
+                    </div>
+                    <div class="text-center py-2" id="staticQrCanvas"></div>
+                    <div class="d-flex justify-content-center gap-2 mt-3">
+                        <button class="btn btn-primary" onclick="printStaticQR()">
+                            <i class="fa-solid fa-print me-1"></i> Imprimir
+                        </button>
+                        <button class="btn btn-warning" onclick="regenerateStaticQR()">
+                            <i class="fa-solid fa-rotate me-1"></i> Regenerar (invalida QRs anteriores)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- Modal QR --}}
 <div class="modal fade" id="qrModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
@@ -253,7 +289,8 @@ async function loadSedes() {
                 <td>${s.radio_mts}m</td>
                 <td><span class="badge ${s.is_active ? 'bg-success' : 'bg-danger'}">${s.is_active ? 'Activo' : 'Inactivo'}</span></td>
                 <td>
-                    <button class="btn btn-sm btn-outline-success me-1" onclick="showQR(${s.id}, '${s.nombre}')"><i class="fa-solid fa-qrcode"></i></button>
+                    <button class="btn btn-sm btn-outline-success me-1" onclick="showQR(${s.id}, '${s.nombre}')" title="QR dinámico (kiosco)"><i class="fa-solid fa-qrcode"></i></button>
+                    <button class="btn btn-sm ${s.qr_static_token ? 'btn-outline-primary' : 'btn-outline-secondary'} me-1" onclick="showStaticQR(${s.id}, '${s.nombre}', ${s.qr_static_token ? 'true' : 'false'})" title="${s.qr_static_token ? 'QR estático (imprimible)' : 'Habilitar QR estático'}"><i class="fa-solid fa-print"></i></button>
                     <button class="btn btn-sm btn-outline-primary me-1" onclick='editSede(${JSON.stringify(s).replace(/'/g, "&#39;")})'><i class="fa-solid fa-pen"></i></button>
                     <button class="btn btn-sm btn-outline-danger" onclick="deleteSede(${s.id})"><i class="fa-solid fa-trash"></i></button>
                 </td>
@@ -383,6 +420,90 @@ async function refreshQR() {
         const remaining = data.expires_in_seconds;
         document.getElementById('qrCountdown').textContent = remaining + 's';
     } catch(e) { console.error('Error generando QR', e); }
+}
+
+// ── QR Estático ───────────────────────────────────────────────────────────────
+let staticQrSedeId = null;
+
+async function showStaticQR(sedeId, sedeName, isEnabled) {
+    staticQrSedeId = sedeId;
+    document.getElementById('staticQrSedeName').textContent = sedeName;
+    document.getElementById('staticQrCanvas').innerHTML = '';
+
+    const modal = new bootstrap.Modal(document.getElementById('staticQrModal'));
+    modal.show();
+
+    if (!isEnabled) {
+        document.getElementById('staticQrNotEnabled').classList.remove('d-none');
+        document.getElementById('staticQrContent').classList.add('d-none');
+        return;
+    }
+
+    await loadStaticQR();
+}
+
+async function loadStaticQR() {
+    try {
+        const res  = await fetch(`/api/sedes/${staticQrSedeId}/qr-static`, { headers: { 'Authorization': `Bearer ${token}` } });
+        if (!res.ok) { console.error('Error cargando QR estático'); return; }
+        const data = await res.json();
+
+        document.getElementById('staticQrNotEnabled').classList.add('d-none');
+        document.getElementById('staticQrContent').classList.remove('d-none');
+        document.getElementById('staticQrCanvas').innerHTML = '';
+
+        new QRCode(document.getElementById('staticQrCanvas'), {
+            text:   data.qr_value,
+            width:  280,
+            height: 280,
+        });
+    } catch(e) { console.error(e); }
+}
+
+async function enableStaticQR() {
+    try {
+        await fetch(`/api/sedes/${staticQrSedeId}/qr-static/enable`,
+            { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+        loadSedes();
+        await loadStaticQR();
+    } catch(e) { console.error(e); }
+}
+
+async function regenerateStaticQR() {
+    if (!confirm('¿Regenerar el QR estático? Los QR impresos anteriores quedarán inválidos inmediatamente.')) return;
+    try {
+        await fetch(`/api/sedes/${staticQrSedeId}/qr-static/regenerar`,
+            { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+        loadSedes();
+        await loadStaticQR();
+    } catch(e) { console.error(e); }
+}
+
+function printStaticQR() {
+    const canvas = document.querySelector('#staticQrCanvas canvas');
+    if (!canvas) return;
+    const img  = canvas.toDataURL('image/png');
+    const name = document.getElementById('staticQrSedeName').textContent;
+    const win  = window.open('', '_blank');
+    win.document.write(`
+        <html><head><title>QR Asistencia - ${name}</title>
+        <style>
+            body { margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: sans-serif; }
+            img  { width: 300px; height: 300px; }
+            h2   { margin-bottom: 12px; }
+            p    { font-size: 14px; color: #555; margin: 4px 0; }
+            button { margin-top: 20px; padding: 8px 24px; font-size: 16px; cursor: pointer; }
+            @media print { button { display: none; } }
+        </style></head>
+        <body>
+            <h2>Marcar Asistencia</h2>
+            <img src="${img}"/>
+            <p style="font-size:18px; font-weight:bold; margin-top:12px;">${name}</p>
+            <p>Escanea con la app BiometricIP</p>
+            <button onclick="window.print()">Imprimir</button>
+        </body></html>
+    `);
+    win.document.close();
 }
 </script>
 <script src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_MAPS_API_KEY') }}&loading=async&callback=googleMapsReady"></script>
