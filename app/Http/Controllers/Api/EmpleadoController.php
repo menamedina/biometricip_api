@@ -90,10 +90,6 @@ class EmpleadoController extends Controller
             'name'            => 'required|string|max:255',
             'email'           => 'required|email|unique:users,email',
             'password'        => 'required|string|min:6',
-            'codigo_empleado' => [
-                'required', 'string', 'max:20',
-                Rule::unique('users', 'codigo_empleado')->where('empresa_id', $empresaId),
-            ],
             'role'            => 'nullable|in:admin,empleado',
             'tipo'            => 'nullable|in:usuario,kiosco',
             'admin_tenant'    => 'nullable|boolean',
@@ -113,7 +109,7 @@ class EmpleadoController extends Controller
             'admin_tenant'    => $data['admin_tenant'] ?? false,
             'is_active'       => true,
             'empresa_id'      => $empresaId,
-            'codigo_empleado' => $data['codigo_empleado'],
+            'codigo_empleado' => $this->generarCodigo($empresaId),
             'departamento_id' => $data['departamento_id'] ?? null,
             'cargo_id'        => $data['cargo_id'] ?? null,
             'horario_id'      => $data['horario_id'] ?? null,
@@ -391,6 +387,25 @@ class EmpleadoController extends Controller
         imagedestroy($dst);
 
         return 'data:image/jpeg;base64,' . base64_encode($jpegBytes);
+    }
+
+    private function generarCodigo(int $empresaId): string
+    {
+        $ultimo = User::where('empresa_id', $empresaId)
+            ->where('codigo_empleado', 'regexp', '^EMP-[0-9]+$')
+            ->orderByRaw('CAST(SUBSTRING(codigo_empleado, 5) AS UNSIGNED) DESC')
+            ->value('codigo_empleado');
+
+        $siguiente = $ultimo ? ((int) substr($ultimo, 4)) + 1 : 1;
+
+        // Evitar colisión en caso de que existan códigos manuales con ese número
+        while (User::where('empresa_id', $empresaId)
+            ->where('codigo_empleado', 'EMP-' . str_pad($siguiente, 4, '0', STR_PAD_LEFT))
+            ->exists()) {
+            $siguiente++;
+        }
+
+        return 'EMP-' . str_pad($siguiente, 4, '0', STR_PAD_LEFT);
     }
 
     private function withNames(User $user): array

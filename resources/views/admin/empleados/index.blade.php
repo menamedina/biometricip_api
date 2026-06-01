@@ -98,9 +98,9 @@
                             <label class="form-label">Contraseña <small class="text-muted">(dejar vacío para mantener)</small></label>
                             <input type="password" id="empPassword" class="form-control" minlength="6">
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-3 mb-3" id="empCodigoRow" style="display:none">
                             <label class="form-label">Código Empleado</label>
-                            <input type="text" id="empCodigo" class="form-control" required>
+                            <input type="text" id="empCodigo" class="form-control" readonly style="background-color:#f8f9fa;font-weight:600;">
                         </div>
                         <div class="col-md-5 mb-3">
                             <label class="form-label">Teléfono</label>
@@ -136,12 +136,6 @@
                                 <option value="empleado">Empleado</option>
                                 <option value="admin">Administrador</option>
                             </select>
-                        </div>
-                        <div class="col-md-4 mb-3 d-flex align-items-end">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="empAdminTenant">
-                                <label class="form-check-label">Admin multi-empresa</label>
-                            </div>
                         </div>
                         <div class="col-md-4 mb-3 d-flex align-items-end">
                             <div class="form-check form-switch">
@@ -189,9 +183,10 @@ let sedeMap   = {};
 function resetForm() {
     document.getElementById('empleadoForm').reset();
     document.getElementById('empleadoId').value = '';
-    document.getElementById('empPassword').required = false;
+    document.getElementById('empPassword').required = true;
     document.getElementById('empRole').value = 'empleado';
-    document.getElementById('empAdminTenant').checked = false;
+    document.getElementById('empCodigoRow').style.display = 'none';
+
     document.getElementById('empActivo').checked = true;
     document.getElementById('empleadoModalTitle').textContent = 'Nuevo Usuario';
     if (isAdminTenant) {
@@ -332,14 +327,15 @@ async function editEmpleado(id) {
         document.getElementById('empEmail').value        = e.email || '';
         document.getElementById('empPassword').value     = '';
         document.getElementById('empPassword').required  = false;
-        document.getElementById('empCodigo').value       = e.codigo_empleado;
+        document.getElementById('empCodigo').value        = e.codigo_empleado;
+        document.getElementById('empCodigoRow').style.display = '';
         document.getElementById('empTelefono').value     = e.telefono || '';
         document.getElementById('empDepartamento').value = e.departamento_id || '';
         document.getElementById('empCargo').value        = e.cargo_id || '';
         document.getElementById('empHorario').value      = e.horario_id || '';
         document.getElementById('empSede').value         = e.sede_id || '';
         document.getElementById('empRole').value         = e.role || 'empleado';
-        document.getElementById('empAdminTenant').checked = !!e.admin_tenant;
+
         document.getElementById('empActivo').checked     = !!e.is_active;
         document.getElementById('empleadoModalTitle').textContent = 'Editar Usuario';
         new bootstrap.Modal(document.getElementById('empleadoModal')).show();
@@ -355,14 +351,14 @@ async function saveEmpleado() {
     const payload = {
         name:             document.getElementById('empName').value,
         email:            document.getElementById('empEmail').value,
-        codigo_empleado:  document.getElementById('empCodigo').value,
+
         telefono:         document.getElementById('empTelefono').value,
         departamento_id:  deptoVal   ? parseInt(deptoVal)   : null,
         cargo_id:         cargoVal   ? parseInt(cargoVal)   : null,
         horario_id:       horarioVal ? parseInt(horarioVal) : null,
         sede_id:          sedeVal    ? parseInt(sedeVal)     : null,
         role:             document.getElementById('empRole').value,
-        admin_tenant:     document.getElementById('empAdminTenant').checked,
+
         is_active:        document.getElementById('empActivo').checked,
     };
     if (isAdminTenant) {
