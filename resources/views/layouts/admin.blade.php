@@ -201,6 +201,98 @@
         </div>
     </div>
 
+    {{-- Botón flotante para abrir el customizer --}}
+    <button data-bs-toggle="offcanvas" data-bs-target="#theme-settings-offcanvas"
+            style="position:fixed;top:50%;right:0;transform:translateY(-50%);z-index:1040;
+                   width:36px;height:36px;border:none;border-radius:4px 0 0 4px;
+                   background:#1abc9c;color:#fff;cursor:pointer;box-shadow:-2px 0 6px rgba(0,0,0,.2)">
+        <i class="ti ti-settings"></i>
+    </button>
+
+    {{-- ===== ADMIN CUSTOMIZER ===== --}}
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="theme-settings-offcanvas" style="width:300px">
+        <div class="offcanvas-header" style="background:linear-gradient(135deg,#1abc9c,#16a085);padding:20px 16px;">
+            <div>
+                <h5 class="offcanvas-title text-white fw-bold mb-0" style="letter-spacing:.5px">ADMIN CUSTOMIZER</h5>
+                <small class="text-white opacity-75">Configure el layout y estilo de la interfaz.</small>
+            </div>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+
+        <div class="offcanvas-body p-0" style="overflow-y:auto">
+
+            {{-- Color Scheme --}}
+            <div class="p-3 border-bottom">
+                <p class="fw-semibold mb-3">Color Scheme</p>
+                <div class="d-flex gap-3">
+                    @foreach([['light','Light'],['dark','Dark'],['system','System']] as [$val,$label])
+                    <label class="flex-fill text-center" style="cursor:pointer">
+                        <input type="radio" name="data-bs-theme" value="{{ $val }}" class="d-none">
+                        <div class="theme-thumb border rounded-2 mb-1 position-relative overflow-hidden" style="height:60px;background:{{ $val==='dark'?'#222':'#f0f0f0' }}">
+                            @if($val==='system')
+                                <div style="position:absolute;left:0;top:0;width:50%;height:100%;background:#222"></div>
+                                <div style="position:absolute;right:0;top:0;width:50%;height:100%;background:#f0f0f0"></div>
+                            @endif
+                            <div style="position:absolute;left:8px;top:8px;width:14px;bottom:8px;background:{{ $val==='dark'?'#444':'#ccc' }};border-radius:2px"></div>
+                            <div style="position:absolute;left:26px;top:8px;right:8px;height:8px;background:{{ $val==='dark'?'#555':'#ddd' }};border-radius:2px"></div>
+                            <div style="position:absolute;left:26px;top:20px;right:8px;height:5px;background:{{ $val==='dark'?'#444':'#e5e5e5' }};border-radius:2px"></div>
+                            <div style="position:absolute;left:26px;top:29px;right:8px;height:5px;background:{{ $val==='dark'?'#444':'#e5e5e5' }};border-radius:2px"></div>
+                            <span class="check-icon position-absolute" style="display:none;bottom:4px;right:4px;width:18px;height:18px;background:#1abc9c;border-radius:50%;align-items:center;justify-content:center">
+                                <i class="ti ti-check text-white" style="font-size:11px"></i>
+                            </span>
+                        </div>
+                        <small class="text-muted">{{ $label }}</small>
+                    </label>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- Sidebar Size --}}
+            <div class="p-3 border-bottom">
+                <p class="fw-semibold mb-3">Sidebar Size</p>
+                <div class="d-flex gap-3">
+                    @foreach([['default','Default'],['compact','Compact'],['condensed','Condensed']] as [$val,$label])
+                    <label class="flex-fill text-center" style="cursor:pointer">
+                        <input type="radio" name="data-sidenav-size" value="{{ $val }}" class="d-none">
+                        <div class="theme-thumb border rounded-2 mb-1 position-relative overflow-hidden" style="height:60px;background:#f0f0f0">
+                            <div style="position:absolute;left:8px;top:8px;width:{{ $val==='condensed'?'8px':($val==='compact'?'10px':'14px') }};bottom:8px;background:#ccc;border-radius:2px"></div>
+                            <div style="position:absolute;left:{{ $val==='condensed'?'20px':($val==='compact'?'22px':'26px') }};top:8px;right:8px;height:8px;background:#ddd;border-radius:2px"></div>
+                            <div style="position:absolute;left:{{ $val==='condensed'?'20px':($val==='compact'?'22px':'26px') }};top:20px;right:8px;height:5px;background:#e5e5e5;border-radius:2px"></div>
+                            <div style="position:absolute;left:{{ $val==='condensed'?'20px':($val==='compact'?'22px':'26px') }};top:29px;right:8px;height:5px;background:#e5e5e5;border-radius:2px"></div>
+                            <span class="check-icon position-absolute" style="display:none;bottom:4px;right:4px;width:18px;height:18px;background:#1abc9c;border-radius:50%;align-items:center;justify-content:center">
+                                <i class="ti ti-check text-white" style="font-size:11px"></i>
+                            </span>
+                        </div>
+                        <small class="text-muted">{{ $label }}</small>
+                    </label>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- Layout Position --}}
+            <div class="p-3 border-bottom">
+                <div class="d-flex align-items-center justify-content-between">
+                    <p class="fw-semibold mb-0">Layout Position</p>
+                    <div class="btn-group btn-group-sm">
+                        <label class="btn btn-outline-secondary mb-0">
+                            <input type="radio" name="data-layout-position" value="fixed" class="d-none"> Fixed
+                        </label>
+                        <label class="btn btn-outline-secondary mb-0">
+                            <input type="radio" name="data-layout-position" value="scrollable" class="d-none"> Scrollable
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="p-3 border-top">
+            <button id="reset-layout" class="btn btn-danger w-100">
+                <i class="ti ti-refresh me-1"></i> Reset
+            </button>
+        </div>
+    </div>
+
     <script>
         // Interceptar fetch de traducciones para evitar 404
         const _fetch = window.fetch;
@@ -216,6 +308,30 @@
     </script>
     <script src="{{ asset('assets/js/vendors.min.js') }}"></script>
     <script src="{{ asset('assets/js/app.js') }}"></script>
+    <script>
+        // Sincronizar checkmarks y botones activos del customizer
+        function syncCustomizer() {
+            document.querySelectorAll('#theme-settings-offcanvas input[type=radio]').forEach(function(input) {
+                var checkIcon = input.closest('label') && input.closest('label').querySelector('.check-icon');
+                var btnLabel = input.matches('label.btn input') ? input.closest('label') : null;
+                if (checkIcon) checkIcon.style.display = input.checked ? 'flex' : 'none';
+                if (btnLabel) {
+                    btnLabel.classList.toggle('btn-primary', input.checked);
+                    btnLabel.classList.toggle('btn-outline-secondary', !input.checked);
+                }
+            });
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            // Marcar inicial según config
+            setTimeout(syncCustomizer, 300);
+            // Actualizar al cambiar
+            document.querySelectorAll('#theme-settings-offcanvas input[type=radio]').forEach(function(input) {
+                input.addEventListener('change', function() { setTimeout(syncCustomizer, 50); });
+            });
+            // Observar cambios de tema desde fuera
+            new MutationObserver(syncCustomizer).observe(document.documentElement, {attributes: true, attributeFilter: ['data-bs-theme','data-sidenav-size','data-layout-position']});
+        });
+    </script>
     <script>
         @if(session('api_token'))
         localStorage.setItem('token', '{{ session('api_token') }}');
