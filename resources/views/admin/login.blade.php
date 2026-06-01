@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <title>Login | BiometricIP</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="shortcut icon" href="{{ asset('assets/images/favicon.ico') }}" />
+    <link rel="shortcut icon" href="{{ asset('favicon.ico') }}" />
     <link href="{{ asset('assets/css/vendors.min.css') }}" rel="stylesheet" />
     <link id="app-style" href="{{ asset('assets/css/app.min.css') }}" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
@@ -39,6 +39,11 @@
                         <i class="fa-solid fa-right-to-bracket me-1"></i> Iniciar Sesión
                     </button>
                 </form>
+                <div class="text-center mt-3">
+                    <a href="{{ url('/') }}" class="text-muted small">
+                        <i class="fa-solid fa-arrow-left me-1"></i> Volver al inicio
+                    </a>
+                </div>
             </div>
         </div>
     </div>

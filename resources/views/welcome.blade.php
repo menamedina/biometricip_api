@@ -53,9 +53,15 @@
                 <img src="{{ asset('logos/logo.png') }}" alt="BiometricIP" style="height:40px; object-fit:contain;">
             </a>
             <div class="ms-auto">
+                @auth
+                <a href="{{ route('admin.dashboard') }}" class="btn btn-primary">
+                    <i class="fa-solid fa-gauge me-1"></i> Panel Admin
+                </a>
+                @else
                 <a href="{{ route('admin.login.show') }}" class="btn btn-primary">
                     <i class="fa-solid fa-right-to-bracket me-1"></i> Acceder
                 </a>
+                @endauth
             </div>
         </div>
     </nav>
@@ -65,9 +71,15 @@
             <img src="{{ asset('logos/logo_blanco.png') }}" alt="BiometricIP" style="height:90px; object-fit:contain; margin-bottom:1rem; display:block; margin-left:auto; margin-right:auto;">
 
             <p class="mb-4">Sistema inteligente de registro de asistencia con validación QR, geolocalización y reconocimiento facial.</p>
+            @auth
+            <a href="{{ route('admin.dashboard') }}" class="btn btn-light btn-lg px-4 fw-semibold">
+                <i class="fa-solid fa-arrow-right me-2"></i>Panel de Administración
+            </a>
+            @else
             <a href="{{ route('admin.login.show') }}" class="btn btn-light btn-lg px-4 fw-semibold">
                 <i class="fa-solid fa-arrow-right me-2"></i>Panel de Administración
             </a>
+            @endauth
         </div>
 
         <div class="row g-4">

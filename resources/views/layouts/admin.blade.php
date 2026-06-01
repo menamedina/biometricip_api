@@ -91,6 +91,10 @@
                             </span>
                         </a>
                         <div class="dropdown-menu dropdown-menu-end">
+                            <a href="{{ url('/') }}" class="dropdown-item fw-semibold">
+                                <i class="ti ti-home me-1 fs-lg align-middle"></i> Ir al Inicio
+                            </a>
+                            <div class="dropdown-divider"></div>
                             <a href="#" class="dropdown-item text-danger fw-semibold" onclick="document.getElementById('frm-logout').submit()">
                                 <i class="ti ti-logout me-1 fs-lg align-middle"></i> Cerrar Sesión
                             </a>
@@ -104,7 +108,7 @@
         </header>
 
         <div class="sidenav-menu">
-            <a href="{{ url('/') }}" class="logo">
+            <a href="{{ route('admin.dashboard') }}" class="logo">
                 <span class="logo logo-light">
                     <span class="logo-lg"><img src="{{ asset('logos/logo_blanco.png') }}" alt="Logo"></span>
                     <span class="logo-sm"><img src="{{ asset('logos/logo_menu.png') }}" alt="Logo"></span>
