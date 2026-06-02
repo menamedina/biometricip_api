@@ -10,6 +10,7 @@ use App\Models\Empresa;
 use App\Models\Horario;
 use App\Models\Sede;
 use App\Models\User;
+use App\Models\UserSede;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -126,18 +127,29 @@ class AuthController extends Controller
             }
         }
 
-        $sedeData = null;
-        if ($user->sede_id) {
-            $sede = Sede::find($user->sede_id);
+        // Sedes múltiples desde tbl_user_sedes
+        // Hacemos switchTenant por cada registro para garantizar el tenant correcto
+        $sedesData   = [];
+        $userSedes   = UserSede::where('user_id', $user->id)->get();
+        $userSedeIds = $userSedes->pluck('sede_id')->all();
+
+        foreach ($userSedes as $us) {
+            TenantHelper::switchTenant($us->empresa_id);
+            $sede = Sede::find($us->sede_id);
             if ($sede) {
-                $sedeData = [
+                $sedesData[] = [
                     'id'        => $sede->id,
                     'nombre'    => $sede->nombre,
-                    'lat'       => $sede->lat,
-                    'lng'       => $sede->lng,
-                    'radio_mts' => $sede->radio_mts,
+                    'lat'       => (float) $sede->lat,
+                    'lng'       => (float) $sede->lng,
+                    'radio_mts' => (float) $sede->radio_mts,
                 ];
             }
+        }
+
+        // Restaurar tenant del usuario
+        if ($user->empresa_id !== null) {
+            TenantHelper::switchTenant($user->empresa_id);
         }
 
         return [
@@ -152,11 +164,11 @@ class AuthController extends Controller
             'departamento_id' => $user->departamento_id,
             'cargo_id'        => $user->cargo_id,
             'horario_id'      => $user->horario_id,
-            'sede_id'         => $user->sede_id,
+            'sede_ids'        => $userSedeIds,
+            'sedes'           => $sedesData,
             'departamento'    => $departamentoNombre,
             'cargo'           => $cargoNombre,
             'horario'         => $horarioData,
-            'sede'            => $sedeData,
             'telefono'        => $user->telefono,
             'foto_url'        => $user->foto_url,
             'is_active'       => $user->is_active,
