@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable
 {
@@ -28,7 +29,6 @@ class User extends Authenticatable
         'departamento_id',
         'cargo_id',
         'horario_id',
-        'sede_id',
         'telefono',
         'foto_url',
         'face_descriptor',
@@ -54,6 +54,11 @@ class User extends Authenticatable
     public function empresa(): BelongsTo
     {
         return $this->belongsTo(Empresa::class, 'empresa_id');
+    }
+
+    public function userSedes(): HasMany
+    {
+        return $this->hasMany(UserSede::class, 'user_id');
     }
 
 

@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Helpers\TenantHelper;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class InitializeTenancyByToken
@@ -14,11 +15,35 @@ class InitializeTenancyByToken
         $user = $request->user();
 
         if (!$user) {
+            Log::warning('Tenancy: request sin usuario autenticado', ['url' => $request->fullUrl()]);
             return response()->json(['message' => 'No autenticado.'], 401);
         }
 
-        if ($user->empresa_id !== null) {
+        Log::info('Tenancy: usuario autenticado', [
+            'user_id'    => $user->id,
+            'email'      => $user->email,
+            'empresa_id' => $user->empresa_id,
+            'role'       => $user->role,
+            'url'        => $request->fullUrl(),
+            'method'     => $request->method(),
+        ]);
+
+        if ($user->empresa_id === null) {
+            Log::error('Tenancy: empresa_id es null', ['user_id' => $user->id, 'email' => $user->email]);
+            return response()->json(['message' => 'El usuario no tiene empresa asignada.'], 422);
+        }
+
+        try {
             TenantHelper::switchTenant($user->empresa_id);
+            Log::info('Tenancy: tenant activado', ['empresa_id' => $user->empresa_id]);
+        } catch (\Throwable $e) {
+            Log::error('Tenancy: fallo al activar tenant', [
+                'empresa_id' => $user->empresa_id,
+                'error'      => $e->getMessage(),
+            ]);
+            return response()->json([
+                'message' => 'Tenant no configurado para empresa_id=' . $user->empresa_id . ': ' . $e->getMessage(),
+            ], 503);
         }
 
         return $next($request);

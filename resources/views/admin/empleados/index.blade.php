@@ -30,6 +30,11 @@
                                 <option value="">Todos los deptos.</option>
                             </select>
                         </div>
+                        <div class="col-md-2">
+                            <select class="form-select form-select-sm" id="filterSede" onchange="loadEmpleados()">
+                                <option value="">Todas las sedes</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div class="table-responsive">
@@ -124,11 +129,11 @@
                                 <option value="">— Sin horario —</option>
                             </select>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Sede</label>
-                            <select id="empSede" class="form-select">
-                                <option value="">— Sin sede —</option>
-                            </select>
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Sedes asignadas</label>
+                            <div id="empSedesContainer" class="border rounded p-2" style="min-height:42px; max-height:160px; overflow-y:auto; background:#fff;">
+                                <span class="text-muted small" id="empSedesVacio">Sin sedes disponibles</span>
+                            </div>
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Rol</label>
@@ -186,11 +191,13 @@ function resetForm() {
     document.getElementById('empPassword').required = true;
     document.getElementById('empRole').value = 'empleado';
     document.getElementById('empCodigoRow').style.display = 'none';
-
     document.getElementById('empActivo').checked = true;
     document.getElementById('empleadoModalTitle').textContent = 'Nuevo Usuario';
+    // Desmarcar todos los checkboxes de sede
+    document.querySelectorAll('.emp-sede-check').forEach(cb => cb.checked = false);
     if (isAdminTenant) {
         document.getElementById('empEmpresaId').value = '';
+        renderSedeOptions([], []);
     }
 }
 
@@ -203,6 +210,8 @@ async function loadCatalogos() {
         (dataEmp.data || []).forEach(e => {
             selEmp.innerHTML += `<option value="${e.id}">${e.nombre}</option>`;
         });
+        // admin_tenant: recargar sedes al cambiar empresa
+        selEmp.addEventListener('change', () => loadSedesParaEmpresa(selEmp.value));
     }
 
     const res  = await fetch('/api/catalogos', { headers: { 'Authorization': `Bearer ${token}` } });
@@ -222,7 +231,6 @@ async function loadCatalogos() {
     const selDepto   = document.getElementById('empDepartamento');
     const selCargo   = document.getElementById('empCargo');
     const selHorario = document.getElementById('empHorario');
-    const selSede    = document.getElementById('empSede');
     deptos.filter(d => d.is_active).forEach(d => {
         selDepto.innerHTML += `<option value="${d.id}">${d.nombre}</option>`;
     });
@@ -232,24 +240,80 @@ async function loadCatalogos() {
     horarios.filter(h => h.is_active).forEach(h => {
         selHorario.innerHTML += `<option value="${h.id}">${h.nombre} (${h.hora_entrada?.slice(0,5)} - ${h.hora_salida?.slice(0,5)})</option>`;
     });
-    sedes.forEach(s => {
-        selSede.innerHTML += `<option value="${s.id}">${s.nombre}</option>`;
-    });
 
-    // Select del filtro
-    const filterSel = document.getElementById('filterDepto');
+    // Sedes (modal + filtro de tabla)
+    renderSedeOptions(sedes, []);
+
+    // Select del filtro de departamento
+    const filterDepto = document.getElementById('filterDepto');
     deptos.forEach(d => {
-        filterSel.innerHTML += `<option value="${d.id}">${d.nombre}</option>`;
+        filterDepto.innerHTML += `<option value="${d.id}">${d.nombre}</option>`;
     });
+}
+
+function renderSedeOptions(sedes, selectedIds = []) {
+    const container  = document.getElementById('empSedesContainer');
+    const vacio      = document.getElementById('empSedesVacio');
+    const filterSede = document.getElementById('filterSede');
+
+    filterSede.innerHTML = '<option value="">Todas las sedes</option>';
+
+    if (!sedes.length) {
+        container.innerHTML = '<span class="text-muted small" id="empSedesVacio">Sin sedes disponibles</span>';
+        return;
+    }
+
+    container.innerHTML = sedes.map(s => `
+        <div class="form-check">
+            <input class="form-check-input emp-sede-check" type="checkbox"
+                   value="${s.id}" id="sedeCheck${s.id}"
+                   ${selectedIds.includes(s.id) ? 'checked' : ''}>
+            <label class="form-check-label" for="sedeCheck${s.id}">${s.nombre}</label>
+        </div>
+    `).join('');
+
+    sedes.forEach(s => {
+        filterSede.innerHTML += `<option value="${s.id}">${s.nombre}</option>`;
+    });
+}
+
+function getSelectedSedeIds() {
+    return [...document.querySelectorAll('.emp-sede-check:checked')]
+        .map(cb => parseInt(cb.value));
+}
+
+async function loadSedesParaEmpresa(empresaId, selectedIds = []) {
+    const container = document.getElementById('empSedesContainer');
+    container.innerHTML = '<span class="text-muted small">Cargando sedes...</span>';
+
+    if (!empresaId) {
+        renderSedeOptions([], []);
+        return;
+    }
+
+    try {
+        const headers = { 'Authorization': `Bearer ${token}` };
+        if (isAdminTenant) headers['X-Empresa-Id'] = empresaId;
+
+        const res   = await fetch(`/api/sedes`, { headers });
+        const data  = await res.json();
+        const sedes = data.data || [];
+        sedeMap = { ...sedeMap, ...Object.fromEntries(sedes.map(s => [s.id, s.nombre])) };
+        renderSedeOptions(sedes, selectedIds);
+    } catch (e) {
+        container.innerHTML = '<span class="text-danger small">Error al cargar sedes</span>';
+    }
 }
 
 async function loadEmpleados(page = 1) {
     currentPage = page;
-    const search = document.getElementById('filterSearch').value;
+    const search  = document.getElementById('filterSearch').value;
     const deptoId = document.getElementById('filterDepto').value;
+    const sedeId  = document.getElementById('filterSede').value;
     let url = `/api/empleados?page=${page}&per_page=15`;
     if (search)  url += `&search=${encodeURIComponent(search)}`;
     if (deptoId) url += `&departamento_id=${deptoId}`;
+    if (sedeId)  url += `&sede_id=${sedeId}`;
 
     try {
         const res  = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
@@ -270,7 +334,7 @@ async function loadEmpleados(page = 1) {
                     <td>${rolBadge}</td>
                     <td>${e.departamento_id ? (deptoMap[e.departamento_id] || e.departamento_id) : '—'}</td>
                     <td>${e.cargo_id ? (cargoMap[e.cargo_id] || e.cargo_id) : '—'}</td>
-                    <td>${e.sede_id ? (sedeMap[e.sede_id] || e.sede_id) : '—'}</td>
+                    <td>${(e.sede_ids && e.sede_ids.length) ? e.sede_ids.map(id => `<span class="badge bg-info text-dark me-1">${sedeMap[id] || id}</span>`).join('') : '—'}</td>
                     <td><span class="badge ${e.is_active ? 'bg-success' : 'bg-danger'}">${e.is_active ? 'Activo' : 'Inactivo'}</span></td>
                     <td>
                         <button class="btn btn-sm ${e.face_descriptor ? 'btn-success' : 'btn-outline-secondary'}" onclick="verRostros(${e.id}, '${(e.name||'').replace(/'/g,'')}')">
@@ -307,6 +371,7 @@ async function editEmpleado(id) {
         const data = await res.json();
         const e = data.data;
         document.getElementById('empleadoId').value      = e.id;
+
         if (isAdminTenant) {
             const selEmp = document.getElementById('empEmpresaId');
             selEmp.value = e.empresa_id || '';
@@ -317,12 +382,15 @@ async function editEmpleado(id) {
                 selEmp.disabled = false;
                 selEmp.title = '';
             }
+            // Cargar sedes de la empresa del empleado con las ya asignadas marcadas
+            await loadSedesParaEmpresa(e.empresa_id, e.sede_ids || []);
         } else if (e.empresa) {
             document.getElementById('empEmpresa').value = e.empresa;
             document.getElementById('empEmpresaRow').style.display = '';
         } else {
             document.getElementById('empEmpresaRow').style.display = 'none';
         }
+
         document.getElementById('empName').value         = e.name || '';
         document.getElementById('empEmail').value        = e.email || '';
         document.getElementById('empPassword').value     = '';
@@ -333,9 +401,13 @@ async function editEmpleado(id) {
         document.getElementById('empDepartamento').value = e.departamento_id || '';
         document.getElementById('empCargo').value        = e.cargo_id || '';
         document.getElementById('empHorario').value      = e.horario_id || '';
-        document.getElementById('empSede').value         = e.sede_id || '';
+        // Para admin no-tenant, marcar las sedes ya asignadas
+        if (!isAdminTenant) {
+            document.querySelectorAll('.emp-sede-check').forEach(cb => {
+                cb.checked = (e.sede_ids || []).includes(parseInt(cb.value));
+            });
+        }
         document.getElementById('empRole').value         = e.role || 'empleado';
-
         document.getElementById('empActivo').checked     = !!e.is_active;
         document.getElementById('empleadoModalTitle').textContent = 'Editar Usuario';
         new bootstrap.Modal(document.getElementById('empleadoModal')).show();
@@ -347,18 +419,15 @@ async function saveEmpleado() {
     const deptoVal   = document.getElementById('empDepartamento').value;
     const cargoVal   = document.getElementById('empCargo').value;
     const horarioVal = document.getElementById('empHorario').value;
-    const sedeVal    = document.getElementById('empSede').value;
     const payload = {
         name:             document.getElementById('empName').value,
         email:            document.getElementById('empEmail').value,
-
         telefono:         document.getElementById('empTelefono').value,
         departamento_id:  deptoVal   ? parseInt(deptoVal)   : null,
         cargo_id:         cargoVal   ? parseInt(cargoVal)   : null,
         horario_id:       horarioVal ? parseInt(horarioVal) : null,
-        sede_id:          sedeVal    ? parseInt(sedeVal)     : null,
+        sede_ids:         getSelectedSedeIds(),
         role:             document.getElementById('empRole').value,
-
         is_active:        document.getElementById('empActivo').checked,
     };
     if (isAdminTenant) {

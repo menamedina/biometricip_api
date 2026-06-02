@@ -2,36 +2,58 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Helpers\TenantHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Sede;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class SedeController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
+        // admin_tenant puede pasar X-Empresa-Id para ver sedes de otra empresa
+        if ($request->user()?->admin_tenant && $request->hasHeader('X-Empresa-Id')) {
+            TenantHelper::switchTenant((int) $request->header('X-Empresa-Id'));
+        }
+
         $sedes = Sede::orderBy('nombre')->get();
         return response()->json(['data' => $sedes]);
     }
 
     public function store(Request $request): JsonResponse
     {
-        $data = $request->validate([
-            'codigo'    => 'required|string|unique:tenant.tbl_sedes,codigo|max:20',
-            'nombre'    => 'required|string|max:255',
-            'direccion' => 'nullable|string|max:500',
-            'lat'       => 'required|numeric|between:-90,90',
-            'lng'       => 'required|numeric|between:-180,180',
-            'radio_mts' => 'nullable|integer|min:10|max:5000',
-            'is_active' => 'nullable|boolean',
-        ]);
+        Log::info('SedeController::store iniciado', ['payload' => $request->all(), 'user_id' => $request->user()?->id]);
 
-        $data['secret_key'] = bin2hex(random_bytes(16));
-        $data['radio_mts'] ??= 150;
-        $data['is_active'] ??= true;
+        try {
+            $data = $request->validate([
+                'codigo'    => 'required|string|unique:tenant.tbl_sedes,codigo|max:20',
+                'nombre'    => 'required|string|max:255',
+                'direccion' => 'nullable|string|max:500',
+                'lat'       => 'required|numeric|between:-90,90',
+                'lng'       => 'required|numeric|between:-180,180',
+                'radio_mts' => 'nullable|integer|min:10|max:5000',
+                'is_active' => 'nullable|boolean',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('SedeController::store validación falló', ['error' => $e->getMessage()]);
+            throw $e;
+        }
 
-        $sede = Sede::create($data);
+        Log::info('SedeController::store validación OK', ['data' => $data]);
+
+        try {
+            $data['secret_key'] = bin2hex(random_bytes(16));
+            $data['radio_mts'] ??= 150;
+            $data['is_active'] ??= true;
+
+            $sede = Sede::create($data);
+            Log::info('SedeController::store sede creada', ['sede_id' => $sede->id]);
+        } catch (\Throwable $e) {
+            Log::error('SedeController::store fallo al crear', ['error' => $e->getMessage()]);
+            throw $e;
+        }
 
         return response()->json(['data' => $sede], 201);
     }

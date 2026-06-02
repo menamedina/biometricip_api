@@ -10,6 +10,7 @@ use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\ImagenRostro;
 use App\Models\User;
+use App\Models\UserSede;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -45,7 +46,17 @@ class EmpleadoController extends Controller
             $query->where('is_active', $request->boolean('is_active'));
         }
 
-        $empleados = $query->orderBy('created_at', 'desc')->paginate($request->per_page ?? 20);
+        if ($request->filled('sede_id')) {
+            $query->whereHas('userSedes', fn($q) => $q->where('sede_id', $request->sede_id));
+        }
+
+        $empleados = $query->with('userSedes')->orderBy('created_at', 'desc')->paginate($request->per_page ?? 20);
+
+        $empleados->getCollection()->transform(function ($user) {
+            $data            = $user->toArray();
+            $data['sede_ids'] = $user->userSedes->pluck('sede_id')->values()->all();
+            return $data;
+        });
 
         return response()->json($empleados);
     }
@@ -96,7 +107,8 @@ class EmpleadoController extends Controller
             'departamento_id' => 'nullable|integer',
             'cargo_id'        => 'nullable|integer',
             'horario_id'      => 'nullable|integer',
-            'sede_id'         => 'nullable|integer',
+            'sede_ids'        => 'nullable|array',
+            'sede_ids.*'      => 'integer',
             'telefono'        => 'nullable|string|max:20',
         ]);
 
@@ -113,9 +125,10 @@ class EmpleadoController extends Controller
             'departamento_id' => $data['departamento_id'] ?? null,
             'cargo_id'        => $data['cargo_id'] ?? null,
             'horario_id'      => $data['horario_id'] ?? null,
-            'sede_id'         => $data['sede_id'] ?? null,
             'telefono'        => $data['telefono'] ?? null,
         ]);
+
+        $this->syncSedes($user->id, $empresaId, $data['sede_ids'] ?? []);
 
         return response()->json(['data' => $this->withNames($user)], 201);
     }
@@ -193,7 +206,8 @@ class EmpleadoController extends Controller
             'departamento_id' => 'nullable|integer',
             'cargo_id'        => 'nullable|integer',
             'horario_id'      => 'nullable|integer',
-            'sede_id'         => 'nullable|integer',
+            'sede_ids'        => 'nullable|array',
+            'sede_ids.*'      => 'integer',
             'telefono'        => 'nullable|string|max:20',
             'is_active'       => 'nullable|boolean',
         ]);
@@ -213,6 +227,13 @@ class EmpleadoController extends Controller
         if (!$authUser->admin_tenant || !$cambiaEmpresa) {
             unset($data['empresa_id']);
         }
+
+        // Sincronizar sedes en tbl_user_sedes
+        if ($request->has('sede_ids')) {
+            $efectivoEmpresaId = $empresaId ?? $empleado->empresa_id;
+            $this->syncSedes($empleado->id, $efectivoEmpresaId, $data['sede_ids'] ?? []);
+        }
+        unset($data['sede_ids']);
 
         $empleado->update($data);
 
@@ -420,6 +441,28 @@ class EmpleadoController extends Controller
         $data['empresa'] = $user->empresa_id
             ? Empresa::find($user->empresa_id)?->nombre
             : null;
+
+        $data['sede_ids'] = UserSede::where('user_id', $user->id)
+            ->pluck('sede_id')
+            ->values()
+            ->all();
+
         return $data;
+    }
+
+    private function syncSedes(int $userId, int $empresaId, array $sedeIds): void
+    {
+        // Eliminar sedes que ya no están en la lista
+        UserSede::where('user_id', $userId)
+            ->whereNotIn('sede_id', $sedeIds)
+            ->delete();
+
+        // Insertar las nuevas sedes que no existen aún
+        foreach ($sedeIds as $sedeId) {
+            UserSede::firstOrCreate(
+                ['user_id' => $userId, 'sede_id' => $sedeId],
+                ['empresa_id' => $empresaId]
+            );
+        }
     }
 }

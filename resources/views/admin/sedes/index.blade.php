@@ -316,17 +316,23 @@ async function saveSede() {
     const id     = document.getElementById('sedeId').value;
     const codigo = document.getElementById('sedeCodigo').value.trim();
 
-    if (!codigo) {
-        showSedeError('El código de la sede es obligatorio.');
+    const nombre = document.getElementById('sedeNombre').value.trim();
+    const lat    = parseFloat(document.getElementById('sedeLat').value);
+    const lng    = parseFloat(document.getElementById('sedeLng').value);
+
+    if (!codigo) { showSedeError('El código de la sede es obligatorio.'); return; }
+    if (!nombre)  { showSedeError('El nombre de la sede es obligatorio.'); return; }
+    if (isNaN(lat) || isNaN(lng)) {
+        showSedeError('Debes hacer clic en el mapa o ingresar latitud y longitud manualmente.');
         return;
     }
 
     const payload = {
         codigo,
-        nombre:    document.getElementById('sedeNombre').value,
+        nombre,
         direccion: document.getElementById('sedeDireccion').value,
-        lat:       parseFloat(document.getElementById('sedeLat').value),
-        lng:       parseFloat(document.getElementById('sedeLng').value),
+        lat,
+        lng,
         radio_mts: parseInt(document.getElementById('sedeRadio').value) || 150,
         is_active: document.getElementById('sedeActivo').checked,
     };
@@ -344,13 +350,16 @@ async function saveSede() {
             bootstrap.Modal.getInstance(document.getElementById('sedeModal')).hide();
             loadSedes();
         } else {
-            const err = await res.json();
-            const msg = err.errors
-                ? Object.values(err.errors).flat().join('\n')
-                : (err.message || 'Error al guardar');
+            const text = await res.text();
+            console.error('saveSede error HTTP ' + res.status, text);
+            let msg = 'Error ' + res.status;
+            try {
+                const err = JSON.parse(text);
+                msg = err.errors ? Object.values(err.errors).flat().join('\n') : (err.message || msg);
+            } catch (_) { msg += ': ' + text.substring(0, 200); }
             showSedeError(msg);
         }
-    } catch(e) { console.error(e); showSedeError('Error de conexión.'); }
+    } catch(e) { console.error('saveSede excepción:', e); showSedeError('Error de conexión: ' + e.message); }
 }
 
 function showSedeError(msg) {
