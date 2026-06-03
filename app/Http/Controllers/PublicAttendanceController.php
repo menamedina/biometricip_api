@@ -53,20 +53,27 @@ class PublicAttendanceController extends Controller
             'cedula'         => 'required|string|max:20',
             'tipo'           => 'required|in:entrada,salida',
             'foto_evidencia' => $fotoRequerida ? 'required|string' : 'nullable|string',
-            // Campos adicionales para visitante en entrada
-            'nombre'         => 'required_if:tipo_usuario,visitante,tipo,entrada|nullable|string|max:255',
+            'nombre'         => 'nullable|string|max:255',
             'telefono'       => 'nullable|string|max:20',
             'eps'            => 'nullable|string|max:100',
             'arl'            => 'nullable|string|max:100',
-            'persona_visita' => 'required_if:tipo_usuario,visitante,tipo,entrada|nullable|string|max:255',
+            'persona_visita' => 'nullable|string|max:255',
         ], [
-            'tipo_usuario.required'      => 'Indica si eres empleado o visitante.',
-            'cedula.required'            => 'La cédula es obligatoria.',
-            'tipo.required'              => 'Selecciona Entrada o Salida.',
-            'foto_evidencia.required'    => 'La foto es obligatoria.',
-            'nombre.required_if'         => 'El nombre es obligatorio.',
-            'persona_visita.required_if' => '¿A quién visitas? Este campo es obligatorio.',
+            'tipo_usuario.required'   => 'Indica si eres empleado o visitante.',
+            'cedula.required'         => 'La cédula es obligatoria.',
+            'tipo.required'           => 'Selecciona Entrada o Salida.',
+            'foto_evidencia.required' => 'La foto es obligatoria.',
         ]);
+
+        // Validación manual para visitante entrada
+        if ($request->tipo_usuario === 'visitante' && $request->tipo === 'entrada') {
+            if (empty($request->nombre)) {
+                return response()->json(['message' => 'El nombre es obligatorio.'], 422);
+            }
+            if (empty($request->persona_visita)) {
+                return response()->json(['message' => '¿A quién visitas? Este campo es obligatorio.'], 422);
+            }
+        }
 
         [$fotoFull, $fotoThumb] = $request->foto_evidencia
             ? $this->procesarFoto($request->foto_evidencia)

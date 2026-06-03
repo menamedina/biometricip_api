@@ -88,8 +88,11 @@
                 <h6 class="modal-title">Foto del visitante</h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body text-center p-2">
-                <img id="fotoModalImg" src="" alt="Foto" class="rounded" style="width:400px;height:400px;object-fit:cover;">
+            <div class="modal-body text-center p-3">
+                <div id="fotoSpinner" class="py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                </div>
+                <img id="fotoModalImg" src="" alt="Foto" class="rounded d-none" style="width:400px;height:400px;object-fit:cover;">
             </div>
         </div>
     </div>
@@ -154,12 +157,17 @@ function formatDT(dt) {
 }
 
 async function verFoto(visitanteId) {
-    const img = document.getElementById('fotoModalImg');
+    const img     = document.getElementById('fotoModalImg');
+    const spinner = document.getElementById('fotoSpinner');
+    img.classList.add('d-none');
     img.src = '';
+    spinner.classList.remove('d-none');
     new bootstrap.Modal(document.getElementById('fotoModal')).show();
     const res  = await fetch(`/api/visitantes/${visitanteId}/foto`, { headers: { Authorization: `Bearer ${token}` } });
     const data = await res.json();
     img.src = data.foto ?? '';
+    spinner.classList.add('d-none');
+    img.classList.remove('d-none');
 }
 
 function clearFilters() {
