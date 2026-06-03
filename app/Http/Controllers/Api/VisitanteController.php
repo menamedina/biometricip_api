@@ -61,6 +61,14 @@ class VisitanteController extends Controller
             });
         }
 
+        if ($request->filled('estado')) {
+            if ($request->estado === 'en_sede') {
+                $query->whereNull('hora_salida');
+            } elseif ($request->estado === 'salieron') {
+                $query->whereNotNull('hora_salida');
+            }
+        }
+
         $visitantes = $query->paginate(50);
 
         // Adjuntar thumbnail de entrada directamente en el objeto

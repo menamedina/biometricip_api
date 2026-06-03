@@ -39,7 +39,15 @@
                             <input type="text" class="form-control form-control-sm" id="filterSearch" placeholder="Buscar..." oninput="loadVisitantes()">
                         </div>
                         <div class="col-md-2">
-                            <button class="btn btn-sm btn-secondary w-100" onclick="clearFilters()">
+                            <label class="form-label form-label-sm mb-1">Estado</label>
+                            <select class="form-select form-select-sm" id="filterEstado" onchange="loadVisitantes()">
+                                <option value="">Todos</option>
+                                <option value="en_sede">En sede</option>
+                                <option value="salieron">Con salida</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-sm btn-secondary w-100 mt-3" onclick="clearFilters()">
                                 <i class="ti ti-x me-1"></i> Limpiar
                             </button>
                         </div>
@@ -126,6 +134,7 @@ async function loadVisitantes() {
         desde:    document.getElementById('filterDesde').value,
         hasta:    document.getElementById('filterHasta').value,
         search:   document.getElementById('filterSearch').value,
+        estado:   document.getElementById('filterEstado').value,
     });
 
     const res  = await fetch(`/api/visitantes?${params}`, { headers: { Authorization: `Bearer ${token}` } });
@@ -211,6 +220,7 @@ async function verFoto(visitanteId) {
 function clearFilters() {
     document.getElementById('filterSede').value   = '';
     document.getElementById('filterSearch').value = '';
+    document.getElementById('filterEstado').value = '';
     document.getElementById('filterDesde').value  = new Date().toISOString().slice(0,10);
     document.getElementById('filterHasta').value  = new Date().toISOString().slice(0,10);
     loadVisitantes();
