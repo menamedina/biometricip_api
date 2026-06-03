@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Sede;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 
 class SedeController extends Controller
@@ -148,5 +149,60 @@ class SedeController extends Controller
             'message'  => 'QR estático regenerado. Los QR impresos anteriores ya no son válidos.',
             'qr_value' => $sede->generateStaticQRValue(),
         ]);
+    }
+
+    public function qrV3(Request $request, int $id): JsonResponse
+    {
+        $sede = Sede::findOrFail($id);
+
+        if (!$sede->qr_v3_token) {
+            return response()->json(['message' => 'QR Web no habilitado para esta sede.'], 404);
+        }
+
+        $webToken = $this->resolveWebToken($request);
+
+        return response()->json([
+            'sede'     => ['id' => $sede->id, 'codigo' => $sede->codigo, 'nombre' => $sede->nombre],
+            'qr_value' => $sede->generateV3QRUrl($webToken),
+            'tipo'     => 'web',
+        ]);
+    }
+
+    public function enableQRV3(Request $request, int $id): JsonResponse
+    {
+        $sede = Sede::findOrFail($id);
+
+        if (!$sede->qr_v3_token) {
+            $sede->update(['qr_v3_token' => bin2hex(random_bytes(16))]);
+        }
+
+        $webToken = $this->resolveWebToken($request);
+
+        return response()->json([
+            'message'  => 'QR Web habilitado.',
+            'qr_value' => $sede->generateV3QRUrl($webToken),
+        ]);
+    }
+
+    public function regenerateQRV3(Request $request, int $id): JsonResponse
+    {
+        $sede = Sede::findOrFail($id);
+        $sede->update(['qr_v3_token' => bin2hex(random_bytes(16))]);
+
+        $webToken = $this->resolveWebToken($request);
+
+        return response()->json([
+            'message'  => 'QR Web regenerado. Los QR impresos anteriores ya no son válidos.',
+            'qr_value' => $sede->generateV3QRUrl($webToken),
+        ]);
+    }
+
+    private function resolveWebToken(Request $request): string
+    {
+        $empresaId = ($request->user()->admin_tenant && $request->hasHeader('X-Empresa-Id'))
+            ? (int) $request->header('X-Empresa-Id')
+            : $request->user()->empresa_id;
+
+        return rtrim(strtr(base64_encode(Crypt::encryptString((string) $empresaId)), '+/', '-_'), '=');
     }
 }

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\PublicAttendanceController;
 use App\Http\Controllers\Api\ReportController;
 use Illuminate\Support\Facades\Route;
 
@@ -71,6 +72,10 @@ Route::post('/eliminacion-datos', function (\Illuminate\Http\Request $request) {
         'ticket'  => $ticket,
     ]);
 })->name('data-deletion.submit');
+
+// QR v3 — Formulario público de asistencia (sin autenticación)
+Route::get ('/asistencia/{webToken}/{sedeCode}/{token}', [PublicAttendanceController::class, 'show'])->name('public.attendance.show');
+Route::post('/asistencia/{webToken}/{sedeCode}/{token}', [PublicAttendanceController::class, 'store'])->name('public.attendance.store');
 
 Route::get('/admin/login',  [LoginController::class, 'showLogin'])->name('admin.login.show');
 Route::post('/admin/login', [LoginController::class, 'login'])->name('admin.login');

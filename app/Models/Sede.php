@@ -66,6 +66,21 @@ class Sede extends Model
         return hash_equals($expectedHash, $data['h']);
     }
 
+    public function generateV3QRUrl(string $webToken): string
+    {
+        $tok = substr(hash_hmac('sha256', $this->codigo . $this->secret_key, $this->qr_v3_token), 0, 32);
+        return rtrim(config('app.url'), '/') . '/asistencia/' . $webToken . '/' . $this->codigo . '/' . $tok;
+    }
+
+    public function validateV3Token(string $token): bool
+    {
+        if (!$this->qr_v3_token) {
+            return false;
+        }
+        $expected = substr(hash_hmac('sha256', $this->codigo . $this->secret_key, $this->qr_v3_token), 0, 32);
+        return hash_equals($expected, $token);
+    }
+
     public function generateStaticQRValue(): string
     {
         $tok = substr(hash_hmac('sha256', $this->codigo . $this->secret_key, $this->qr_static_token), 0, 32);

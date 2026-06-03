@@ -37,6 +37,9 @@ Route::middleware(['auth:sanctum', 'tenancy'])->group(function () {
         Route::get ('/sedes/{sede}/qr-static',            [SedeController::class, 'qrStatic']);
         Route::post('/sedes/{sede}/qr-static/enable',     [SedeController::class, 'enableStaticQR']);
         Route::post('/sedes/{sede}/qr-static/regenerar',  [SedeController::class, 'regenerateStaticQR']);
+        Route::get ('/sedes/{sede}/qr-v3',                [SedeController::class, 'qrV3']);
+        Route::post('/sedes/{sede}/qr-v3/enable',         [SedeController::class, 'enableQRV3']);
+        Route::post('/sedes/{sede}/qr-v3/regenerar',      [SedeController::class, 'regenerateQRV3']);
 
         Route::get('/empleados/departamentos/list', [EmpleadoController::class, 'departamentos']);
         Route::apiResource('empleados', EmpleadoController::class);

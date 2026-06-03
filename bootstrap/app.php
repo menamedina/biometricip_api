@@ -19,6 +19,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'superadmin'      => \App\Http\Middleware\SuperAdminMiddleware::class,
         ]);
         $middleware->redirectGuestsTo('/admin/login');
+        $middleware->validateCsrfTokens(except: [
+            'asistencia/*',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

@@ -138,6 +138,42 @@
     </div>
 </div>
 
+{{-- Modal QR Web (v3) --}}
+<div class="modal fade" id="webQrModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa-solid fa-globe me-2"></i>QR Web (sin app) — <span id="webQrSedeName"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="webQrNotEnabled" class="text-center py-4 d-none">
+                    <p class="text-muted">Esta sede no tiene QR Web habilitado.</p>
+                    <button class="btn btn-primary" onclick="enableWebQR()">
+                        <i class="fa-solid fa-toggle-on me-1"></i> Habilitar QR Web
+                    </button>
+                </div>
+                <div id="webQrContent" class="d-none">
+                    <div class="alert alert-info py-2 mb-3">
+                        <i class="fa-solid fa-info-circle me-1"></i>
+                        Este QR abre una <strong>página web</strong> — el usuario ingresa su cédula y se toma una foto, <strong>sin necesitar la app</strong>.
+                        Es fijo e imprimible. Usa "Regenerar" si se compromete.
+                    </div>
+                    <div class="text-center py-2" id="webQrCanvas"></div>
+                    <div class="d-flex justify-content-center gap-2 mt-3">
+                        <button class="btn btn-primary" onclick="printWebQR()">
+                            <i class="fa-solid fa-print me-1"></i> Imprimir
+                        </button>
+                        <button class="btn btn-warning" onclick="regenerateWebQR()">
+                            <i class="fa-solid fa-rotate me-1"></i> Regenerar (invalida QRs anteriores)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- Modal QR --}}
 <div class="modal fade" id="qrModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
@@ -291,6 +327,7 @@ async function loadSedes() {
                 <td>
                     <button class="btn btn-sm btn-outline-success me-1" onclick="showQR(${s.id}, '${s.nombre}')" title="QR dinámico (kiosco)"><i class="fa-solid fa-qrcode"></i></button>
                     <button class="btn btn-sm ${s.qr_static_token ? 'btn-outline-primary' : 'btn-outline-secondary'} me-1" onclick="showStaticQR(${s.id}, '${s.nombre}', ${s.qr_static_token ? 'true' : 'false'})" title="${s.qr_static_token ? 'QR estático (imprimible)' : 'Habilitar QR estático'}"><i class="fa-solid fa-print"></i></button>
+                    <button class="btn btn-sm ${s.qr_v3_token ? 'btn-outline-info' : 'btn-outline-secondary'} me-1" onclick="showWebQR(${s.id}, '${s.nombre}', ${s.qr_v3_token ? 'true' : 'false'})" title="${s.qr_v3_token ? 'QR Web (sin app)' : 'Habilitar QR Web'}"><i class="fa-solid fa-globe"></i></button>
                     <button class="btn btn-sm btn-outline-primary me-1" onclick='editSede(${JSON.stringify(s).replace(/'/g, "&#39;")})'><i class="fa-solid fa-pen"></i></button>
                     <button class="btn btn-sm btn-outline-danger" onclick="deleteSede(${s.id})"><i class="fa-solid fa-trash"></i></button>
                 </td>
@@ -509,6 +546,90 @@ function printStaticQR() {
             <img src="${img}"/>
             <p style="font-size:18px; font-weight:bold; margin-top:12px;">${name}</p>
             <p>Escanea con la app BiometricIP</p>
+            <button onclick="window.print()">Imprimir</button>
+        </body></html>
+    `);
+    win.document.close();
+}
+
+// ── QR Web v3 ─────────────────────────────────────────────────────────────────
+let webQrSedeId = null;
+
+async function showWebQR(sedeId, sedeName, isEnabled) {
+    webQrSedeId = sedeId;
+    document.getElementById('webQrSedeName').textContent = sedeName;
+    document.getElementById('webQrCanvas').innerHTML = '';
+
+    const modal = new bootstrap.Modal(document.getElementById('webQrModal'));
+    modal.show();
+
+    if (!isEnabled) {
+        document.getElementById('webQrNotEnabled').classList.remove('d-none');
+        document.getElementById('webQrContent').classList.add('d-none');
+        return;
+    }
+
+    await loadWebQR();
+}
+
+async function loadWebQR() {
+    try {
+        const res  = await fetch(`/api/sedes/${webQrSedeId}/qr-v3`, { headers: { 'Authorization': `Bearer ${token}` } });
+        if (!res.ok) { console.error('Error cargando QR Web'); return; }
+        const data = await res.json();
+
+        document.getElementById('webQrNotEnabled').classList.add('d-none');
+        document.getElementById('webQrContent').classList.remove('d-none');
+        document.getElementById('webQrCanvas').innerHTML = '';
+
+        new QRCode(document.getElementById('webQrCanvas'), {
+            text:   data.qr_value,
+            width:  280,
+            height: 280,
+        });
+    } catch(e) { console.error(e); }
+}
+
+async function enableWebQR() {
+    try {
+        await fetch(`/api/sedes/${webQrSedeId}/qr-v3/enable`,
+            { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+        loadSedes();
+        await loadWebQR();
+    } catch(e) { console.error(e); }
+}
+
+async function regenerateWebQR() {
+    if (!confirm('¿Regenerar el QR Web? Los QR impresos anteriores quedarán inválidos inmediatamente.')) return;
+    try {
+        await fetch(`/api/sedes/${webQrSedeId}/qr-v3/regenerar`,
+            { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+        loadSedes();
+        await loadWebQR();
+    } catch(e) { console.error(e); }
+}
+
+function printWebQR() {
+    const canvas = document.querySelector('#webQrCanvas canvas');
+    if (!canvas) return;
+    const img  = canvas.toDataURL('image/png');
+    const name = document.getElementById('webQrSedeName').textContent;
+    const win  = window.open('', '_blank');
+    win.document.write(`
+        <html><head><title>QR Asistencia Web - ${name}</title>
+        <style>
+            body { margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: sans-serif; }
+            img  { width: 300px; height: 300px; }
+            h2   { margin-bottom: 12px; }
+            p    { font-size: 14px; color: #555; margin: 4px 0; }
+            button { margin-top: 20px; padding: 8px 24px; font-size: 16px; cursor: pointer; }
+            @media print { button { display: none; } }
+        </style></head>
+        <body>
+            <h2>Registrar Asistencia</h2>
+            <img src="${img}"/>
+            <p style="font-size:18px; font-weight:bold; margin-top:12px;">${name}</p>
+            <p>Escanea con tu cámara — no necesitas la app</p>
             <button onclick="window.print()">Imprimir</button>
         </body></html>
     `);
