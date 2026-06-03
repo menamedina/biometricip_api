@@ -7,17 +7,9 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
-        * { box-sizing: border-box; }
-        html, body { height: 100%; }
-        body {
-            background: #f0f4ff;
-            min-height: 100vh;
-            display: flex;
-            align-items: flex-start;
-            justify-content: center;
-            padding: 0;
-            margin: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { min-height: 100%; }
+        body { background: #f0f4ff; }
         .card-form {
             width: 100%;
             min-height: 100vh;
@@ -25,9 +17,20 @@
             box-shadow: none;
             border: none;
         }
-        @media (min-width: 600px) {
-            body { padding: 24px 16px 40px; align-items: flex-start; }
-            .card-form { max-width: 520px; min-height: unset; border-radius: 18px; box-shadow: 0 8px 32px rgba(79,70,229,.13); }
+        @media (min-width: 700px) {
+            body {
+                display: flex;
+                align-items: flex-start;
+                justify-content: center;
+                padding: 32px 16px 48px;
+            }
+            .card-form {
+                width: 100%;
+                max-width: 520px;
+                min-height: unset;
+                border-radius: 18px;
+                box-shadow: 0 8px 32px rgba(79,70,229,.13);
+            }
         }
         .sede-header {
             background: linear-gradient(135deg, #4F46E5, #7C3AED);
@@ -35,7 +38,7 @@
             padding: 28px 20px 22px;
             color: #fff;
         }
-        @media (min-width: 600px) {
+        @media (min-width: 700px) {
             .sede-header { border-radius: 18px 18px 0 0; }
         }
         .sede-header h5 { font-size: 1rem; opacity: .85; margin-bottom: 4px; }
@@ -238,13 +241,37 @@ let fotoBase64       = null;
 
 // ── Paso 1 ────────────────────────────────────────────────────────────────────
 function selectTipoUsuario(tipo) {
-    tipoUsuario = tipo;
-    document.getElementById('step1').style.display = 'none';
-    document.getElementById('step2').style.display = 'block';
+    tipoUsuario      = tipo;
+    tipoSeleccionado = null;
+    fotoBase64       = null;
+
+    // Limpiar campos y errores
+    ['nombre','cedula','telefono','eps','arl','personaVisita'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.value = ''; el.classList.remove('is-invalid'); }
+    });
+    ['nombreError','cedulaError','personaVisitaError','photoError'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = '';
+    });
+    document.getElementById('photoLabelText').textContent = 'Toca para abrir la cámara';
+    document.getElementById('photoPreview').style.display = 'none';
+
+    // Resetear botones Entrada/Salida
+    document.getElementById('btnEntrada').className = 'btn btn-outline-success tipo-btn';
+    document.getElementById('btnSalida').className  = 'btn btn-outline-danger tipo-btn';
+
+    // Para visitante: ocultar form hasta que elija Entrada o Salida
+    // Para empleado: mostrar form de inmediato
+    document.getElementById('formBody').style.display        = tipo === 'empleado' ? 'block' : 'none';
+    document.getElementById('visitanteFields').style.display = 'none';
+    document.getElementById('photoSection').style.display    = 'block';
+
+    document.getElementById('btnSubmit').disabled = true;
     document.getElementById('resultBox').style.display = 'none';
     document.getElementById('step2Label').textContent = tipo === 'empleado' ? 'Soy Empleado' : 'Soy Visitante';
-
-    resetPaso2();
+    document.getElementById('step1').style.display = 'none';
+    document.getElementById('step2').style.display = 'block';
 }
 
 function volverPaso1() {
@@ -254,53 +281,25 @@ function volverPaso1() {
 }
 
 // ── Paso 2 ────────────────────────────────────────────────────────────────────
-function resetPaso2() {
-    tipoSeleccionado = null;
-    fotoBase64       = null;
-    ['nombre','cedula','telefono','eps','arl','personaVisita'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) { el.value = ''; el.classList.remove('is-invalid'); }
-    });
-    ['nombreError','cedulaError','personaVisitaError'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = '';
-    });
-    document.getElementById('photoLabelText').textContent = 'Toca para abrir la cámara';
-    document.getElementById('photoPreview').style.display = 'none';
-    document.getElementById('photoError').textContent = '';
-    document.getElementById('visitanteFields').style.display = 'none';
-    document.getElementById('photoSection').style.display = 'block';
-
-    // formBody: empleado lo ve de inmediato; visitante solo tras elegir Entrada/Salida
-    const mostrarForm = tipoUsuario === 'empleado';
-    document.getElementById('formBody').style.display = mostrarForm ? 'block' : 'none';
-
-    ['btnEntrada','btnSalida'].forEach(id => {
-        const btn = document.getElementById(id);
-        btn.classList.remove('active','btn-success','btn-danger');
-        btn.classList.add(id === 'btnEntrada' ? 'btn-outline-success' : 'btn-outline-danger');
-    });
-}
-
 function setTipo(tipo) {
     tipoSeleccionado = tipo;
     const esEntrada  = tipo === 'entrada';
 
-    document.getElementById('btnEntrada').classList.toggle('active', esEntrada);
-    document.getElementById('btnEntrada').classList.toggle('btn-success', esEntrada);
-    document.getElementById('btnEntrada').classList.toggle('btn-outline-success', !esEntrada);
-    document.getElementById('btnSalida').classList.toggle('active', !esEntrada);
-    document.getElementById('btnSalida').classList.toggle('btn-danger', !esEntrada);
-    document.getElementById('btnSalida').classList.toggle('btn-outline-danger', esEntrada);
+    document.getElementById('btnEntrada').className = esEntrada
+        ? 'btn btn-success tipo-btn active'
+        : 'btn btn-outline-success tipo-btn';
+    document.getElementById('btnSalida').className = !esEntrada
+        ? 'btn btn-danger tipo-btn active'
+        : 'btn btn-outline-danger tipo-btn';
 
     if (tipoUsuario === 'visitante') {
         // Mostrar el formulario solo después de elegir el tipo
-        document.getElementById('formBody').style.display = 'block';
+        document.getElementById('formBody').style.display        = 'block';
         // Campos extra solo en entrada
         document.getElementById('visitanteFields').style.display = esEntrada ? 'block' : 'none';
         // Foto solo en entrada
-        document.getElementById('photoSection').style.display = esEntrada ? 'block' : 'none';
-        if (!esEntrada) { fotoBase64 = null; }
+        document.getElementById('photoSection').style.display    = esEntrada ? 'block' : 'none';
+        if (!esEntrada) fotoBase64 = null;
     }
 
     checkReady();
