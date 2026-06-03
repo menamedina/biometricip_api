@@ -118,7 +118,7 @@
         <div id="step1">
             <p class="fw-semibold text-center mb-1" style="font-size:1.05rem;">¿Cómo deseas registrarte?</p>
             <p class="text-muted text-center small mb-4">Selecciona tu tipo de ingreso</p>
-            <div class="d-flex gap-3">
+            <div class="d-flex flex-column gap-3">
                 <button type="button" class="btn btn-outline-primary user-type-btn" onclick="selectTipoUsuario('empleado')">
                     <i class="fa-solid fa-id-badge"></i>Empleado
                 </button>
@@ -135,7 +135,7 @@
             </a>
 
             {{-- Entrada / Salida --}}
-            <div class="d-flex gap-2 mb-4">
+            <div class="d-flex gap-2 mb-4" id="tipoBtns">
                 <button type="button" class="btn btn-outline-success tipo-btn" id="btnEntrada" onclick="setTipo('entrada')">
                     <i class="fa-solid fa-arrow-right-to-bracket me-1"></i> Entrada
                 </button>
@@ -239,6 +239,7 @@ function selectTipoUsuario(tipo) {
     document.getElementById('photoPreview').style.display = 'none';
 
     // Resetear botones Entrada/Salida
+    document.getElementById('tipoBtns').classList.remove('d-none');
     document.getElementById('btnEntrada').className = 'btn btn-outline-success tipo-btn';
     document.getElementById('btnSalida').className  = 'btn btn-outline-danger tipo-btn';
 
@@ -273,6 +274,9 @@ function setTipo(tipo) {
     document.getElementById('btnSalida').className = !esEntrada
         ? 'btn btn-danger tipo-btn active'
         : 'btn btn-outline-danger tipo-btn';
+
+    // Ocultar botones Entrada/Salida tras seleccionar
+    document.getElementById('tipoBtns').classList.add('d-none');
 
     if (tipoUsuario === 'visitante') {
         document.getElementById('formBody').classList.remove('d-none');
