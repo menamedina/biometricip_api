@@ -89,7 +89,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body text-center p-2">
-                <img id="fotoModalImg" src="" alt="Foto" class="img-fluid rounded" style="max-height:420px;">
+                <img id="fotoModalImg" src="" alt="Foto" class="rounded" style="width:400px;height:400px;object-fit:cover;">
             </div>
         </div>
     </div>
@@ -142,7 +142,7 @@ async function loadVisitantes() {
             <td>${v.telefono ?? '—'}</td>
             <td><small>${formatDT(v.hora_entrada)}</small></td>
             <td><small>${v.hora_salida ? formatDT(v.hora_salida) : '<span class="badge bg-warning text-dark">En sede</span>'}</small></td>
-            <td>${v.imagen_entrada ? `<button class="btn btn-sm btn-outline-primary" onclick="verFoto('${v.imagen_entrada}')"><i class="ti ti-photo"></i></button>` : '—'}</td>
+            <td>${v.imagen_entrada ? `<button class="btn btn-sm btn-outline-primary" onclick="verFoto(${v.id})"><i class="ti ti-photo"></i></button>` : '—'}</td>
         </tr>
     `).join('');
 }
@@ -153,9 +153,13 @@ function formatDT(dt) {
     return d.toLocaleDateString('es-CO') + ' ' + d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
 }
 
-function verFoto(src) {
-    document.getElementById('fotoModalImg').src = src;
+async function verFoto(visitanteId) {
+    const img = document.getElementById('fotoModalImg');
+    img.src = '';
     new bootstrap.Modal(document.getElementById('fotoModal')).show();
+    const res  = await fetch(`/api/visitantes/${visitanteId}/foto`, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    img.src = data.foto ?? '';
 }
 
 function clearFilters() {

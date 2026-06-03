@@ -10,6 +10,19 @@ use Illuminate\Http\Request;
 
 class VisitanteController extends Controller
 {
+    public function foto(int $id): JsonResponse
+    {
+        $img = VisitanteImagen::where('visitante_id', $id)
+            ->where('tipo', 'entrada')
+            ->first();
+
+        if (!$img) {
+            return response()->json(['foto' => null]);
+        }
+
+        return response()->json(['foto' => $img->foto_base64]);
+    }
+
     public function index(Request $request): JsonResponse
     {
         $query = Visitante::with(['sede', 'imagenes' => fn ($q) => $q->where('tipo', 'entrada')])
