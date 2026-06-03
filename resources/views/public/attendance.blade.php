@@ -135,11 +135,11 @@
             </a>
 
             {{-- Entrada / Salida --}}
-            <div class="d-flex gap-2 mb-4" id="tipoBtns">
-                <button type="button" class="btn btn-outline-success tipo-btn" id="btnEntrada" onclick="setTipo('entrada')">
+            <div id="tipoBtns" style="display:flex; flex-direction:column; gap:16px; margin-bottom:24px;">
+                <button type="button" class="btn btn-outline-success tipo-btn w-100" id="btnEntrada" onclick="setTipo('entrada')">
                     <i class="fa-solid fa-arrow-right-to-bracket me-1"></i> Entrada
                 </button>
-                <button type="button" class="btn btn-outline-danger tipo-btn" id="btnSalida" onclick="setTipo('salida')">
+                <button type="button" class="btn btn-outline-danger tipo-btn w-100" id="btnSalida" onclick="setTipo('salida')">
                     <i class="fa-solid fa-arrow-right-from-bracket me-1"></i> Salida
                 </button>
             </div>
