@@ -235,6 +235,7 @@ function selectTipoUsuario(tipo) {
         const el = document.getElementById(id);
         if (el) el.textContent = '';
     });
+    document.getElementById('photoInput').value = '';
     document.getElementById('photoLabelText').textContent = 'Toca para abrir la cámara';
     document.getElementById('photoPreview').style.display = 'none';
 
@@ -278,6 +279,12 @@ function setTipo(tipo) {
 
     // Mostrar form para ambos tipos
     document.getElementById('formBody').classList.remove('d-none');
+
+    // Resetear foto al cambiar tipo
+    fotoBase64 = null;
+    document.getElementById('photoInput').value = '';
+    document.getElementById('photoPreview').style.display = 'none';
+    document.getElementById('photoLabelText').textContent = 'Toca para abrir la cámara';
 
     // Foto: visible siempre, obligatoria solo en entrada
     document.getElementById('photoSection').classList.remove('d-none');

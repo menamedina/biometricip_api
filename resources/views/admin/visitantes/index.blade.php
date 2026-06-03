@@ -98,11 +98,24 @@
                 <h6 class="modal-title">Foto del visitante</h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body text-center p-3">
-                <div id="fotoSpinner" class="py-5">
+            <div class="modal-body p-3">
+                <div id="fotoSpinner" class="text-center py-5">
                     <div class="spinner-border text-primary" role="status"></div>
                 </div>
-                <img id="fotoModalImg" src="" alt="Foto" class="rounded d-none" style="width:400px;height:400px;object-fit:cover;">
+                <div id="fotoContent" class="d-none">
+                    <div class="row g-3">
+                        <div class="col-6 text-center">
+                            <p class="fw-semibold mb-2 small text-success"><i class="ti ti-arrow-right-to-arc me-1"></i>Entrada</p>
+                            <img id="fotoEntrada" src="" alt="Entrada" class="rounded w-100" style="height:280px;object-fit:cover;">
+                            <p id="fotoEntradaVacio" class="text-muted small mt-2 d-none">Sin foto</p>
+                        </div>
+                        <div class="col-6 text-center">
+                            <p class="fw-semibold mb-2 small text-danger"><i class="ti ti-arrow-right-from-arc me-1"></i>Salida</p>
+                            <img id="fotoSalida" src="" alt="Salida" class="rounded w-100" style="height:280px;object-fit:cover;">
+                            <p id="fotoSalidaVacio" class="text-muted small mt-2 d-none">Sin foto</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -204,17 +217,28 @@ function formatDT(dt) {
 }
 
 async function verFoto(visitanteId) {
-    const img     = document.getElementById('fotoModalImg');
     const spinner = document.getElementById('fotoSpinner');
-    img.classList.add('d-none');
-    img.src = '';
+    const content = document.getElementById('fotoContent');
     spinner.classList.remove('d-none');
+    content.classList.add('d-none');
     new bootstrap.Modal(document.getElementById('fotoModal')).show();
+
     const res  = await fetch(`/api/visitantes/${visitanteId}/foto`, { headers: { Authorization: `Bearer ${token}` } });
     const data = await res.json();
-    img.src = data.foto ?? '';
+
+    const imgE = document.getElementById('fotoEntrada');
+    const imgS = document.getElementById('fotoSalida');
+    const vacE = document.getElementById('fotoEntradaVacio');
+    const vacS = document.getElementById('fotoSalidaVacio');
+
+    if (data.entrada) { imgE.src = data.entrada; imgE.classList.remove('d-none'); vacE.classList.add('d-none'); }
+    else              { imgE.classList.add('d-none'); vacE.classList.remove('d-none'); }
+
+    if (data.salida)  { imgS.src = data.salida;  imgS.classList.remove('d-none'); vacS.classList.add('d-none'); }
+    else              { imgS.classList.add('d-none'); vacS.classList.remove('d-none'); }
+
     spinner.classList.add('d-none');
-    img.classList.remove('d-none');
+    content.classList.remove('d-none');
 }
 
 function clearFilters() {

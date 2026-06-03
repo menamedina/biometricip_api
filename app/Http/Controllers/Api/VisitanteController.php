@@ -25,15 +25,12 @@ class VisitanteController extends Controller
 
     public function foto(int $id): JsonResponse
     {
-        $img = VisitanteImagen::where('visitante_id', $id)
-            ->where('tipo', 'entrada')
-            ->first();
+        $imgs = VisitanteImagen::where('visitante_id', $id)->get()->keyBy('tipo');
 
-        if (!$img) {
-            return response()->json(['foto' => null]);
-        }
-
-        return response()->json(['foto' => $img->foto_base64]);
+        return response()->json([
+            'entrada' => $imgs->get('entrada')?->foto_base64,
+            'salida'  => $imgs->get('salida')?->foto_base64,
+        ]);
     }
 
     public function index(Request $request): JsonResponse
