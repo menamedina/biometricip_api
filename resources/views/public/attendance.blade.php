@@ -118,11 +118,11 @@
         <div id="step1">
             <p class="fw-semibold text-center mb-1" style="font-size:1.05rem;">¿Cómo deseas registrarte?</p>
             <p class="text-muted text-center small mb-4">Selecciona tu tipo de ingreso</p>
-            <div class="d-flex flex-column gap-3">
-                <button type="button" class="btn btn-outline-primary user-type-btn" onclick="selectTipoUsuario('empleado')">
+            <div style="display:flex; flex-direction:column; gap:16px;">
+                <button type="button" class="btn btn-outline-primary user-type-btn w-100" onclick="selectTipoUsuario('empleado')">
                     <i class="fa-solid fa-id-badge"></i>Empleado
                 </button>
-                <button type="button" class="btn btn-outline-secondary user-type-btn" onclick="selectTipoUsuario('visitante')">
+                <button type="button" class="btn btn-outline-secondary user-type-btn w-100" onclick="selectTipoUsuario('visitante')">
                     <i class="fa-solid fa-user-clock"></i>Visitante
                 </button>
             </div>
