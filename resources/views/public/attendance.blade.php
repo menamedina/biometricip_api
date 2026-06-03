@@ -243,10 +243,8 @@ function selectTipoUsuario(tipo) {
     document.getElementById('btnEntrada').className = 'btn btn-outline-success tipo-btn';
     document.getElementById('btnSalida').className  = 'btn btn-outline-danger tipo-btn';
 
-    // Para visitante: ocultar form hasta que elija Entrada o Salida
-    // Para empleado: mostrar form de inmediato
-    const formBody = document.getElementById('formBody');
-    tipo === 'empleado' ? formBody.classList.remove('d-none') : formBody.classList.add('d-none');
+    // Ambos tipos: ocultar form hasta elegir Entrada o Salida
+    document.getElementById('formBody').classList.add('d-none');
     document.getElementById('visitanteFields').classList.add('d-none');
     document.getElementById('photoSection').classList.remove('d-none');
 
@@ -278,8 +276,10 @@ function setTipo(tipo) {
     // Ocultar botones Entrada/Salida tras seleccionar
     document.getElementById('tipoBtns').classList.add('d-none');
 
+    // Mostrar form para ambos tipos
+    document.getElementById('formBody').classList.remove('d-none');
+
     if (tipoUsuario === 'visitante') {
-        document.getElementById('formBody').classList.remove('d-none');
         const vf = document.getElementById('visitanteFields');
         esEntrada ? vf.classList.remove('d-none') : vf.classList.add('d-none');
         const ps = document.getElementById('photoSection');
