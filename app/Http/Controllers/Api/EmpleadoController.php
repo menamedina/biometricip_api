@@ -109,6 +109,7 @@ class EmpleadoController extends Controller
             'horario_id'      => 'nullable|integer',
             'sede_ids'        => 'nullable|array',
             'sede_ids.*'      => 'integer',
+            'cedula'          => 'required|string|max:20',
             'telefono'        => 'nullable|string|max:20',
         ]);
 
@@ -125,6 +126,7 @@ class EmpleadoController extends Controller
             'departamento_id' => $data['departamento_id'] ?? null,
             'cargo_id'        => $data['cargo_id'] ?? null,
             'horario_id'      => $data['horario_id'] ?? null,
+            'cedula'          => $data['cedula'] ?? null,
             'telefono'        => $data['telefono'] ?? null,
         ]);
 
@@ -208,6 +210,7 @@ class EmpleadoController extends Controller
             'horario_id'      => 'nullable|integer',
             'sede_ids'        => 'nullable|array',
             'sede_ids.*'      => 'integer',
+            'cedula'          => 'nullable|string|max:20',
             'telefono'        => 'nullable|string|max:20',
             'is_active'       => 'nullable|boolean',
         ]);

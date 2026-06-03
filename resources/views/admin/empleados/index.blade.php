@@ -43,6 +43,7 @@
                             <tr>
                                 <th>Código</th>
                                 <th>Nombre</th>
+                                <th>Cédula</th>
                                 <th>Email</th>
                                 <th>Rol</th>
                                 <th>Departamento</th>
@@ -107,7 +108,11 @@
                             <label class="form-label">Código Empleado</label>
                             <input type="text" id="empCodigo" class="form-control" readonly style="background-color:#f8f9fa;font-weight:600;">
                         </div>
-                        <div class="col-md-5 mb-3">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Cédula <span class="text-danger">*</span></label>
+                            <input type="text" id="empCedula" class="form-control" required placeholder="Ej: 1234567890" inputmode="numeric">
+                        </div>
+                        <div class="col-md-4 mb-3">
                             <label class="form-label">Teléfono</label>
                             <input type="text" id="empTelefono" class="form-control">
                         </div>
@@ -330,6 +335,7 @@ async function loadEmpleados(page = 1) {
                 <tr>
                     <td><span class="badge bg-primary">${e.codigo_empleado || '—'}</span></td>
                     <td><strong>${e.name || 'N/A'}</strong></td>
+                    <td>${e.cedula || '—'}</td>
                     <td>${e.email || 'N/A'}</td>
                     <td>${rolBadge}</td>
                     <td>${e.departamento_id ? (deptoMap[e.departamento_id] || e.departamento_id) : '—'}</td>
@@ -397,6 +403,7 @@ async function editEmpleado(id) {
         document.getElementById('empPassword').required  = false;
         document.getElementById('empCodigo').value        = e.codigo_empleado;
         document.getElementById('empCodigoRow').style.display = '';
+        document.getElementById('empCedula').value       = e.cedula || '';
         document.getElementById('empTelefono').value     = e.telefono || '';
         document.getElementById('empDepartamento').value = e.departamento_id || '';
         document.getElementById('empCargo').value        = e.cargo_id || '';
@@ -422,6 +429,7 @@ async function saveEmpleado() {
     const payload = {
         name:             document.getElementById('empName').value,
         email:            document.getElementById('empEmail').value,
+        cedula:           document.getElementById('empCedula').value,
         telefono:         document.getElementById('empTelefono').value,
         departamento_id:  deptoVal   ? parseInt(deptoVal)   : null,
         cargo_id:         cargoVal   ? parseInt(cargoVal)   : null,
