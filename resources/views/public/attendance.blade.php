@@ -191,7 +191,7 @@
 
                 {{-- Foto --}}
                 <div class="mb-4" id="photoSection">
-                    <label class="form-label fw-semibold">Foto <span class="text-danger">*</span></label>
+                    <label class="form-label fw-semibold" id="photoLabel">Foto <span class="text-danger">*</span></label>
                     <label class="photo-label" for="photoInput">
                         <i class="fa-solid fa-camera"></i>
                         <span id="photoLabelText">Toca para abrir la cámara</span>
@@ -279,12 +279,15 @@ function setTipo(tipo) {
     // Mostrar form para ambos tipos
     document.getElementById('formBody').classList.remove('d-none');
 
+    // Foto: visible siempre, obligatoria solo en entrada
+    document.getElementById('photoSection').classList.remove('d-none');
+    document.getElementById('photoLabel').innerHTML = esEntrada
+        ? 'Foto <span class="text-danger">*</span>'
+        : 'Foto <span class="text-muted small">(opcional)</span>';
+
     if (tipoUsuario === 'visitante') {
         const vf = document.getElementById('visitanteFields');
         esEntrada ? vf.classList.remove('d-none') : vf.classList.add('d-none');
-        const ps = document.getElementById('photoSection');
-        esEntrada ? ps.classList.remove('d-none') : ps.classList.add('d-none');
-        if (!esEntrada) fotoBase64 = null;
     }
 
     checkReady();
@@ -313,7 +316,7 @@ document.getElementById('photoInput').addEventListener('change', function () {
 
 function checkReady() {
     const cedula = document.getElementById('cedula').value.trim();
-    const fotoOpcional = tipoUsuario === 'visitante' && tipoSeleccionado === 'salida';
+    const fotoOpcional = tipoSeleccionado === 'salida'; // opcional en salida para ambos tipos
     let ok = tipoSeleccionado && cedula.length >= 5 && (fotoOpcional || fotoBase64);
 
     // Campos extra para visitante entrada
@@ -341,7 +344,7 @@ async function submitForm() {
         document.getElementById('cedula').classList.remove('is-invalid');
     }
 
-    const fotoOpcional = tipoUsuario === 'visitante' && tipoSeleccionado === 'salida';
+    const fotoOpcional = tipoSeleccionado === 'salida'; // opcional en salida para ambos tipos
     if (!fotoBase64 && !fotoOpcional) {
         document.getElementById('photoError').textContent = 'La foto es obligatoria.';
         ok = false;

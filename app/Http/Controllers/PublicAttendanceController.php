@@ -46,7 +46,7 @@ class PublicAttendanceController extends Controller
         }
 
         // La foto es obligatoria salvo visitante+salida
-        $fotoRequerida = !($request->tipo_usuario === 'visitante' && $request->tipo === 'salida');
+        $fotoRequerida = $request->tipo !== 'salida';
 
         $request->validate([
             'tipo_usuario'   => 'required|in:empleado,visitante',
