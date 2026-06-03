@@ -20,15 +20,14 @@
         }
         .card-form {
             width: 100%;
-            max-width: 480px;
             min-height: 100vh;
             border-radius: 0;
             box-shadow: none;
             border: none;
         }
-        @media (min-width: 520px) {
+        @media (min-width: 600px) {
             body { padding: 24px 16px 40px; align-items: flex-start; }
-            .card-form { min-height: unset; border-radius: 18px; box-shadow: 0 8px 32px rgba(79,70,229,.13); }
+            .card-form { max-width: 520px; min-height: unset; border-radius: 18px; box-shadow: 0 8px 32px rgba(79,70,229,.13); }
         }
         .sede-header {
             background: linear-gradient(135deg, #4F46E5, #7C3AED);
@@ -36,7 +35,7 @@
             padding: 28px 20px 22px;
             color: #fff;
         }
-        @media (min-width: 520px) {
+        @media (min-width: 600px) {
             .sede-header { border-radius: 18px 18px 0 0; }
         }
         .sede-header h5 { font-size: 1rem; opacity: .85; margin-bottom: 4px; }
@@ -270,9 +269,11 @@ function resetPaso2() {
     document.getElementById('photoPreview').style.display = 'none';
     document.getElementById('photoError').textContent = '';
     document.getElementById('visitanteFields').style.display = 'none';
+    document.getElementById('photoSection').style.display = 'block';
 
-    // Para empleado el formulario se muestra directo; para visitante espera a elegir tipo
-    document.getElementById('formBody').style.display = tipoUsuario === 'empleado' ? 'block' : 'none';
+    // formBody: empleado lo ve de inmediato; visitante solo tras elegir Entrada/Salida
+    const mostrarForm = tipoUsuario === 'empleado';
+    document.getElementById('formBody').style.display = mostrarForm ? 'block' : 'none';
 
     ['btnEntrada','btnSalida'].forEach(id => {
         const btn = document.getElementById(id);
