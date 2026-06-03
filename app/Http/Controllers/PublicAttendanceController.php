@@ -45,11 +45,14 @@ class PublicAttendanceController extends Controller
             return response()->json(['message' => 'QR inválido o expirado.'], 422);
         }
 
+        // La foto es obligatoria salvo visitante+salida
+        $fotoRequerida = !($request->tipo_usuario === 'visitante' && $request->tipo === 'salida');
+
         $request->validate([
             'tipo_usuario'   => 'required|in:empleado,visitante',
             'cedula'         => 'required|string|max:20',
             'tipo'           => 'required|in:entrada,salida',
-            'foto_evidencia' => 'required|string',
+            'foto_evidencia' => $fotoRequerida ? 'required|string' : 'nullable|string',
             // Campos adicionales para visitante en entrada
             'nombre'         => 'required_if:tipo_usuario,visitante,tipo,entrada|nullable|string|max:255',
             'telefono'       => 'nullable|string|max:20',
@@ -65,7 +68,9 @@ class PublicAttendanceController extends Controller
             'persona_visita.required_if' => '¿A quién visitas? Este campo es obligatorio.',
         ]);
 
-        [$fotoFull, $fotoThumb] = $this->procesarFoto($request->foto_evidencia);
+        [$fotoFull, $fotoThumb] = $request->foto_evidencia
+            ? $this->procesarFoto($request->foto_evidencia)
+            : [null, null];
 
         if ($request->tipo_usuario === 'empleado') {
             return $this->registrarEmpleado($request, $sede, (int) $empresaId, $fotoFull, $fotoThumb);
@@ -168,15 +173,6 @@ class PublicAttendanceController extends Controller
         }
 
         $visitante->update(['hora_salida' => now()]);
-
-        if ($fotoFull) {
-            VisitanteImagen::create([
-                'visitante_id'     => $visitante->id,
-                'tipo'             => 'salida',
-                'foto_base64'      => $fotoFull,
-                'thumbnail_base64' => $fotoThumb ?? $fotoFull,
-            ]);
-        }
 
         return response()->json([
             'success' => true,

@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\HorarioController;
 use App\Http\Controllers\Api\PermisoController;
 use App\Http\Controllers\Api\FestivoController;
 use App\Http\Controllers\Api\EmpresaController;
+use App\Http\Controllers\Api\VisitanteController;
 use Illuminate\Support\Facades\Route;
 
 // Pública
@@ -88,6 +89,9 @@ Route::middleware(['auth:sanctum', 'tenancy'])->group(function () {
         // Empresa propia (admin normal)
         Route::get('/mi-empresa',        [EmpresaController::class, 'miEmpresa']);
         Route::put('/mi-empresa',        [EmpresaController::class, 'updateMiEmpresa']);
+
+        // Visitantes
+        Route::get('/visitantes', [VisitanteController::class, 'index']);
 
         // CRUD Empresas (solo admin_tenant)
         Route::get('/empresas',           [EmpresaController::class, 'index']);

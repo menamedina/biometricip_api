@@ -7,57 +7,109 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
+        * { box-sizing: border-box; }
+        html, body { height: 100%; }
         body {
             background: #f0f4ff;
             min-height: 100vh;
             display: flex;
             align-items: flex-start;
             justify-content: center;
-            padding: 24px 16px 40px;
+            padding: 0;
+            margin: 0;
         }
         .card-form {
             width: 100%;
-            max-width: 460px;
-            border-radius: 18px;
-            box-shadow: 0 8px 32px rgba(79,70,229,.13);
+            max-width: 480px;
+            min-height: 100vh;
+            border-radius: 0;
+            box-shadow: none;
             border: none;
+        }
+        @media (min-width: 520px) {
+            body { padding: 24px 16px 40px; align-items: flex-start; }
+            .card-form { min-height: unset; border-radius: 18px; box-shadow: 0 8px 32px rgba(79,70,229,.13); }
         }
         .sede-header {
             background: linear-gradient(135deg, #4F46E5, #7C3AED);
-            border-radius: 18px 18px 0 0;
-            padding: 22px 24px 18px;
+            border-radius: 0;
+            padding: 28px 20px 22px;
             color: #fff;
         }
-        .sede-header h5 { font-size: 1.05rem; opacity: .85; margin-bottom: 2px; }
-        .sede-header h3 { font-size: 1.4rem; font-weight: 700; margin: 0; }
-
-        .user-type-btn {
-            flex: 1; border-radius: 14px !important; padding: 18px 10px;
-            font-size: 1rem; font-weight: 600; border-width: 2px;
-            transition: all .15s;
+        @media (min-width: 520px) {
+            .sede-header { border-radius: 18px 18px 0 0; }
         }
-        .user-type-btn i { display: block; font-size: 2rem; margin-bottom: 6px; }
+        .sede-header h5 { font-size: 1rem; opacity: .85; margin-bottom: 4px; }
+        .sede-header h3 { font-size: 1.5rem; font-weight: 700; margin: 0; }
 
-        .tipo-btn { flex: 1; border-radius: 10px !important; font-weight: 600; font-size: 1rem; padding: 12px; }
-        .tipo-btn.active { box-shadow: 0 2px 8px rgba(0,0,0,.18); }
+        /* Botones tipo usuario (Empleado / Visitante) */
+        .user-type-btn {
+            flex: 1;
+            border-radius: 16px !important;
+            padding: 24px 8px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border-width: 2px;
+            line-height: 1.3;
+            min-height: 110px;
+            transition: all .15s;
+            touch-action: manipulation;
+        }
+        .user-type-btn i {
+            display: block;
+            font-size: 2.4rem;
+            margin-bottom: 10px;
+        }
+
+        /* Botones Entrada / Salida */
+        .tipo-btn {
+            flex: 1;
+            border-radius: 12px !important;
+            font-weight: 700;
+            font-size: 1.1rem;
+            padding: 16px 8px;
+            min-height: 60px;
+            touch-action: manipulation;
+        }
+        .tipo-btn.active { box-shadow: 0 2px 10px rgba(0,0,0,.2); }
 
         #photoPreview {
-            width: 100%; max-height: 220px; border-radius: 12px;
-            object-fit: cover; display: none; margin-top: 10px;
+            width: 100%; max-height: 260px; border-radius: 12px;
+            object-fit: cover; display: none; margin-top: 12px;
             border: 2px solid #4F46E5;
         }
         .photo-label {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            border: 2px dashed #c7d2fe; border-radius: 12px; padding: 22px 12px;
+            border: 2px dashed #c7d2fe; border-radius: 14px; padding: 28px 12px;
             cursor: pointer; color: #6366f1; background: #eef2ff;
-            transition: background .2s;
+            transition: background .2s; touch-action: manipulation;
+            min-height: 110px;
         }
-        .photo-label:hover { background: #e0e7ff; }
-        .photo-label i { font-size: 2rem; margin-bottom: 6px; }
+        .photo-label:active { background: #e0e7ff; }
+        .photo-label i { font-size: 2.6rem; margin-bottom: 8px; }
+        .photo-label span { font-size: 1rem; font-weight: 600; }
+
+        /* Inputs más grandes para táctil */
+        .form-control, .form-control-lg {
+            font-size: 1.05rem !important;
+            padding: 14px 14px !important;
+            border-radius: 10px !important;
+            min-height: 52px;
+        }
+
+        /* Botón principal grande */
+        #btnSubmit {
+            font-size: 1.15rem;
+            font-weight: 700;
+            padding: 18px;
+            border-radius: 14px !important;
+            min-height: 60px;
+            touch-action: manipulation;
+        }
 
         #resultBox { display: none; border-radius: 12px; }
-        .spinner-border { width: 1.4rem; height: 1.4rem; }
-        .step-back { cursor: pointer; color: #4F46E5; font-size: .85rem; }
+        .spinner-border { width: 1.5rem; height: 1.5rem; }
+        .step-back { cursor: pointer; color: #4F46E5; font-size: .9rem; touch-action: manipulation; }
         .section-divider {
             font-size: .75rem; font-weight: 700; letter-spacing: .08em;
             text-transform: uppercase; color: #9ca3af; margin: 18px 0 12px;
@@ -74,7 +126,7 @@
         <h5><i class="fa-solid fa-building me-1"></i> Registro de Asistencia</h5>
         <h3>{{ $sede->nombre }}</h3>
     </div>
-    <div class="card-body p-4">
+    <div class="card-body p-4" style="padding: 24px 20px !important;">
 
         <div id="resultBox" class="alert py-3 mb-3"></div>
 
@@ -108,65 +160,71 @@
                 </button>
             </div>
 
-            {{-- Campos solo para visitante en entrada --}}
-            <div id="visitanteFields" style="display:none;">
-                <div class="section-divider">Datos del visitante</div>
+            {{-- Cuerpo del formulario — se muestra tras elegir tipo --}}
+            <div id="formBody" style="display:none;">
 
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Nombre completo <span class="text-danger">*</span></label>
-                    <input type="text" id="nombre" class="form-control" placeholder="Ej: Juan Pérez" autocomplete="off">
-                    <div class="invalid-feedback" id="nombreError"></div>
-                </div>
+                {{-- Campos extra: solo visitante entrada --}}
+                <div id="visitanteFields" style="display:none;">
+                    <div class="section-divider">Datos del visitante</div>
 
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Teléfono</label>
-                    <input type="tel" id="telefono" class="form-control" placeholder="Ej: 3001234567" inputmode="numeric" autocomplete="off">
-                </div>
-
-                <div class="row g-2 mb-3">
-                    <div class="col-6">
-                        <label class="form-label fw-semibold">EPS</label>
-                        <input type="text" id="eps" class="form-control" placeholder="Ej: Sura" autocomplete="off">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nombre completo <span class="text-danger">*</span></label>
+                        <input type="text" id="nombre" class="form-control" placeholder="Ej: Juan Pérez" autocomplete="off">
+                        <div class="invalid-feedback" id="nombreError"></div>
                     </div>
-                    <div class="col-6">
-                        <label class="form-label fw-semibold">ARL</label>
-                        <input type="text" id="arl" class="form-control" placeholder="Ej: Positiva" autocomplete="off">
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Teléfono</label>
+                        <input type="tel" id="telefono" class="form-control" placeholder="Ej: 3001234567" inputmode="numeric" autocomplete="off">
                     </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">EPS</label>
+                            <input type="text" id="eps" class="form-control" placeholder="Ej: Sura" autocomplete="off">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">ARL</label>
+                            <input type="text" id="arl" class="form-control" placeholder="Ej: Positiva" autocomplete="off">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">¿A quién visita? <span class="text-danger">*</span></label>
+                        <input type="text" id="personaVisita" class="form-control" placeholder="Nombre del empleado o área" autocomplete="off">
+                        <div class="invalid-feedback" id="personaVisitaError"></div>
+                    </div>
+
+                    <div class="section-divider"></div>
                 </div>
 
+                {{-- Cédula --}}
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">¿A quién visita? <span class="text-danger">*</span></label>
-                    <input type="text" id="personaVisita" class="form-control" placeholder="Nombre del empleado o área" autocomplete="off">
-                    <div class="invalid-feedback" id="personaVisitaError"></div>
+                    <label class="form-label fw-semibold">Número de cédula <span class="text-danger">*</span></label>
+                    <input type="number" id="cedula" class="form-control form-control-lg"
+                           placeholder="Ej: 1234567890" inputmode="numeric" autocomplete="off">
+                    <div class="invalid-feedback" id="cedulaError"></div>
                 </div>
-            </div>
 
-            {{-- Cédula (siempre visible) --}}
-            <div class="mb-3">
-                <label class="form-label fw-semibold">Número de cédula <span class="text-danger">*</span></label>
-                <input type="number" id="cedula" class="form-control form-control-lg"
-                       placeholder="Ej: 1234567890" inputmode="numeric" autocomplete="off">
-                <div class="invalid-feedback" id="cedulaError"></div>
-            </div>
+                {{-- Foto --}}
+                <div class="mb-4" id="photoSection">
+                    <label class="form-label fw-semibold">Foto <span class="text-danger">*</span></label>
+                    <label class="photo-label" for="photoInput">
+                        <i class="fa-solid fa-camera"></i>
+                        <span id="photoLabelText">Toca para abrir la cámara</span>
+                    </label>
+                    <input type="file" id="photoInput" accept="image/*" capture="user" class="d-none">
+                    <img id="photoPreview" alt="Vista previa">
+                    <div class="text-danger small mt-1" id="photoError"></div>
+                </div>
 
-            {{-- Foto --}}
-            <div class="mb-4">
-                <label class="form-label fw-semibold">Foto <span class="text-danger">*</span></label>
-                <label class="photo-label" for="photoInput">
-                    <i class="fa-solid fa-camera"></i>
-                    <span id="photoLabelText">Toca para abrir la cámara</span>
-                </label>
-                <input type="file" id="photoInput" accept="image/*" capture="user" class="d-none">
-                <img id="photoPreview" alt="Vista previa">
-                <div class="text-danger small mt-1" id="photoError"></div>
+                <button type="button" class="btn btn-primary btn-lg w-100" id="btnSubmit" onclick="submitForm()" disabled>
+                    <span id="btnText"><i class="fa-solid fa-check me-1"></i> Registrar</span>
+                    <span id="btnSpinner" class="d-none">
+                        <span class="spinner-border me-1"></span> Registrando...
+                    </span>
+                </button>
             </div>
-
-            <button type="button" class="btn btn-primary btn-lg w-100" id="btnSubmit" onclick="submitForm()" disabled>
-                <span id="btnText"><i class="fa-solid fa-check me-1"></i> Registrar</span>
-                <span id="btnSpinner" class="d-none">
-                    <span class="spinner-border me-1"></span> Registrando...
-                </span>
-            </button>
         </div>
 
     </div>
@@ -211,10 +269,11 @@ function resetPaso2() {
     document.getElementById('photoLabelText').textContent = 'Toca para abrir la cámara';
     document.getElementById('photoPreview').style.display = 'none';
     document.getElementById('photoError').textContent = '';
-    document.getElementById('btnSubmit').disabled = true;
-    document.getElementById('btnText').classList.remove('d-none');
-    document.getElementById('btnSpinner').classList.add('d-none');
     document.getElementById('visitanteFields').style.display = 'none';
+
+    // Para empleado el formulario se muestra directo; para visitante espera a elegir tipo
+    document.getElementById('formBody').style.display = tipoUsuario === 'empleado' ? 'block' : 'none';
+
     ['btnEntrada','btnSalida'].forEach(id => {
         const btn = document.getElementById(id);
         btn.classList.remove('active','btn-success','btn-danger');
@@ -233,9 +292,15 @@ function setTipo(tipo) {
     document.getElementById('btnSalida').classList.toggle('btn-danger', !esEntrada);
     document.getElementById('btnSalida').classList.toggle('btn-outline-danger', esEntrada);
 
-    // Campos extra solo para visitante en entrada
-    const mostrarExtra = tipoUsuario === 'visitante' && esEntrada;
-    document.getElementById('visitanteFields').style.display = mostrarExtra ? 'block' : 'none';
+    if (tipoUsuario === 'visitante') {
+        // Mostrar el formulario solo después de elegir el tipo
+        document.getElementById('formBody').style.display = 'block';
+        // Campos extra solo en entrada
+        document.getElementById('visitanteFields').style.display = esEntrada ? 'block' : 'none';
+        // Foto solo en entrada
+        document.getElementById('photoSection').style.display = esEntrada ? 'block' : 'none';
+        if (!esEntrada) { fotoBase64 = null; }
+    }
 
     checkReady();
 }
@@ -263,7 +328,8 @@ document.getElementById('photoInput').addEventListener('change', function () {
 
 function checkReady() {
     const cedula = document.getElementById('cedula').value.trim();
-    let ok = tipoSeleccionado && fotoBase64 && cedula.length >= 5;
+    const fotoOpcional = tipoUsuario === 'visitante' && tipoSeleccionado === 'salida';
+    let ok = tipoSeleccionado && cedula.length >= 5 && (fotoOpcional || fotoBase64);
 
     // Campos extra para visitante entrada
     if (tipoUsuario === 'visitante' && tipoSeleccionado === 'entrada') {
@@ -290,7 +356,8 @@ async function submitForm() {
         document.getElementById('cedula').classList.remove('is-invalid');
     }
 
-    if (!fotoBase64) {
+    const fotoOpcional = tipoUsuario === 'visitante' && tipoSeleccionado === 'salida';
+    if (!fotoBase64 && !fotoOpcional) {
         document.getElementById('photoError').textContent = 'La foto es obligatoria.';
         ok = false;
     }

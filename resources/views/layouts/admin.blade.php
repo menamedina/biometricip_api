@@ -154,6 +154,12 @@
                                 <span class="menu-text">Empleados</span>
                             </a>
                         </li>
+                        <li class="side-nav-item">
+                            <a href="{{ route('admin.visitantes.index') }}" class="side-nav-link {{ request()->routeIs('admin.visitantes.*') ? 'active' : '' }}">
+                                <span class="menu-icon"><i class="ti ti-user-check"></i></span>
+                                <span class="menu-text">Visitantes</span>
+                            </a>
+                        </li>
 
                         <li class="side-nav-title mt-2">Asistencia</li>
                         <li class="side-nav-item">

@@ -4,8 +4,9 @@
 -- ============================================================
 
 -- 1. Agregar columna qr_v3_token a tbl_sedes
+--    Se ubica después de qr_static_token si existe; de lo contrario al final.
 ALTER TABLE `tbl_sedes`
-    ADD COLUMN `qr_v3_token` VARCHAR(64) NULL AFTER `qr_static_token`;
+    ADD COLUMN `qr_v3_token` VARCHAR(64) NULL;
 
 -- 2. Agregar 'qr_web' al ENUM metodo de tbl_registros_asistencia
 ALTER TABLE `tbl_registros_asistencia`
