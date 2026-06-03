@@ -91,8 +91,9 @@ Route::middleware(['auth:sanctum', 'tenancy'])->group(function () {
         Route::put('/mi-empresa',        [EmpresaController::class, 'updateMiEmpresa']);
 
         // Visitantes
-        Route::get('/visitantes',          [VisitanteController::class, 'index']);
-        Route::get('/visitantes/{id}/foto', [VisitanteController::class, 'foto']);
+        Route::get ('/visitantes',                    [VisitanteController::class, 'index']);
+        Route::get ('/visitantes/{id}/foto',          [VisitanteController::class, 'foto']);
+        Route::post('/visitantes/{id}/forzar-salida', [VisitanteController::class, 'forzarSalida']);
 
         // CRUD Empresas (solo admin_tenant)
         Route::get('/empresas',           [EmpresaController::class, 'index']);

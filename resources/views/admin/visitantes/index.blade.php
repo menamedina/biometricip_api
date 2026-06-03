@@ -66,7 +66,9 @@
                                     <th>Teléfono</th>
                                     <th>Entrada</th>
                                     <th>Salida</th>
+                                    <th>Tiempo en sede</th>
                                     <th>Foto</th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody id="visitantesTbody">
@@ -131,7 +133,7 @@ async function loadVisitantes() {
     const tbody = document.getElementById('visitantesTbody');
 
     if (!data.data || data.data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-3">Sin registros</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-3">Sin registros</td></tr>';
         return;
     }
 
@@ -145,9 +147,45 @@ async function loadVisitantes() {
             <td>${v.telefono ?? '—'}</td>
             <td><small>${formatDT(v.hora_entrada)}</small></td>
             <td><small>${v.hora_salida ? formatDT(v.hora_salida) : '<span class="badge bg-warning text-dark">En sede</span>'}</small></td>
+            <td><small>${tiempoEnSede(v.hora_entrada, v.hora_salida)}</small></td>
             <td>${v.imagen_entrada ? `<button class="btn btn-sm btn-outline-primary" onclick="verFoto(${v.id})"><i class="ti ti-photo"></i></button>` : '—'}</td>
+            <td>${botonForzarSalida(v)}</td>
         </tr>
     `).join('');
+}
+
+function tiempoEnSede(entrada, salida) {
+    if (!entrada) return '—';
+    const inicio = new Date(entrada);
+    const fin    = salida ? new Date(salida) : new Date();
+    const mins   = Math.floor((fin - inicio) / 60000);
+    if (mins < 0) return '—';
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    const texto = h > 0 ? `${h}h ${m}m` : `${m}m`;
+    return salida
+        ? texto
+        : `<span class="text-warning fw-semibold">${texto} ⏳</span>`;
+}
+
+function botonForzarSalida(v) {
+    if (v.hora_salida) return '';
+    const horas   = (new Date() - new Date(v.hora_entrada)) / 3600000;
+    const habilitado = horas >= 24;
+    const title   = habilitado ? 'Registrar salida forzada' : 'Se habilita tras 24h sin salida';
+    return `<button class="btn btn-sm btn-outline-danger" onclick="forzarSalida(${v.id})"
+        ${habilitado ? '' : 'disabled'} title="${title}">
+        <i class="ti ti-door-exit"></i>
+    </button>`;
+}
+
+async function forzarSalida(id) {
+    if (!confirm('¿Registrar salida forzada para este visitante?')) return;
+    await fetch(`/api/visitantes/${id}/forzar-salida`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    loadVisitantes();
 }
 
 function formatDT(dt) {

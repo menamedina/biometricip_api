@@ -10,6 +10,19 @@ use Illuminate\Http\Request;
 
 class VisitanteController extends Controller
 {
+    public function forzarSalida(int $id): JsonResponse
+    {
+        $visitante = Visitante::findOrFail($id);
+
+        if ($visitante->hora_salida) {
+            return response()->json(['message' => 'Ya tiene salida registrada.'], 422);
+        }
+
+        $visitante->update(['hora_salida' => now()]);
+
+        return response()->json(['success' => true, 'hora_salida' => $visitante->hora_salida]);
+    }
+
     public function foto(int $id): JsonResponse
     {
         $img = VisitanteImagen::where('visitante_id', $id)
