@@ -17,29 +17,11 @@
             box-shadow: none;
             border: none;
         }
-        @media (min-width: 700px) {
-            body {
-                display: flex;
-                align-items: flex-start;
-                justify-content: center;
-                padding: 32px 16px 48px;
-            }
-            .card-form {
-                width: 100%;
-                max-width: 520px;
-                min-height: unset;
-                border-radius: 18px;
-                box-shadow: 0 8px 32px rgba(79,70,229,.13);
-            }
-        }
         .sede-header {
             background: linear-gradient(135deg, #4F46E5, #7C3AED);
             border-radius: 0;
             padding: 28px 20px 22px;
             color: #fff;
-        }
-        @media (min-width: 700px) {
-            .sede-header { border-radius: 18px 18px 0 0; }
         }
         .sede-header h5 { font-size: 1rem; opacity: .85; margin-bottom: 4px; }
         .sede-header h3 { font-size: 1.5rem; font-weight: 700; margin: 0; }
@@ -163,10 +145,10 @@
             </div>
 
             {{-- Cuerpo del formulario — se muestra tras elegir tipo --}}
-            <div id="formBody" style="display:none;">
+            <div id="formBody" class="d-none">
 
                 {{-- Campos extra: solo visitante entrada --}}
-                <div id="visitanteFields" style="display:none;">
+                <div id="visitanteFields" class="d-none">
                     <div class="section-divider">Datos del visitante</div>
 
                     <div class="mb-3">
@@ -263,9 +245,10 @@ function selectTipoUsuario(tipo) {
 
     // Para visitante: ocultar form hasta que elija Entrada o Salida
     // Para empleado: mostrar form de inmediato
-    document.getElementById('formBody').style.display        = tipo === 'empleado' ? 'block' : 'none';
-    document.getElementById('visitanteFields').style.display = 'none';
-    document.getElementById('photoSection').style.display    = 'block';
+    const formBody = document.getElementById('formBody');
+    tipo === 'empleado' ? formBody.classList.remove('d-none') : formBody.classList.add('d-none');
+    document.getElementById('visitanteFields').classList.add('d-none');
+    document.getElementById('photoSection').classList.remove('d-none');
 
     document.getElementById('btnSubmit').disabled = true;
     document.getElementById('resultBox').style.display = 'none';
@@ -293,12 +276,11 @@ function setTipo(tipo) {
         : 'btn btn-outline-danger tipo-btn';
 
     if (tipoUsuario === 'visitante') {
-        // Mostrar el formulario solo después de elegir el tipo
-        document.getElementById('formBody').style.display        = 'block';
-        // Campos extra solo en entrada
-        document.getElementById('visitanteFields').style.display = esEntrada ? 'block' : 'none';
-        // Foto solo en entrada
-        document.getElementById('photoSection').style.display    = esEntrada ? 'block' : 'none';
+        document.getElementById('formBody').classList.remove('d-none');
+        const vf = document.getElementById('visitanteFields');
+        esEntrada ? vf.classList.remove('d-none') : vf.classList.add('d-none');
+        const ps = document.getElementById('photoSection');
+        esEntrada ? ps.classList.remove('d-none') : ps.classList.add('d-none');
         if (!esEntrada) fotoBase64 = null;
     }
 
