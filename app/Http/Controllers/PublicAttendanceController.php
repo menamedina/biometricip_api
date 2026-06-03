@@ -181,6 +181,15 @@ class PublicAttendanceController extends Controller
 
         $visitante->update(['hora_salida' => now()]);
 
+        if ($fotoFull) {
+            VisitanteImagen::create([
+                'visitante_id'     => $visitante->id,
+                'tipo'             => 'salida',
+                'foto_base64'      => $fotoFull,
+                'thumbnail_base64' => $fotoThumb ?? $fotoFull,
+            ]);
+        }
+
         return response()->json([
             'success' => true,
             'message' => '¡Salida registrada! Hasta pronto.',
