@@ -162,15 +162,14 @@
                         <input type="tel" id="telefono" class="form-control" placeholder="Ej: 3001234567" inputmode="numeric" autocomplete="off">
                     </div>
 
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label class="form-label fw-semibold">EPS</label>
-                            <input type="text" id="eps" class="form-control" placeholder="Ej: Sura" autocomplete="off">
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label fw-semibold">ARL</label>
-                            <input type="text" id="arl" class="form-control" placeholder="Ej: Positiva" autocomplete="off">
-                        </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">EPS</label>
+                        <input type="text" id="eps" class="form-control" placeholder="Ej: Sura" autocomplete="off">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">ARL</label>
+                        <input type="text" id="arl" class="form-control" placeholder="Ej: Positiva" autocomplete="off">
                     </div>
 
                     <div class="mb-3">
