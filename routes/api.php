@@ -12,8 +12,14 @@ use App\Http\Controllers\Api\PermisoController;
 use App\Http\Controllers\Api\FestivoController;
 use App\Http\Controllers\Api\EmpresaController;
 use App\Http\Controllers\Api\DeviceController;
+use App\Http\Controllers\Api\AdmsController;
 use App\Http\Controllers\Api\VisitanteController;
 use Illuminate\Support\Facades\Route;
+
+// ADMS — ZKTeco PUSH (sin autenticación, el dispositivo envía marcaciones)
+Route::get ('/iclock/cdata',      [AdmsController::class, 'cdata']);
+Route::post('/iclock/cdata',      [AdmsController::class, 'cdata']);
+Route::get ('/iclock/getrequest', [AdmsController::class, 'getrequest']);
 
 // Pública
 Route::post('/auth/login', [AuthController::class, 'login']);
