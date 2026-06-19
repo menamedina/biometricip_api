@@ -4,7 +4,13 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\PublicAttendanceController;
 use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\AdmsController;
 use Illuminate\Support\Facades\Route;
+
+// ZKTeco ADMS PUSH — sin autenticación ni CSRF
+Route::get ('/iclock/cdata',      [AdmsController::class, 'cdata']);
+Route::post('/iclock/cdata',      [AdmsController::class, 'cdata']);
+Route::get ('/iclock/getrequest', [AdmsController::class, 'getrequest']);
 
 Route::get('/', function () {
     return view('welcome');

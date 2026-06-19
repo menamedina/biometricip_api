@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo('/admin/login');
         $middleware->validateCsrfTokens(except: [
             'asistencia/*',
+            'iclock/*',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
