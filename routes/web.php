@@ -93,5 +93,6 @@ Route::middleware(['auth', 'admin', 'tenancy.session'])->group(function () {
     Route::get('/admin/festivos',      [AdminController::class, 'festivosIndex'])->name('admin.festivos.index');
     Route::get('/admin/empresas',      [AdminController::class, 'empresasIndex'])->name('admin.empresas.index');
     Route::get('/admin/visitantes',    [AdminController::class, 'visitantesIndex'])->name('admin.visitantes.index');
+    Route::get('/admin/dispositivos', [AdminController::class, 'dispositivosIndex'])->name('admin.dispositivos.index');
     Route::get('/admin/reports/export', [ReportController::class, 'attendance'])->name('admin.reports.export');
 });

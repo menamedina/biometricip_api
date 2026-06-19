@@ -161,6 +161,13 @@
                             </a>
                         </li>
 
+                        <li class="side-nav-item">
+                            <a href="{{ route('admin.dispositivos.index') }}" class="side-nav-link {{ request()->routeIs('admin.dispositivos.*') ? 'active' : '' }}">
+                                <span class="menu-icon"><i class="ti ti-fingerprint"></i></span>
+                                <span class="menu-text">Dispositivos</span>
+                            </a>
+                        </li>
+
                         <li class="side-nav-title mt-2">Asistencia</li>
                         <li class="side-nav-item">
                             <a href="{{ route('admin.attendance.index') }}" class="side-nav-link {{ request()->routeIs('admin.attendance.*') ? 'active' : '' }}">
@@ -321,6 +328,7 @@
     </script>
     <script src="{{ asset('assets/js/vendors.min.js') }}"></script>
     <script src="{{ asset('assets/js/app.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         // Sincronizar checkmarks y botones activos del customizer
         function syncCustomizer() {

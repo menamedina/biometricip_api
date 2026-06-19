@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\HorarioController;
 use App\Http\Controllers\Api\PermisoController;
 use App\Http\Controllers\Api\FestivoController;
 use App\Http\Controllers\Api\EmpresaController;
+use App\Http\Controllers\Api\DeviceController;
 use App\Http\Controllers\Api\VisitanteController;
 use Illuminate\Support\Facades\Route;
 
@@ -101,6 +102,15 @@ Route::middleware(['auth:sanctum', 'tenancy'])->group(function () {
         Route::get('/empresas/{id}',      [EmpresaController::class, 'showById']);
         Route::put('/empresas/{id}',      [EmpresaController::class, 'updateById']);
         Route::delete('/empresas/{id}',   [EmpresaController::class, 'destroyById']);
+
+        // Dispositivos biométricos ZKTeco
+        Route::post('/devices/ping',                    [DeviceController::class, 'ping']);
+        Route::apiResource('devices', DeviceController::class);
+        Route::get ('/devices/{id}/test',               [DeviceController::class, 'testConnection']);
+        Route::get ('/devices/{id}/users',              [DeviceController::class, 'deviceUsers']);
+        Route::post('/devices/{id}/sync',               [DeviceController::class, 'syncAttendance']);
+        Route::post('/devices/{id}/clear',              [DeviceController::class, 'clearDevice']);
+        Route::get ('/devices/{id}/sync-history',       [DeviceController::class, 'syncHistory']);
     });
 });
 

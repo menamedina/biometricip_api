@@ -60,4 +60,9 @@ class AdminController extends Controller
     {
         return view('admin.visitantes.index');
     }
+
+    public function dispositivosIndex(): View
+    {
+        return view('admin.dispositivos.index');
+    }
 }
