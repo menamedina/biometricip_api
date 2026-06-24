@@ -180,20 +180,18 @@ class AdmsController extends Controller
     private function handleRegistration(string $sn): Response
     {
         $body  = "GET OPTION FROM: {$sn}\r\n";
-        $body .= "ATTLOGStamp=0\r\n";
-        $body .= "OPERLOGStamp=0\r\n";
-        $body .= "ATTPHOTOStamp=0\r\n";
+        $body .= "Stamp=0\r\n";
+        $body .= "OpStamp=0\r\n";
         $body .= "ErrorDelay=30\r\n";
         $body .= "Delay=10\r\n";
-        // TransTimes cada 30 minutos (alternativa al TransInterval):
-        // $body .= "TransTimes=00:00;00:30;01:00;01:30;...;23:30\r\n";
+        $body .= "TransTimes=00:00;14:05\r\n";
         $body .= "TransInterval=1\r\n";
-        $body .= "TransFlag=TransData AttLog OpLog AttPhoto\r\n";
+        $body .= "TransFlag=1111000000\r\n";
         $body .= "TimeZone=0\r\n";
         $body .= "Realtime=1\r\n";
-        $body .= "Encrypt=0\r\n";
-        $body .= "ServerVer=2.4.1\r\n";
-        $body .= "PushProtVer=2.4.1\r\n";
+        $body .= "Encrypt=0";
+
+        Log::info('ADMS registration response', ['SN' => $sn, 'body' => $body]);
 
         return response($body, 200)->header('Content-Type', 'text/plain');
     }
