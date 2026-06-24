@@ -48,8 +48,12 @@ class AdmsController extends Controller
      */
     public function getrequest(Request $request): Response
     {
-        Log::info('ADMS getrequest', ['SN' => $request->query('SN')]);
-        return response("OK", 200)->header('Content-Type', 'text/plain');
+        $sn = $request->query('SN');
+        Log::info('ADMS getrequest', ['SN' => $sn]);
+
+        // Comando para forzar al dispositivo a subir marcaciones
+        $command = "C:1:DATA QUERY ATTLOG StartTime=2020-01-01 00:00:00\tEndTime=2035-12-31 23:59:59";
+        return response($command, 200)->header('Content-Type', 'text/plain');
     }
 
     /**
