@@ -45,9 +45,9 @@ class AdmsController extends Controller
         if ($request->isMethod('POST') && $table === 'options') {
             Log::info('ADMS cdata options', ['SN' => $sn, 'body' => $request->getContent()]);
             $resp  = "OK\r\n";
-            $resp .= "ATTLOGStamp=0\r\n";
-            $resp .= "OPERLOGStamp=0\r\n";
-            $resp .= "ATTPHOTOStamp=0";
+            $resp .= "Stamp=0\r\n";
+            $resp .= "OpStamp=0\r\n";
+            $resp .= "PhotoStamp=0";
             return response($resp, 200)->header('Content-Type', 'text/plain');
         }
 
@@ -189,7 +189,8 @@ class AdmsController extends Controller
         $body .= "OpStamp=0\r\n";
         $body .= "ErrorDelay=30\r\n";
         $body .= "Delay=10\r\n";
-        $body .= "TransTimes=00:00;14:05\r\n";
+        // TransTimes cada 30 minutos (alternativa al TransInterval):
+        // $body .= "TransTimes=00:00;00:30;01:00;01:30;...;23:30\r\n";
         $body .= "TransInterval=1\r\n";
         $body .= "TransFlag=1111000000\r\n";
         $body .= "TimeZone=0\r\n";
