@@ -51,9 +51,7 @@ class AdmsController extends Controller
         $sn = $request->query('SN');
         Log::info('ADMS getrequest', ['SN' => $sn]);
 
-        // Comando para forzar al dispositivo a subir marcaciones
-        $command = "C:1:DATA QUERY ATTLOG StartTime=2020-01-01 00:00:00\tEndTime=2035-12-31 23:59:59";
-        return response($command, 200)->header('Content-Type', 'text/plain');
+        return response("OK", 200)->header('Content-Type', 'text/plain');
     }
 
     /**
@@ -62,7 +60,7 @@ class AdmsController extends Controller
     private function handleRegistration(string $sn): Response
     {
         $body  = "GET OPTION FROM: {$sn}\r\n";
-        $body .= "ATTLOGStamp=9999\r\n";
+        $body .= "ATTLOGStamp=0\r\n";
         $body .= "OPERLOGStamp=9999\r\n";
         $body .= "ATTPHOTOStamp=0\r\n";
         $body .= "ErrorDelay=30\r\n";
