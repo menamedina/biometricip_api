@@ -50,10 +50,11 @@ class AgentController extends Controller
             'registros' => 'required|array|min:1',
         ]);
 
-        $empresa   = $request->_empresa;
-        $device    = DispositivoBiometrico::where('id', $request->device_id)
-                        ->where('sede_id', '!=', null)
-                        ->first();
+        $empresa = $request->_empresa;
+
+        $device = DispositivoBiometrico::where('id', $request->device_id)
+                    ->whereNotNull('sede_id')
+                    ->first();
 
         if (!$device) {
             return response()->json(['message' => 'Dispositivo no encontrado.'], 404);
@@ -61,9 +62,11 @@ class AgentController extends Controller
 
         $records = $request->registros;
 
-        // Mapear cédulas a user_ids
+        // Mapear cédulas a user_ids — filtrado por empresa
         $cedulas = collect($records)->pluck('id')->unique()->filter()->toArray();
-        $userMap = User::whereIn('cedula', $cedulas)->pluck('id', 'cedula');
+        $userMap = User::whereIn('cedula', $cedulas)
+                        ->where('empresa_id', $empresa->id)
+                        ->pluck('id', 'cedula');
 
         $created = 0;
         $skipped = 0;
@@ -99,8 +102,8 @@ class AgentController extends Controller
                 continue;
             }
 
-            $empleado = User::find($userId);
-            $horario  = $empleado->horario_id ? Horario::find($empleado->horario_id) : null;
+            $empleado = User::where('id', $userId)->where('empresa_id', $empresa->id)->first();
+            $horario  = $empleado?->horario_id ? Horario::find($empleado->horario_id) : null;
 
             AttendanceRecord::create([
                 'user_id'               => $userId,

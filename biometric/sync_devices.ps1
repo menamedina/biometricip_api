@@ -9,6 +9,11 @@ $AGENT_TOKEN = "jaLESXY799kLsQelzgMNgzVAAwJkjIi8bqfLq1x5EHerD3sF"
 #$AGENT_TOKEN = "7nWBS1dkjwjBCrziCMeNA6HtWoCY0k8c0RIdnfj2N8e1IvXq"
 $PHP_PATH    = "php"
 $SCRIPT_DIR  = $PSScriptRoot
+
+# Dispositivos locales: id = ID en el sistema, ip = IP local, puerto = puerto
+$DEVICES = @(
+    @{ id = 1; nombre = "MB160 Principal"; ip = "10.1.40.23"; puerto = 4370 }
+)
 # ---------------------
 
 $headers = @{
@@ -23,23 +28,9 @@ function Write-Log {
 }
 
 Write-Log "=== BiometricIP Sync Agent ===" "Cyan"
-Write-Log "Obteniendo dispositivos desde el VPS..."
+Write-Log "Dispositivos configurados: $($DEVICES.Count)" "Green"
 
-try {
-    $res     = Invoke-RestMethod -Uri "$VPS_URL/api/agent/devices" -Method GET -Headers $headers
-    $devices = $res.devices
-    Write-Log "Dispositivos encontrados: $($devices.Count)" "Green"
-} catch {
-    Write-Log "ERROR al obtener dispositivos: $_" "Red"
-    exit 1
-}
-
-if ($devices.Count -eq 0) {
-    Write-Log "No hay dispositivos activos. Fin." "Yellow"
-    exit 0
-}
-
-foreach ($device in $devices) {
+foreach ($device in $DEVICES) {
     Write-Log "Procesando: $($device.nombre) ($($device.ip):$($device.puerto))" "Cyan"
 
     $phpOutput = & $PHP_PATH "$SCRIPT_DIR\get_attendance.php" $device.ip $device.puerto 2>&1
