@@ -47,6 +47,7 @@ class AgentController extends Controller
     {
         $request->validate([
             'device_id' => 'required|integer',
+            'serial'    => 'required|string',
             'registros' => 'required|array|min:1',
         ]);
 
@@ -54,10 +55,16 @@ class AgentController extends Controller
 
         $device = DispositivoBiometrico::where('id', $request->device_id)
                     ->whereNotNull('sede_id')
+                    ->where('is_active', true)
+                    ->with('sede')
                     ->first();
 
         if (!$device) {
             return response()->json(['message' => 'Dispositivo no encontrado.'], 404);
+        }
+
+        if ($device->numero_serie && $device->numero_serie !== $request->serial) {
+            return response()->json(['message' => 'Serial del dispositivo no coincide.'], 403);
         }
 
         $records = $request->registros;

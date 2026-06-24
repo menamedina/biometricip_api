@@ -13,6 +13,8 @@ $SCRIPT_DIR  = $PSScriptRoot
 # Dispositivos locales: id = ID en el sistema, ip = IP local, puerto = puerto
 $DEVICES = @(
     @{ id = 1; nombre = "MB160 Principal"; ip = "10.1.40.23"; puerto = 4370 }
+     <# @{ id = 2; nombre = "MB160 Recepcion";   ip = "10.1.40.24"; puerto = 4370 }
+      @{ id = 3; nombre = "MB160 Bodega";      ip = "10.1.40.25"; puerto = 4370 } #>
 )
 # ---------------------
 
@@ -56,6 +58,7 @@ foreach ($device in $DEVICES) {
 
     $body = @{
         device_id = $device.id
+        serial    = $data.serial
         registros = $data.registros
     } | ConvertTo-Json -Depth 5
 

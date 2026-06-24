@@ -21,6 +21,7 @@ try {
         exit(1);
     }
 
+    $serial     = trim(str_replace('~SerialNumber=', '', $zk->serialNumber()));
     $attendance = @$zk->getAttendance();
     $zk->disconnect();
 
@@ -28,6 +29,7 @@ try {
         'success'    => true,
         'ip'         => $ip,
         'puerto'     => $port,
+        'serial'     => $serial,
         'total'      => is_array($attendance) ? count($attendance) : 0,
         'registros'  => is_array($attendance) ? $attendance : [],
     ]);
