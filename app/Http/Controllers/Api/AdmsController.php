@@ -44,10 +44,7 @@ class AdmsController extends Controller
         // para que sepa qué datos debe enviar a continuación.
         if ($request->isMethod('POST') && $table === 'options') {
             Log::info('ADMS cdata options', ['SN' => $sn, 'body' => $request->getContent()]);
-            $resp  = "OK\r\n";
-            $resp .= "Stamp=0\r\n";
-            $resp .= "OpStamp=0\r\n";
-            $resp .= "PhotoStamp=0";
+            $resp = "OK";
             return response($resp, 200)->header('Content-Type', 'text/plain');
         }
 
@@ -185,7 +182,7 @@ class AdmsController extends Controller
     private function handleRegistration(string $sn): Response
     {
         $body  = "GET OPTION FROM: {$sn}\r\n";
-        $body .= "Stamp=0\r\n";
+        $body .= "Stamp=-1\r\n";
         $body .= "OpStamp=0\r\n";
         $body .= "ErrorDelay=30\r\n";
         $body .= "Delay=10\r\n";
