@@ -45,20 +45,13 @@ class AdmsController extends Controller
 
     /**
      * GET /iclock/getrequest — el dispositivo solicita comandos pendientes.
-     * Con pushver=2.4.1 (MB160), enviamos DATA QUERY ATTLOG para que el
-     * dispositivo envíe sus registros a POST /iclock/devicecmd.
      */
     public function getrequest(Request $request): Response
     {
         $sn = $request->query('SN');
         Log::info('ADMS getrequest', ['SN' => $sn]);
 
-        // Comando con ID único (timestamp) para que el dispositivo lo ejecute siempre.
-        // El dispositivo responderá enviando sus ATTLOG a POST /iclock/devicecmd.
-        $cmdId = time();
-        $cmd   = "C:{$cmdId}:DATA QUERY ATTLOG StartTime=2000-01-01 00:00:00\r\n";
-
-        return response($cmd, 200)->header('Content-Type', 'text/plain');
+        return response("OK", 200)->header('Content-Type', 'text/plain');
     }
 
     /**
@@ -72,8 +65,9 @@ class AdmsController extends Controller
         $body = $request->getContent();
 
         Log::info('ADMS devicecmd', [
-            'SN'      => $sn,
-            'preview' => substr($body, 0, 300),
+            'SN'          => $sn,
+            'query'       => $request->query(),
+            'body_full'   => $body,
         ]);
 
         if (!$sn) {
