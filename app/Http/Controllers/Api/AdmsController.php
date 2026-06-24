@@ -40,10 +40,15 @@ class AdmsController extends Controller
             return $this->handleAttendancePush($sn, $request);
         }
 
-        // pushver=2.4.1: el dispositivo envía sus opciones al servidor antes de empezar a hacer push
+        // pushver=2.4.1: el dispositivo envía sus opciones; respondemos con los stamps
+        // para que sepa qué datos debe enviar a continuación.
         if ($request->isMethod('POST') && $table === 'options') {
             Log::info('ADMS cdata options', ['SN' => $sn, 'body' => $request->getContent()]);
-            return response("OK", 200)->header('Content-Type', 'text/plain');
+            $resp  = "OK\r\n";
+            $resp .= "ATTLOGStamp=0\r\n";
+            $resp .= "OPERLOGStamp=0\r\n";
+            $resp .= "ATTPHOTOStamp=0";
+            return response($resp, 200)->header('Content-Type', 'text/plain');
         }
 
         return $this->handleRegistration($sn);
@@ -189,7 +194,8 @@ class AdmsController extends Controller
         $body .= "TransFlag=1111000000\r\n";
         $body .= "TimeZone=0\r\n";
         $body .= "Realtime=1\r\n";
-        $body .= "Encrypt=0";
+        $body .= "Encrypt=0\r\n";
+        $body .= "PushProtVer=2.4.1";
 
         Log::info('ADMS registration response', ['SN' => $sn, 'body' => $body]);
 
