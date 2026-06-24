@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenancy'         => \App\Http\Middleware\InitializeTenancyByToken::class,
             'tenancy.session' => \App\Http\Middleware\InitializeTenancyBySession::class,
             'superadmin'      => \App\Http\Middleware\SuperAdminMiddleware::class,
+            'agent.token'     => \App\Http\Middleware\ValidateAgentToken::class,
         ]);
         $middleware->redirectGuestsTo('/admin/login');
         $middleware->validateCsrfTokens(except: [

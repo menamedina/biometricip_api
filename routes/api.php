@@ -11,10 +11,17 @@ use App\Http\Controllers\Api\HorarioController;
 use App\Http\Controllers\Api\PermisoController;
 use App\Http\Controllers\Api\FestivoController;
 use App\Http\Controllers\Api\EmpresaController;
+use App\Http\Controllers\Api\AgentController;
 use App\Http\Controllers\Api\DeviceController;
 use App\Http\Controllers\Api\AdmsController;
 use App\Http\Controllers\Api\VisitanteController;
 use Illuminate\Support\Facades\Route;
+
+// Agente local — sincronización desde servicio Windows
+Route::middleware('agent.token')->group(function () {
+    Route::get ('/agent/devices', [AgentController::class, 'getDevices']);
+    Route::post('/agent/sync',    [AgentController::class, 'syncAttendance']);
+});
 
 // ADMS — ZKTeco PUSH (sin autenticación, el dispositivo envía marcaciones)
 Route::get ('/iclock/cdata',      [AdmsController::class, 'cdata']);
@@ -104,11 +111,13 @@ Route::middleware(['auth:sanctum', 'tenancy'])->group(function () {
         Route::post('/visitantes/{id}/forzar-salida', [VisitanteController::class, 'forzarSalida']);
 
         // CRUD Empresas (solo admin_tenant)
-        Route::get('/empresas',           [EmpresaController::class, 'index']);
-        Route::post('/empresas',          [EmpresaController::class, 'store']);
-        Route::get('/empresas/{id}',      [EmpresaController::class, 'showById']);
-        Route::put('/empresas/{id}',      [EmpresaController::class, 'updateById']);
-        Route::delete('/empresas/{id}',   [EmpresaController::class, 'destroyById']);
+        Route::get('/empresas',                          [EmpresaController::class, 'index']);
+        Route::post('/empresas',                         [EmpresaController::class, 'store']);
+        Route::get('/empresas/{id}',                     [EmpresaController::class, 'showById']);
+        Route::put('/empresas/{id}',                     [EmpresaController::class, 'updateById']);
+        Route::delete('/empresas/{id}',                  [EmpresaController::class, 'destroyById']);
+        Route::post('/empresas/{id}/agent-token',        [EmpresaController::class, 'generateAgentToken']);
+        Route::delete('/empresas/{id}/agent-token',      [EmpresaController::class, 'revokeAgentToken']);
 
         // Dispositivos biométricos ZKTeco
         Route::post('/devices/ping',                    [DeviceController::class, 'ping']);

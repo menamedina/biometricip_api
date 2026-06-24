@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Str;
 
 class EmpresaController extends Controller
 {
@@ -100,6 +101,44 @@ class EmpresaController extends Controller
         $empresa = Empresa::findOrFail($id);
         $empresa->update(['is_active' => false]);
         return response()->json(['message' => 'Empresa desactivada.']);
+    }
+
+    // --- Token de agente local ---
+
+    public function generateAgentToken(Request $request, int $id): JsonResponse
+    {
+        if ($denied = $this->checkAdminTenant($request)) return $denied;
+
+        $request->validate([
+            'vigencia_dias' => 'nullable|integer|min:1|max:3650',
+        ]);
+
+        $empresa = Empresa::findOrFail($id);
+        $dias    = $request->vigencia_dias ?? 365;
+
+        $token = Str::random(48);
+
+        $empresa->update([
+            'agent_token'         => $token,
+            'agent_token_vigencia' => now()->addDays($dias),
+        ]);
+
+        return response()->json([
+            'message'   => 'Token generado correctamente.',
+            'token'     => $token,
+            'vigencia'  => $empresa->agent_token_vigencia->format('Y-m-d H:i:s'),
+            'dias'      => $dias,
+        ]);
+    }
+
+    public function revokeAgentToken(Request $request, int $id): JsonResponse
+    {
+        if ($denied = $this->checkAdminTenant($request)) return $denied;
+
+        $empresa = Empresa::findOrFail($id);
+        $empresa->update(['agent_token' => null, 'agent_token_vigencia' => null]);
+
+        return response()->json(['message' => 'Token revocado.']);
     }
 
     // --- Empresa propia (admin normal) ---

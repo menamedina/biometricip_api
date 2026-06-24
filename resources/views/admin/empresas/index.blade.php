@@ -118,6 +118,54 @@
         </div>
     </div>
 </div>
+<!-- Modal Token Agente -->
+<div class="modal fade" id="tokenModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa-solid fa-key me-2"></i>Token Agente — <span id="tokenEmpresaNombre"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="tokenEmpresaId">
+
+                <div id="tokenActual" class="mb-3" style="display:none">
+                    <label class="form-label text-muted">Token actual</label>
+                    <div class="input-group">
+                        <input type="text" id="tokenMasked" class="form-control font-monospace" readonly>
+                        <button class="btn btn-outline-danger" onclick="revokeToken()" title="Revocar token">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                    <small class="text-muted" id="tokenVigencia"></small>
+                </div>
+
+                <div id="tokenSinToken" class="alert alert-warning mb-3" style="display:none">
+                    <i class="fa-solid fa-triangle-exclamation me-1"></i> No hay token generado para esta empresa.
+                </div>
+
+                <div id="tokenNuevo" class="mb-3" style="display:none">
+                    <label class="form-label text-success fw-bold">Token generado — cópialo ahora, no se volverá a mostrar completo</label>
+                    <div class="input-group">
+                        <input type="text" id="tokenNuevoValor" class="form-control font-monospace" readonly>
+                        <button class="btn btn-outline-secondary" onclick="copyToken()"><i class="fa-solid fa-copy"></i></button>
+                    </div>
+                </div>
+
+                <hr>
+                <label class="form-label">Vigencia (días)</label>
+                <input type="number" id="tokenDias" class="form-control" value="365" min="1" max="3650">
+                <small class="text-muted">Por defecto 365 días.</small>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" onclick="generateToken()">
+                    <i class="fa-solid fa-rotate me-1"></i> Generar nuevo token
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -175,6 +223,7 @@ async function loadEmpresas() {
                     <td><span class="badge ${e.is_active ? 'bg-success' : 'bg-danger'}">${e.is_active ? 'Activa' : 'Inactiva'}</span></td>
                     <td>
                         <button class="btn btn-sm btn-outline-primary me-1" onclick="editEmpresa(${e.id})"><i class="fa-solid fa-pen"></i></button>
+                        <button class="btn btn-sm btn-outline-secondary me-1" onclick="openTokenModal(${e.id}, '${e.nombre}', ${JSON.stringify(e.agent_token ? '****' + e.agent_token.slice(-6) : null)}, ${JSON.stringify(e.agent_token_vigencia || null)})" title="Token agente"><i class="fa-solid fa-key"></i></button>
                         ${e.is_active
                             ? `<button class="btn btn-sm btn-outline-danger" onclick="deleteEmpresa(${e.id})"><i class="fa-solid fa-ban"></i></button>`
                             : `<button class="btn btn-sm btn-outline-success" onclick="activarEmpresa(${e.id})"><i class="fa-solid fa-check"></i></button>`
@@ -272,5 +321,75 @@ async function activarEmpresa(id) {
 }
 
 document.addEventListener('DOMContentLoaded', loadEmpresas);
+
+// --- Token Agente ---
+
+function openTokenModal(id, nombre, tokenMasked, vigencia) {
+    document.getElementById('tokenEmpresaId').value        = id;
+    document.getElementById('tokenEmpresaNombre').textContent = nombre;
+    document.getElementById('tokenNuevo').style.display    = 'none';
+    document.getElementById('tokenNuevoValor').value       = '';
+
+    if (tokenMasked) {
+        document.getElementById('tokenActual').style.display    = '';
+        document.getElementById('tokenSinToken').style.display  = 'none';
+        document.getElementById('tokenMasked').value            = tokenMasked;
+        document.getElementById('tokenVigencia').textContent    = vigencia ? `Vigente hasta: ${vigencia}` : '';
+    } else {
+        document.getElementById('tokenActual').style.display    = 'none';
+        document.getElementById('tokenSinToken').style.display  = '';
+    }
+
+    new bootstrap.Modal(document.getElementById('tokenModal')).show();
+}
+
+async function generateToken() {
+    const id   = document.getElementById('tokenEmpresaId').value;
+    const dias = parseInt(document.getElementById('tokenDias').value) || 365;
+
+    try {
+        const res = await fetch(`/api/empresas/${id}/agent-token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ vigencia_dias: dias }),
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+            document.getElementById('tokenNuevoValor').value    = data.token;
+            document.getElementById('tokenNuevo').style.display = '';
+            document.getElementById('tokenActual').style.display   = '';
+            document.getElementById('tokenSinToken').style.display = 'none';
+            document.getElementById('tokenMasked').value           = '****' + data.token.slice(-6);
+            document.getElementById('tokenVigencia').textContent   = `Vigente hasta: ${data.vigencia}`;
+            loadEmpresas();
+        } else {
+            alert(data.message || 'Error generando token');
+        }
+    } catch(e) { console.error(e); }
+}
+
+async function revokeToken() {
+    if (!confirm('¿Revocar el token? El agente dejará de funcionar hasta generar uno nuevo.')) return;
+    const id = document.getElementById('tokenEmpresaId').value;
+
+    try {
+        const res = await fetch(`/api/empresas/${id}/agent-token`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (res.ok) {
+            document.getElementById('tokenActual').style.display   = 'none';
+            document.getElementById('tokenSinToken').style.display = '';
+            document.getElementById('tokenNuevo').style.display    = 'none';
+            loadEmpresas();
+        }
+    } catch(e) { console.error(e); }
+}
+
+function copyToken() {
+    const val = document.getElementById('tokenNuevoValor').value;
+    navigator.clipboard.writeText(val).then(() => alert('Token copiado al portapapeles'));
+}
 </script>
 @endpush
