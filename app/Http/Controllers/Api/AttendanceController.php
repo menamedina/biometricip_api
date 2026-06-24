@@ -40,7 +40,7 @@ class AttendanceController extends Controller
             $query->where('user_id', $request->user_id);
         }
 
-        $records = $query->with(['photo', 'horario'])->orderBy('fecha_hora', 'asc')->paginate($request->per_page ?? 50);
+        $records = $query->with(['photo', 'horario'])->orderBy('fecha_hora', 'desc')->paginate($request->per_page ?? 50);
 
         return response()->json($records);
     }
