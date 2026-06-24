@@ -178,14 +178,15 @@ class AdmsController extends Controller
         $body .= "OPERLOGStamp=9999\r\n";
         $body .= "ATTPHOTOStamp=0\r\n";
         $body .= "ErrorDelay=30\r\n";
-        $body .= "Delay=60\r\n";
+        $body .= "Delay=10\r\n";
         // TransTimes cada 30 minutos (alternativa al TransInterval):
         // $body .= "TransTimes=00:00;00:30;01:00;01:30;...;23:30\r\n";
         $body .= "TransInterval=1\r\n";
-        $body .= "TransFlag=TransData AttLog\r\n";
+        $body .= "TransFlag=AttLog\r\n";
         $body .= "TimeZone=0\r\n";
         $body .= "Realtime=1\r\n";
         $body .= "Encrypt=0\r\n";
+        $body .= "PushProtVer=2.4.1\r\n";
 
         return response($body, 200)->header('Content-Type', 'text/plain');
     }
