@@ -193,6 +193,7 @@ class AdmsController extends Controller
         $body .= "Realtime=1\r\n";
         $body .= "Encrypt=0\r\n";
         $body .= "ServerVer=2.4.1\r\n";
+        $body .= "PushProtVer=2.4.1\r\n";
 
         return response($body, 200)->header('Content-Type', 'text/plain');
     }
