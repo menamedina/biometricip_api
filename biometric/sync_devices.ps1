@@ -2,8 +2,11 @@
 # Ruta final: C:\ExpertosIP\biometric\sync_devices.ps1
 
 # --- CONFIGURACION ---
-$VPS_URL     = "http://82.180.160.92:8000"
-$AGENT_TOKEN = "7nWBS1dkjwjBCrziCMeNA6HtWoCY0k8c0RIdnfj2N8e1IvXq"
+$VPS_URL     = "https://biometricip.innovasoftip.com"
+#$VPS_URL    = "http://82.180.160.92:8000"
+#$VPS_URL    = "http://10.1.40.14:8000"
+$AGENT_TOKEN = "jaLESXY799kLsQelzgMNgzVAAwJkjIi8bqfLq1x5EHerD3sF"
+#$AGENT_TOKEN = "7nWBS1dkjwjBCrziCMeNA6HtWoCY0k8c0RIdnfj2N8e1IvXq"
 $PHP_PATH    = "php"
 $SCRIPT_DIR  = $PSScriptRoot
 # ---------------------

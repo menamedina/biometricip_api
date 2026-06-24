@@ -34,10 +34,10 @@ class DeviceController extends Controller
     public function store(Request $request): JsonResponse
     {
         $request->validate([
-            'sede_id' => 'required|integer|exists:tbl_sedes,id',
-            'nombre'  => 'required|string|max:255',
-            'ip'      => 'required|ip',
-            'puerto'  => 'nullable|integer|min:1|max:65535',
+            'sede_id'  => 'required|integer|exists:tbl_sedes,id',
+            'nombre'   => 'required|string|max:255',
+            'ip'       => 'required|ip',
+            'puerto'   => 'nullable|integer|min:1|max:65535',
         ]);
 
         // Probar conexión antes de guardar
