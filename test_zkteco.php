@@ -8,7 +8,7 @@ require __DIR__ . '/vendor/autoload.php';
 
 use Rats\Zkteco\Lib\ZKTeco;
 
-$ip = '10.1.40.23';
+$ip = '177.253.207.186';
 $port = 4370;
 
 echo "=== Prueba de conexión ZKTeco MB160 ===\n";
