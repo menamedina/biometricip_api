@@ -40,6 +40,12 @@ class AdmsController extends Controller
             return $this->handleAttendancePush($sn, $request);
         }
 
+        // pushver=2.4.1: el dispositivo envía sus opciones al servidor antes de empezar a hacer push
+        if ($request->isMethod('POST') && $table === 'options') {
+            Log::info('ADMS cdata options', ['SN' => $sn, 'body' => $request->getContent()]);
+            return response("OK", 200)->header('Content-Type', 'text/plain');
+        }
+
         return $this->handleRegistration($sn);
     }
 
