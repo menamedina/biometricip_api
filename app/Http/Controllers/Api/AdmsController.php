@@ -44,14 +44,134 @@ class AdmsController extends Controller
     }
 
     /**
-     * GET /api/iclock/getrequest — el dispositivo solicita comandos pendientes
+     * GET /iclock/getrequest — el dispositivo solicita comandos pendientes.
+     * Con pushver=2.4.1 (MB160), enviamos DATA QUERY ATTLOG para que el
+     * dispositivo envíe sus registros a POST /iclock/devicecmd.
      */
     public function getrequest(Request $request): Response
     {
         $sn = $request->query('SN');
         Log::info('ADMS getrequest', ['SN' => $sn]);
 
-        return response("OK", 200)->header('Content-Type', 'text/plain');
+        // Comando con ID único (timestamp) para que el dispositivo lo ejecute siempre.
+        // El dispositivo responderá enviando sus ATTLOG a POST /iclock/devicecmd.
+        $cmdId = time();
+        $cmd   = "C:{$cmdId}:DATA QUERY ATTLOG StartTime=2000-01-01 00:00:00\r\n";
+
+        return response($cmd, 200)->header('Content-Type', 'text/plain');
+    }
+
+    /**
+     * POST /iclock/devicecmd — el dispositivo envía aquí la respuesta a comandos
+     * (incluyendo los registros ATTLOG resultado de DATA QUERY ATTLOG).
+     * Formato ATTLOG: userid\tchecktime\tstatus\tverify\tworkcode\treserved
+     */
+    public function devicecmd(Request $request): Response
+    {
+        $sn   = $request->query('SN');
+        $body = $request->getContent();
+
+        Log::info('ADMS devicecmd', [
+            'SN'      => $sn,
+            'preview' => substr($body, 0, 300),
+        ]);
+
+        if (!$sn) {
+            return response('OK', 200)->header('Content-Type', 'text/plain');
+        }
+
+        $result = $this->findDeviceBySn($sn);
+
+        if (!$result) {
+            Log::warning('ADMS devicecmd: dispositivo no encontrado', ['SN' => $sn]);
+            return response('OK', 200)->header('Content-Type', 'text/plain');
+        }
+
+        $device  = $result['device'];
+        $lines   = array_filter(explode("\n", $body));
+        $created = 0;
+        $skipped = 0;
+        $noUser  = 0;
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+
+            // Saltar líneas de cabecera (Return=OK, CmdId=..., CMD=..., etc.)
+            if (empty($line) || str_contains($line, '=') || $line === 'ATTLOG') {
+                continue;
+            }
+
+            $parts     = explode("\t", $line);
+            $cedula    = trim($parts[0] ?? '');
+            $timestamp = trim($parts[1] ?? '');
+            $status    = (int) trim($parts[2] ?? 0);
+
+            if (!$cedula || !$timestamp) {
+                $skipped++;
+                continue;
+            }
+
+            $userId = User::where('cedula', $cedula)->value('id');
+
+            if (!$userId) {
+                $noUser++;
+                continue;
+            }
+
+            $uid = md5($sn . $cedula . $timestamp);
+
+            $exists = AttendanceRecord::where('uid_dispositivo', $uid)
+                ->where('dispositivo_id', $device->id)
+                ->exists();
+
+            if ($exists) {
+                $skipped++;
+                continue;
+            }
+
+            $empleado = User::find($userId);
+            $horario  = $empleado?->horario_id ? Horario::find($empleado->horario_id) : null;
+
+            AttendanceRecord::create([
+                'user_id'               => $userId,
+                'sede_id'               => $device->sede_id,
+                'horario_id'            => $horario?->id,
+                'tipo'                  => $status === 0 ? 'entrada' : 'salida',
+                'lat'                   => $device->sede?->lat ?? 0,
+                'lng'                   => $device->sede?->lng ?? 0,
+                'metodo'                => 'dispositivo',
+                'qr_validado'           => false,
+                'geocerca_validada'     => true,
+                'distancia_oficina_mts' => 0,
+                'fecha_hora'            => Carbon::parse($timestamp),
+                'dispositivo_id'        => $device->id,
+                'uid_dispositivo'       => $uid,
+            ]);
+
+            $created++;
+        }
+
+        if ($created > 0 || $skipped > 0 || $noUser > 0) {
+            $device->update(['ultima_sync' => now()]);
+
+            SyncLog::create([
+                'dispositivo_id'   => $device->id,
+                'registros_nuevos' => $created,
+                'registros_total'  => $created + $skipped + $noUser,
+                'status'           => 'ok',
+                'mensaje'          => "DEVICECMD - Nuevos: {$created}, Omitidos: {$skipped}, Sin usuario: {$noUser}",
+                'created_at'       => now(),
+            ]);
+        }
+
+        Log::info('ADMS devicecmd procesado', [
+            'SN'      => $sn,
+            'created' => $created,
+            'skipped' => $skipped,
+            'noUser'  => $noUser,
+        ]);
+
+        return response('OK', 200)->header('Content-Type', 'text/plain');
     }
 
     /**

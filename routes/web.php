@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Route;
 Route::get ('/iclock/cdata',      [AdmsController::class, 'cdata']);
 Route::post('/iclock/cdata',      [AdmsController::class, 'cdata']);
 Route::get ('/iclock/getrequest', [AdmsController::class, 'getrequest']);
+Route::post('/iclock/devicecmd',  [AdmsController::class, 'devicecmd']);
 
 Route::get('/', function () {
     return view('welcome');
