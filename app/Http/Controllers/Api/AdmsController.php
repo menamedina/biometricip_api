@@ -58,11 +58,11 @@ class AdmsController extends Controller
     private function handleRegistration(string $sn): Response
     {
         $body  = "GET OPTION FROM: {$sn}\r\n";
-        $body .= "ATTLOGStamp=0\r\n";
+        $body .= "ATTLOGStamp=9999\r\n";
         $body .= "OPERLOGStamp=9999\r\n";
         $body .= "ATTPHOTOStamp=0\r\n";
         $body .= "ErrorDelay=30\r\n";
-        $body .= "Delay=10\r\n";
+        $body .= "Delay=60\r\n";
         // TransTimes cada 30 minutos (alternativa al TransInterval):
         // $body .= "TransTimes=00:00;00:30;01:00;01:30;...;23:30\r\n";
         $body .= "TransInterval=1\r\n";
