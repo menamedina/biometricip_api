@@ -63,7 +63,7 @@ class AdmsController extends Controller
         $body .= "ATTPHOTOStamp=0\r\n";
         $body .= "ErrorDelay=30\r\n";
         $body .= "Delay=10\r\n";
-        $body .= "TransTimes=00:00;00:01\r\n";
+        $body .= "TransTimes=06:00;07:00;08:00;09:00;10:00;11:00;12:00;13:00;14:00;15:00;16:00;17:00;18:00;19:00;20:00\r\n";
         $body .= "TransInterval=1\r\n";
         $body .= "TransFlag=TransData AttLog\r\n";
         $body .= "TimeZone=0\r\n";
