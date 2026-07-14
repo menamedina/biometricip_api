@@ -132,7 +132,7 @@ async function loadRecords(page = 1) {
                     <td><span class="badge bg-primary">${r.user?.codigo_empleado || '—'}</span></td>
                     <td>${r.sede?.nombre || '—'}</td>
                     <td><span class="badge ${r.tipo.includes('entrada') ? 'bg-success' : 'bg-danger'}">${r.tipo.replace(/_/g, ' ')}</span></td>
-                    <td>${new Date(r.fecha_hora).toLocaleString('es-MX')}</td>
+                    <td>${new Date(r.fecha_hora).toLocaleString('es-CO', {timeZone: 'America/Bogota'})}</td>
                     <td><span class="badge bg-info">${r.metodo}</span></td>
                     <td>${fotoHtml}</td>
                     <td><span class="badge ${r.qr_validado ? 'bg-success' : 'bg-danger'}">${r.qr_validado ? 'Sí' : 'No'}</span></td>

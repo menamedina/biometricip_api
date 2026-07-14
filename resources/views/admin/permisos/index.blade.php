@@ -173,7 +173,7 @@ async function loadPermisos(page = 1) {
     }
     tbody.innerHTML = items.map(p => `<tr>
         <td><strong>${p.user?.name ?? 'N/A'}</strong><br><small class="text-muted">${p.user?.codigo_empleado ?? ''}</small></td>
-        <td>${p.fecha}</td>
+        <td>${p.fecha ? p.fecha.slice(0,10) : '—'}</td>
         <td>${tipoLabels[p.tipo] ?? p.tipo}</td>
         <td>${p.horas_permiso}h</td>
         <td><small class="text-muted">${p.motivo || '—'}</small></td>

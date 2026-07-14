@@ -4,11 +4,11 @@
  * Uso: php get_attendance.php <ip> <puerto>
  */
 
-require __DIR__ . '/../vendor/autoload.php';
+require __DIR__ . '/vendor/autoload.php';
 
 use Rats\Zkteco\Lib\ZKTeco;
 
-$ip    = $argv[1] ?? '10.1.40.23';
+$ip    = $argv[1] ?? '10.1.40.14';
 $port  = (int)($argv[2] ?? 4370);
 
 $zk = new ZKTeco($ip, $port);

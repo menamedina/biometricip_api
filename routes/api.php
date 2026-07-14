@@ -19,8 +19,9 @@ use Illuminate\Support\Facades\Route;
 
 // Agente local — sincronización desde servicio Windows
 Route::middleware('agent.token')->group(function () {
-    Route::get ('/agent/devices', [AgentController::class, 'getDevices']);
-    Route::post('/agent/sync',    [AgentController::class, 'syncAttendance']);
+    Route::get ('/agent/devices',     [AgentController::class, 'getDevices']);
+    Route::post('/agent/sync',        [AgentController::class, 'syncAttendance']);
+    Route::post('/agent/users/sync',  [AgentController::class, 'syncUsers']);
 });
 
 // ADMS — ZKTeco PUSH (sin autenticación, el dispositivo envía marcaciones)

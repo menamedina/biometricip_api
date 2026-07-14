@@ -286,29 +286,31 @@ async function cargarResumen() {
             }
             if (openEntrada) sessions.push({ e: openEntrada, s: null });
 
+            const toDate = str => new Date(str.replace(' ', 'T'));
             let totalMin = 0;
             for (const s of sessions) {
                 if (s.e && s.s) {
-                    totalMin += Math.round((new Date(s.s.fecha_hora) - new Date(s.e.fecha_hora)) / 60000);
+                    totalMin += Math.round((toDate(s.s.fecha_hora) - toDate(s.e.fecha_hora)) / 60000);
                 }
             }
 
             const horario = sorted.find(r => r.horario)?.horario;
-            if (horario?.duracion_almuerzo_min) {
-                totalMin = Math.max(0, totalMin - horario.duracion_almuerzo_min);
+            if (horario?.duracion_almuerzo_min && totalMin > horario.duracion_almuerzo_min) {
+                totalMin = totalMin - horario.duracion_almuerzo_min;
             }
 
             // Construir celdas clickeables (hasta 4 pares entrada/salida)
+            const fmtHora = str => toDate(str).toLocaleTimeString('es-CO', {hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Bogota'});
             const celdas = [];
             for (let i = 0; i < 4; i++) {
                 const s = sessions[i];
                 if (s?.e) {
-                    celdas.push(`<span class="text-success fw-semibold cursor-pointer" onclick="editarRegistro(${s.e.id})" title="Click para editar">${s.e.fecha_hora.slice(11,16)} <i class="fa-solid fa-pen fa-xs text-muted"></i></span>`);
+                    celdas.push(`<span class="text-success fw-semibold cursor-pointer" onclick="editarRegistro(${s.e.id})" title="Click para editar">${fmtHora(s.e.fecha_hora)} <i class="fa-solid fa-pen fa-xs text-muted"></i></span>`);
                 } else {
                     celdas.push('<span class="text-muted">—</span>');
                 }
                 if (s?.s) {
-                    celdas.push(`<span class="text-danger fw-semibold cursor-pointer" onclick="editarRegistro(${s.s.id})" title="Click para editar">${s.s.fecha_hora.slice(11,16)} <i class="fa-solid fa-pen fa-xs text-muted"></i></span>`);
+                    celdas.push(`<span class="text-danger fw-semibold cursor-pointer" onclick="editarRegistro(${s.s.id})" title="Click para editar">${fmtHora(s.s.fecha_hora)} <i class="fa-solid fa-pen fa-xs text-muted"></i></span>`);
                 } else {
                     celdas.push('<span class="text-muted">—</span>');
                 }

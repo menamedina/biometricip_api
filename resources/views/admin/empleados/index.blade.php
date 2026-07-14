@@ -363,10 +363,14 @@ async function loadEmpleados(page = 1) {
 function renderPagination(data) {
     const nav = document.getElementById('empleadosPagination');
     if (!data.last_page || data.last_page <= 1) { nav.innerHTML = ''; return; }
+    const cur = data.current_page;
+    const last = data.last_page;
     let html = '<nav><ul class="pagination pagination-sm mb-0">';
-    for (let i = 1; i <= data.last_page; i++) {
-        html += `<li class="page-item ${i === data.current_page ? 'active' : ''}"><a class="page-link" href="#" onclick="loadEmpleados(${i});return false">${i}</a></li>`;
+    html += `<li class="page-item ${cur === 1 ? 'disabled' : ''}"><a class="page-link" href="#" onclick="loadEmpleados(${cur - 1});return false">&#8249; Anterior</a></li>`;
+    for (let i = 1; i <= last; i++) {
+        html += `<li class="page-item ${i === cur ? 'active' : ''}"><a class="page-link" href="#" onclick="loadEmpleados(${i});return false">${i}</a></li>`;
     }
+    html += `<li class="page-item ${cur === last ? 'disabled' : ''}"><a class="page-link" href="#" onclick="loadEmpleados(${cur + 1});return false">Siguiente &#8250;</a></li>`;
     html += '</ul></nav>';
     nav.innerHTML = html;
 }

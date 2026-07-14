@@ -11,6 +11,8 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class AgentController extends Controller
 {
@@ -34,6 +36,93 @@ class AgentController extends Controller
             ]);
 
         return response()->json(['devices' => $devices]);
+    }
+
+    /**
+     * Recibe usuarios del dispositivo y crea los que no existen en la plataforma.
+     *
+     * POST /api/agent/users/sync
+     * Header: X-Agent-Token: {token}
+     * Body: { device_id: 1, serial: "...", usuarios: [...] }
+     */
+    public function syncUsers(Request $request): JsonResponse
+    {
+        $request->validate([
+            'device_id' => 'required|integer',
+            'serial'    => 'required|string',
+            'usuarios'  => 'required|array|min:1',
+        ]);
+
+        $empresa = $request->_empresa;
+
+        $device = DispositivoBiometrico::where('id', $request->device_id)
+                    ->where('is_active', true)
+                    ->first();
+
+        if (!$device) {
+            return response()->json(['message' => 'Dispositivo no encontrado.'], 404);
+        }
+
+        if ($device->numero_serie && $device->numero_serie !== $request->serial) {
+            return response()->json(['message' => 'Serial del dispositivo no coincide.'], 403);
+        }
+
+        // Filtrar usuarios con cedula valida y construir mapa cedula => nombre
+        $incoming = collect($request->usuarios)
+            ->map(fn($u) => ['cedula' => trim($u['userid'] ?? ''), 'nombre' => trim($u['name'] ?? '')])
+            ->filter(fn($u) => $u['cedula'] !== '')
+            ->keyBy('cedula');
+
+        $omitidos = count($request->usuarios) - $incoming->count();
+
+        // Cedulas que ya existen en la BD — una sola query
+        $existentes = User::whereIn('cedula', $incoming->keys())
+                          ->where('empresa_id', $empresa->id)
+                          ->pluck('cedula')
+                          ->flip();
+
+        $nuevos = $incoming->reject(fn($u) => $existentes->has($u['cedula']));
+        $omitidos += $existentes->count();
+
+        $now      = now();
+        $password = Hash::make(Str::random(16));
+
+        // Obtener el ultimo codigo EMP-XXXX para seguir la secuencia
+        $ultimo = User::where('empresa_id', $empresa->id)
+            ->where('codigo_empleado', 'regexp', '^EMP-[0-9]+$')
+            ->orderByRaw('CAST(SUBSTRING(codigo_empleado, 5) AS UNSIGNED) DESC')
+            ->value('codigo_empleado');
+
+        $siguiente = $ultimo ? ((int) substr($ultimo, 4)) + 1 : 1;
+
+        $inserts = $nuevos->map(function ($u) use ($empresa, $password, $now, &$siguiente) {
+            $codigo = 'EMP-' . str_pad($siguiente++, 4, '0', STR_PAD_LEFT);
+            return [
+                'name'             => $u['nombre'] ?: "Empleado {$u['cedula']}",
+                'cedula'           => $u['cedula'],
+                'codigo_empleado'  => $codigo,
+                'email'            => "{$u['cedula']}@{$empresa->id}.local",
+                'password'         => $password,
+                'role'             => 'empleado',
+                'tipo'             => 'usuario',
+                'is_active'        => 1,
+                'empresa_id'       => $empresa->id,
+                'created_at'       => $now,
+                'updated_at'       => $now,
+            ];
+        })->values()->toArray();
+
+        if (!empty($inserts)) {
+            User::insert($inserts);
+        }
+
+        $creados = count($inserts);
+
+        return response()->json([
+            'message'  => 'Sincronizacion de usuarios completada.',
+            'creados'  => $creados,
+            'omitidos' => $omitidos,
+        ]);
     }
 
     /**
