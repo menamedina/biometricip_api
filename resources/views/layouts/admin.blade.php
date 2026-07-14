@@ -217,6 +217,22 @@
                                 <span class="menu-text">Festivos</span>
                             </a>
                         </li>
+
+                        @if(auth()->user()->admin_tenant ?? false)
+                        <li class="side-nav-title mt-2">Super Admin</li>
+                        <li class="side-nav-item">
+                            <a href="{{ route('admin.tenants.index') }}" class="side-nav-link {{ request()->routeIs('admin.tenants.index') || request()->routeIs('admin.tenants.create') ? 'active' : '' }}">
+                                <span class="menu-icon"><i class="ti ti-database"></i></span>
+                                <span class="menu-text">Tenants</span>
+                            </a>
+                        </li>
+                        <li class="side-nav-item">
+                            <a href="{{ route('admin.tenants.tablas') }}" class="side-nav-link {{ request()->routeIs('admin.tenants.tablas') ? 'active' : '' }}">
+                                <span class="menu-icon"><i class="ti ti-table"></i></span>
+                                <span class="menu-text">Config. Tablas</span>
+                            </a>
+                        </li>
+                        @endif
                     </ul>
                 </div>
             </div>

@@ -7,7 +7,8 @@ use App\Models\Empresa;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class EmpresaController extends Controller
@@ -50,28 +51,55 @@ class EmpresaController extends Controller
             'admin_email'    => 'required|email|unique:users,email',
             'admin_password' => 'required|string|min:6',
             'admin_name'     => 'nullable|string|max:255',
+            'db_name'        => 'nullable|string|max:64|regex:/^[a-zA-Z0-9_]+$/',
+            'db_user'        => 'nullable|string|max:64',
+            'db_pass'        => 'nullable|string|max:255',
         ]);
 
-        $empresa = Empresa::create([
-            'nombre'    => $data['nombre'],
-            'ruc'       => $data['ruc'] ?? null,
-            'email'     => $data['email'] ?? null,
-            'telefono'  => $data['telefono'] ?? null,
-            'plan'          => $data['plan'] ?? 'bronce',
-            'max_usuarios'  => $data['max_usuarios'] ?? 50,
-            'is_active'     => true,
-        ]);
+        DB::beginTransaction();
 
-        Artisan::call('tenant:create-db',        ['empresa_id' => $empresa->id]);
-        Artisan::call('tenant:create-structure',  ['empresa_id' => $empresa->id]);
-        Artisan::call('tenant:seed', [
-            'empresa_id'       => $empresa->id,
-            '--admin-email'    => $data['admin_email'],
-            '--admin-password' => $data['admin_password'],
-            '--admin-name'     => $data['admin_name'] ?? null,
-        ]);
+        try {
+            $empresa = Empresa::create([
+                'nombre'       => $data['nombre'],
+                'ruc'          => $data['ruc'] ?? null,
+                'email'        => $data['email'] ?? null,
+                'telefono'     => $data['telefono'] ?? null,
+                'plan'         => $data['plan'] ?? 'bronce',
+                'max_usuarios' => $data['max_usuarios'] ?? 50,
+                'is_active'    => true,
+            ]);
 
-        return response()->json(['data' => $empresa->fresh()], 201);
+            // Registrar el tenant con las credenciales de BD provistas
+            DB::table('tenants')->insert([
+                'empresa_id' => $empresa->id,
+                'db_name'    => $data['db_name'] ?? null,
+                'db_user'    => $data['db_user'] ?? null,
+                'db_pass'    => $data['db_pass'] ?? null,
+                'data'       => '{}',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // Crear usuario administrador en BD central
+            DB::table('users')->insert([
+                'name'            => $data['admin_name'] ?? ('Admin ' . $data['nombre']),
+                'email'           => $data['admin_email'],
+                'password'        => Hash::make($data['admin_password']),
+                'role'            => 'admin',
+                'is_active'       => 1,
+                'empresa_id'      => $empresa->id,
+                'created_at'      => now(),
+                'updated_at'      => now(),
+            ]);
+
+            DB::commit();
+
+            return response()->json(['data' => $empresa->fresh()->loadCount('users')], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Error al crear el tenant: ' . $e->getMessage()], 500);
+        }
     }
 
     public function updateById(Request $request, int $id): JsonResponse

@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\HorarioController;
 use App\Http\Controllers\Api\PermisoController;
 use App\Http\Controllers\Api\FestivoController;
 use App\Http\Controllers\Api\EmpresaController;
+use App\Http\Controllers\Api\TenantTablaController;
 use App\Http\Controllers\Api\AgentController;
 use App\Http\Controllers\Api\DeviceController;
 use App\Http\Controllers\Api\AdmsController;
@@ -119,6 +120,12 @@ Route::middleware(['auth:sanctum', 'tenancy'])->group(function () {
         Route::delete('/empresas/{id}',                  [EmpresaController::class, 'destroyById']);
         Route::post('/empresas/{id}/agent-token',        [EmpresaController::class, 'generateAgentToken']);
         Route::delete('/empresas/{id}/agent-token',      [EmpresaController::class, 'revokeAgentToken']);
+
+        // Configuración de tablas tenant (solo admin_tenant)
+        Route::get   ('/tenant-tablas',      [TenantTablaController::class, 'index']);
+        Route::post  ('/tenant-tablas',      [TenantTablaController::class, 'store']);
+        Route::put   ('/tenant-tablas/{id}', [TenantTablaController::class, 'update']);
+        Route::delete('/tenant-tablas/{id}', [TenantTablaController::class, 'destroy']);
 
         // Dispositivos biométricos ZKTeco
         Route::post('/devices/ping',                    [DeviceController::class, 'ping']);

@@ -7,7 +7,11 @@ use Illuminate\Support\Facades\DB;
 
 class TenantCreateDb extends Command
 {
-    protected $signature = 'tenant:create-db {empresa_id}';
+    protected $signature = 'tenant:create-db
+                            {empresa_id}
+                            {--db-name= : Nombre de la base de datos (por defecto: biometricip_tenant_{id})}
+                            {--db-user= : Usuario MySQL (por defecto: el del config)}
+                            {--db-pass= : Contraseña MySQL (por defecto: la del config)}';
 
     protected $description = 'Crea la base de datos para un tenant y la registra en la tabla tenants';
 
@@ -21,10 +25,9 @@ class TenantCreateDb extends Command
             return Command::FAILURE;
         }
 
-        // Nombre generado aquí — único lugar donde se construye el nombre
-        $dbName  = 'biometricip_tenant_' . $empresaId;
-        $dbUser  = config('database.connections.mysql.username');
-        $dbPass  = config('database.connections.mysql.password');
+        $dbName  = $this->option('db-name') ?: 'biometricip_tenant_' . $empresaId;
+        $dbUser  = $this->option('db-user') ?: config('database.connections.mysql.username');
+        $dbPass  = $this->option('db-pass') ?: config('database.connections.mysql.password');
 
         $this->info("Creando BD `{$dbName}`...");
         DB::statement("CREATE DATABASE IF NOT EXISTS `{$dbName}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
