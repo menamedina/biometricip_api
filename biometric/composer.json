@@ -1,0 +1,5 @@
+{
+    "require": {
+        "rats/zkteco": "^1.0"
+    }
+}
