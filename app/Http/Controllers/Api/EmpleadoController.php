@@ -27,6 +27,8 @@ class EmpleadoController extends Controller
         // Si NO es admin_tenant, solo ve usuarios de su propia empresa
         if (!$authUser->admin_tenant) {
             $query->where('empresa_id', $authUser->empresa_id);
+        } elseif ($request->filled('empresa_id')) {
+            $query->where('empresa_id', $request->empresa_id);
         }
 
         if ($request->filled('search')) {

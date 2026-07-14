@@ -25,6 +25,13 @@
                         <div class="col-md-3">
                             <input type="text" class="form-control form-control-sm" id="filterSearch" placeholder="Buscar..." oninput="loadEmpleados()">
                         </div>
+                        @if(auth()->user()->admin_tenant)
+                        <div class="col-md-2">
+                            <select class="form-select form-select-sm" id="filterEmpresa" onchange="loadEmpleados()">
+                                <option value="">Todas las empresas</option>
+                            </select>
+                        </div>
+                        @endif
                         <div class="col-md-2">
                             <select class="form-select form-select-sm" id="filterDepto" onchange="loadEmpleados()">
                                 <option value="">Todos los deptos.</option>
@@ -45,6 +52,9 @@
                                 <th>Nombre</th>
                                 <th>Cédula</th>
                                 <th>Email</th>
+                                @if(auth()->user()->admin_tenant)
+                                <th>Empresa</th>
+                                @endif
                                 <th>Rol</th>
                                 <th>Departamento</th>
                                 <th>Cargo</th>
@@ -186,9 +196,10 @@ const isAdminTenant = {{ auth()->user()->admin_tenant ? 'true' : 'false' }};
 let currentPage = 1;
 
 // Catálogos en memoria para resolver nombres
-let deptoMap  = {};
-let cargoMap  = {};
-let sedeMap   = {};
+let deptoMap    = {};
+let cargoMap    = {};
+let sedeMap     = {};
+let empresaMap  = {};
 
 function resetForm() {
     document.getElementById('empleadoForm').reset();
@@ -209,11 +220,14 @@ function resetForm() {
 async function loadCatalogos() {
     // Cargar lista de empresas si es admin_tenant
     if (isAdminTenant) {
-        const resEmp = await fetch('/api/empresas', { headers: { 'Authorization': `Bearer ${token}` } });
+        const resEmp  = await fetch('/api/empresas', { headers: { 'Authorization': `Bearer ${token}` } });
         const dataEmp = await resEmp.json();
-        const selEmp = document.getElementById('empEmpresaId');
+        const selEmp       = document.getElementById('empEmpresaId');
+        const filterEmpresa = document.getElementById('filterEmpresa');
         (dataEmp.data || []).forEach(e => {
-            selEmp.innerHTML += `<option value="${e.id}">${e.nombre}</option>`;
+            empresaMap[e.id] = e.nombre;
+            selEmp.innerHTML       += `<option value="${e.id}">${e.nombre}</option>`;
+            filterEmpresa.innerHTML += `<option value="${e.id}">${e.nombre}</option>`;
         });
         // admin_tenant: recargar sedes al cambiar empresa
         selEmp.addEventListener('change', () => loadSedesParaEmpresa(selEmp.value));
@@ -312,13 +326,15 @@ async function loadSedesParaEmpresa(empresaId, selectedIds = []) {
 
 async function loadEmpleados(page = 1) {
     currentPage = page;
-    const search  = document.getElementById('filterSearch').value;
-    const deptoId = document.getElementById('filterDepto').value;
-    const sedeId  = document.getElementById('filterSede').value;
+    const search     = document.getElementById('filterSearch').value;
+    const deptoId    = document.getElementById('filterDepto').value;
+    const sedeId     = document.getElementById('filterSede').value;
+    const empresaId  = isAdminTenant ? document.getElementById('filterEmpresa').value : '';
     let url = `/api/empleados?page=${page}&per_page=15`;
-    if (search)  url += `&search=${encodeURIComponent(search)}`;
-    if (deptoId) url += `&departamento_id=${deptoId}`;
-    if (sedeId)  url += `&sede_id=${sedeId}`;
+    if (search)    url += `&search=${encodeURIComponent(search)}`;
+    if (deptoId)   url += `&departamento_id=${deptoId}`;
+    if (sedeId)    url += `&sede_id=${sedeId}`;
+    if (empresaId) url += `&empresa_id=${empresaId}`;
 
     try {
         const res  = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
@@ -337,6 +353,7 @@ async function loadEmpleados(page = 1) {
                     <td><strong>${e.name || 'N/A'}</strong></td>
                     <td>${e.cedula || '—'}</td>
                     <td>${e.email || 'N/A'}</td>
+                    ${isAdminTenant ? `<td><span class="badge bg-light text-dark border">${empresaMap[e.empresa_id] || '—'}</span></td>` : ''}
                     <td>${rolBadge}</td>
                     <td>${e.departamento_id ? (deptoMap[e.departamento_id] || e.departamento_id) : '—'}</td>
                     <td>${e.cargo_id ? (cargoMap[e.cargo_id] || e.cargo_id) : '—'}</td>
