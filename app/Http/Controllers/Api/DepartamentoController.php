@@ -15,12 +15,21 @@ class DepartamentoController extends Controller
     // ── Catálogos combinados (deptos + cargos + horarios en una sola llamada) ─
     public function catalogos(): JsonResponse
     {
-        return response()->json([
-            'departamentos' => Departamento::orderBy('nombre')->get(),
-            'cargos'        => Cargo::orderBy('nombre')->get(),
-            'horarios'      => Horario::where('is_active', true)->orderBy('nombre')->get(),
-            'sedes'         => Sede::where('is_active', true)->orderBy('nombre')->get(),
-        ]);
+        try {
+            return response()->json([
+                'departamentos' => Departamento::orderBy('nombre')->get(),
+                'cargos'        => Cargo::orderBy('nombre')->get(),
+                'horarios'      => Horario::where('is_active', true)->orderBy('nombre')->get(),
+                'sedes'         => Sede::where('is_active', true)->orderBy('nombre')->get(),
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'departamentos' => [],
+                'cargos'        => [],
+                'horarios'      => [],
+                'sedes'         => [],
+            ]);
+        }
     }
 
     // ── Departamentos ────────────────────────────────────────────────────────

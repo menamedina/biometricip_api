@@ -14,12 +14,11 @@ class SedeController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        // admin_tenant puede pasar X-Empresa-Id para ver sedes de otra empresa
-        if ($request->user()?->admin_tenant && $request->hasHeader('X-Empresa-Id')) {
-            TenantHelper::switchTenant((int) $request->header('X-Empresa-Id'));
+        try {
+            $sedes = Sede::orderBy('nombre')->get();
+        } catch (\Throwable $e) {
+            $sedes = collect();
         }
-
-        $sedes = Sede::orderBy('nombre')->get();
         return response()->json(['data' => $sedes]);
     }
 
