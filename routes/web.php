@@ -87,6 +87,11 @@ Route::post('/asistencia/{webToken}/{sedeCode}/{token}', [PublicAttendanceContro
 Route::get('/admin/login',  [LoginController::class, 'showLogin'])->name('admin.login.show');
 Route::post('/admin/login', [LoginController::class, 'login'])->name('admin.login');
 
+Route::get('/admin/forgot-password',  [LoginController::class, 'showForgotPassword'])->name('admin.password.request');
+Route::post('/admin/forgot-password', [LoginController::class, 'sendResetLink'])->name('admin.password.email');
+Route::get('/admin/reset-password/{token}', [LoginController::class, 'showResetPassword'])->name('admin.password.reset');
+Route::post('/admin/reset-password',  [LoginController::class, 'resetPassword'])->name('admin.password.update');
+
 Route::middleware(['auth', 'admin', 'tenancy.session'])->group(function () {
     Route::post('/admin/logout', [LoginController::class, 'logout'])->name('admin.logout');
     Route::get('/admin', [AdminController::class, 'dashboard'])->name('admin.dashboard');

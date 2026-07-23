@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="utf-8" />
-    <title>Login | BiometricIP</title>
+    <title>Recuperar contraseña | BiometricIP</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="shortcut icon" href="{{ asset('favicon.ico') }}" />
     <link href="{{ asset('assets/css/vendors.min.css') }}" rel="stylesheet" />
@@ -11,19 +11,12 @@
 </head>
 <body>
     <div class="d-flex align-items-center justify-content-center vh-100 bg-light">
-        <div class="card shadow" style="width: 400px; max-width: 90vw;">
+        <div class="card shadow" style="width: 420px; max-width: 90vw;">
             <div class="card-body p-4">
                 <div class="text-center mb-4">
                     <img src="{{ asset('logos/logo.png') }}" alt="BiometricIP" class="mb-3" style="max-height: 120px; max-width: 280px; object-fit: contain;">
-                    <p class="text-muted mb-0">Panel de Administración</p>
+                    <p class="text-muted mb-0">Recuperar contraseña</p>
                 </div>
-
-                @if($errors->any())
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        {{ $errors->first() }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                @endif
 
                 @if(session('status'))
                     <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -32,30 +25,31 @@
                     </div>
                 @endif
 
-                <form action="{{ route('admin.login') }}" method="POST">
+                @if($errors->any())
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        {{ $errors->first() }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                @endif
+
+                <p class="text-muted small mb-3">
+                    Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.
+                </p>
+
+                <form action="{{ route('admin.password.email') }}" method="POST">
                     @csrf
                     <div class="mb-3">
                         <label class="form-label">Correo electrónico</label>
                         <input type="email" name="email" class="form-control" placeholder="admin@biometricip.com" value="{{ old('email') }}" required autofocus>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Contraseña</label>
-                        <input type="password" name="password" class="form-control" placeholder="Tu contraseña" required>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="form-check mb-0">
-                            <input class="form-check-input" type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }}>
-                            <label class="form-check-label text-muted small" for="remember">Recordar sesión</label>
-                        </div>
-                        <a href="{{ route('admin.password.request') }}" class="text-muted small">¿Olvidaste tu contraseña?</a>
-                    </div>
                     <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
-                        <i class="fa-solid fa-right-to-bracket me-1"></i> Iniciar Sesión
+                        <i class="fa-solid fa-paper-plane me-1"></i> Enviar enlace de recuperación
                     </button>
                 </form>
+
                 <div class="text-center mt-3">
-                    <a href="{{ url('/') }}" class="text-muted small">
-                        <i class="fa-solid fa-arrow-left me-1"></i> Volver al inicio
+                    <a href="{{ route('admin.login.show') }}" class="text-muted small">
+                        <i class="fa-solid fa-arrow-left me-1"></i> Volver al inicio de sesión
                     </a>
                 </div>
             </div>
