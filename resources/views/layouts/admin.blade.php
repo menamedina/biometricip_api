@@ -87,7 +87,7 @@
                             </span>
                             <span class="d-lg-block d-none">
                                 <span class="account-user-name">{{ auth()->user()->name ?? 'Admin' }}</span>
-                                <span class="account-position fw-semibold text-muted fs-12 d-block">{{ auth()->user()->role ?? 'Administrador' }}</span>
+                                <span class="account-position fw-semibold text-muted fs-12 d-block">{{ auth()->user()->empresa?->nombre ?? 'BiometricIP' }}</span>
                             </span>
                         </a>
                         <div class="dropdown-menu dropdown-menu-end">
