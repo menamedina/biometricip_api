@@ -108,8 +108,11 @@ Route::middleware(['auth', 'admin', 'tenancy.session'])->group(function () {
     Route::get('/admin/dispositivos', [AdminController::class, 'dispositivosIndex'])->name('admin.dispositivos.index');
     Route::get('/admin/reports/export', [ReportController::class, 'attendance'])->name('admin.reports.export');
 
-    Route::get('/admin/tenants',        [AdminController::class, 'tenantsIndex'])->name('admin.tenants.index');
-    Route::get('/admin/tenants/create', [AdminController::class, 'tenantsCreate'])->name('admin.tenants.create');
+});
+
+Route::middleware(['auth', 'admin', 'admin.tenant', 'tenancy.session'])->group(function () {
+    Route::get('/admin/tenants',              [AdminController::class, 'tenantsIndex'])->name('admin.tenants.index');
+    Route::get('/admin/tenants/create',       [AdminController::class, 'tenantsCreate'])->name('admin.tenants.create');
     Route::get('/admin/tenants/tablas',       [AdminController::class, 'tenantsTablas'])->name('admin.tenants.tablas');
-    Route::get('/admin/tenants/descargar-sql', [AdminController::class, 'tenantsDescargarSql'])->name('admin.tenants.descargar-sql');
+    Route::get('/admin/tenants/descargar-sql',[AdminController::class, 'tenantsDescargarSql'])->name('admin.tenants.descargar-sql');
 });
