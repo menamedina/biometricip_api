@@ -397,7 +397,18 @@ function renderPagination(data) {
 
 async function editEmpleado(id) {
     try {
-        const res  = await fetch(`/api/empleados/${id}`, { headers: { 'Authorization': `Bearer ${token}` } });
+        // Obtener empresa_id del empleado desde la fila de la tabla
+        const row = document.querySelector(`button[onclick="editEmpleado(${id})"]`)?.closest('tr');
+        const empresaCellIndex = isAdminTenant ? 5 : -1;
+        const editHeaders = { 'Authorization': `Bearer ${token}` };
+
+        const res  = await fetch(`/api/empleados/${id}`, { headers: editHeaders });
+        if (!res.ok) {
+            const text = await res.text();
+            console.error('Error al cargar empleado:', res.status, text);
+            alert('Error ' + res.status + ': ' + (res.statusText || 'Error del servidor'));
+            return;
+        }
         const data = await res.json();
         const e = data.data;
         document.getElementById('empleadoId').value      = e.id;
@@ -475,9 +486,15 @@ async function saveEmpleado() {
     const url    = id ? `/api/empleados/${id}` : '/api/empleados';
     const method = id ? 'PUT' : 'POST';
 
+    const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+    if (isAdminTenant) {
+        const empId = payload.empresa_id || document.getElementById('empEmpresaId')?.value;
+        if (empId) headers['X-Empresa-Id'] = empId;
+    }
+
     try {
         const res = await fetch(url, {
-            method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            method, headers,
             body: JSON.stringify(payload)
         });
         if (res.ok) {

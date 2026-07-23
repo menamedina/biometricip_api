@@ -28,6 +28,26 @@ class InitializeTenancyByToken
             'method'     => $request->method(),
         ]);
 
+        // admin_tenant puede operar en cualquier empresa mediante el header X-Empresa-Id
+        if ($user->admin_tenant) {
+            $empresaId = $request->header('X-Empresa-Id');
+            if ($empresaId) {
+                try {
+                    TenantHelper::switchTenant((int) $empresaId);
+                    Log::info('Tenancy: admin_tenant activó tenant', ['empresa_id' => $empresaId]);
+                } catch (\Throwable $e) {
+                    Log::error('Tenancy: fallo al activar tenant (admin_tenant)', [
+                        'empresa_id' => $empresaId,
+                        'error'      => $e->getMessage(),
+                    ]);
+                    return response()->json([
+                        'message' => 'Tenant no configurado para empresa_id=' . $empresaId . ': ' . $e->getMessage(),
+                    ], 503);
+                }
+            }
+            return $next($request);
+        }
+
         if ($user->empresa_id === null) {
             Log::error('Tenancy: empresa_id es null', ['user_id' => $user->id, 'email' => $user->email]);
             return response()->json(['message' => 'El usuario no tiene empresa asignada.'], 422);
