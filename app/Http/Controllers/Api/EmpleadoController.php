@@ -152,8 +152,12 @@ class EmpleadoController extends Controller
 
         // Para admin_tenant: indicar si tiene movimientos (para bloquear cambio de empresa en UI)
         if ($authUser->admin_tenant && $empleado->empresa_id) {
-            TenantHelper::switchTenant($empleado->empresa_id);
-            $data['tiene_movimientos'] = AttendanceRecord::where('user_id', $empleado->id)->exists();
+            try {
+                TenantHelper::switchTenant($empleado->empresa_id);
+                $data['tiene_movimientos'] = AttendanceRecord::where('user_id', $empleado->id)->exists();
+            } catch (\Throwable $e) {
+                $data['tiene_movimientos'] = false;
+            }
         } else {
             $data['tiene_movimientos'] = false;
         }

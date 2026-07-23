@@ -29,8 +29,9 @@ class InitializeTenancyByToken
         ]);
 
         // admin_tenant puede operar en cualquier empresa mediante el header X-Empresa-Id
+        // Si no viene el header, usa su propio empresa_id como fallback
         if ($user->admin_tenant) {
-            $empresaId = $request->header('X-Empresa-Id');
+            $empresaId = $request->header('X-Empresa-Id') ?? $user->empresa_id;
             if ($empresaId) {
                 try {
                     TenantHelper::switchTenant((int) $empresaId);
