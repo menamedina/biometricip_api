@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
-use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -81,10 +80,6 @@ class LoginController extends Controller
     public function sendResetLink(Request $request): RedirectResponse
     {
         $request->validate(['email' => 'required|email']);
-
-        ResetPassword::createUrlUsing(function (User $user, string $token) {
-            return route('admin.password.reset', ['token' => $token, 'email' => $user->email]);
-        });
 
         $status = Password::sendResetLink($request->only('email'));
 
