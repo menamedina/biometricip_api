@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin'           => \App\Http\Middleware\AdminMiddleware::class,
             'admin.tenant'    => \App\Http\Middleware\AdminTenantMiddleware::class,
+            'role'            => \App\Http\Middleware\RoleMiddleware::class,
             'tenancy'         => \App\Http\Middleware\InitializeTenancyByToken::class,
             'tenancy.session' => \App\Http\Middleware\InitializeTenancyBySession::class,
             'superadmin'      => \App\Http\Middleware\SuperAdminMiddleware::class,

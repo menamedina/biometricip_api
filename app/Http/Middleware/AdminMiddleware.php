@@ -10,11 +10,11 @@ class AdminMiddleware
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (!$request->user() || !in_array($request->user()->role, ['admin', 'supervisor'])) {
+        if (!$request->user()) {
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'Acceso no autorizado.'], 403);
+                return response()->json(['message' => 'No autenticado.'], 401);
             }
-            abort(403, 'Acceso no autorizado.');
+            return redirect()->route('admin.login.show');
         }
 
         return $next($request);

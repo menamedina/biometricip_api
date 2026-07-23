@@ -92,22 +92,26 @@ Route::post('/admin/forgot-password', [LoginController::class, 'sendResetLink'])
 Route::get('/admin/reset-password/{token}', [LoginController::class, 'showResetPassword'])->name('admin.password.reset');
 Route::post('/admin/reset-password',  [LoginController::class, 'resetPassword'])->name('admin.password.update');
 
+// Accesible por todos los roles autenticados
 Route::middleware(['auth', 'admin', 'tenancy.session'])->group(function () {
     Route::post('/admin/logout', [LoginController::class, 'logout'])->name('admin.logout');
-    Route::get('/admin', [AdminController::class, 'dashboard'])->name('admin.dashboard');
-    Route::get('/admin/sedes', [AdminController::class, 'sedesIndex'])->name('admin.sedes.index');
-    Route::get('/admin/empleados', [AdminController::class, 'empleadosIndex'])->name('admin.empleados.index');
+    Route::get('/admin',            [AdminController::class, 'dashboard'])->name('admin.dashboard');
     Route::get('/admin/attendance', [AdminController::class, 'attendanceIndex'])->name('admin.attendance.index');
-    Route::get('/admin/resumen', [AdminController::class, 'resumenIndex'])->name('admin.resumen.index');
-    Route::get('/admin/departamentos', [AdminController::class, 'departamentosIndex'])->name('admin.departamentos.index');
-    Route::get('/admin/horarios',      [AdminController::class, 'horariosIndex'])->name('admin.horarios.index');
-    Route::get('/admin/permisos',      [AdminController::class, 'permisosIndex'])->name('admin.permisos.index');
-    Route::get('/admin/festivos',      [AdminController::class, 'festivosIndex'])->name('admin.festivos.index');
-    Route::get('/admin/empresas',      [AdminController::class, 'empresasIndex'])->name('admin.empresas.index');
-    Route::get('/admin/visitantes',    [AdminController::class, 'visitantesIndex'])->name('admin.visitantes.index');
-    Route::get('/admin/dispositivos', [AdminController::class, 'dispositivosIndex'])->name('admin.dispositivos.index');
-    Route::get('/admin/reports/export', [ReportController::class, 'attendance'])->name('admin.reports.export');
+    Route::get('/admin/resumen',    [AdminController::class, 'resumenIndex'])->name('admin.resumen.index');
+});
 
+// Solo admin y supervisor
+Route::middleware(['auth', 'admin', 'role:admin,supervisor', 'tenancy.session'])->group(function () {
+    Route::get('/admin/sedes',          [AdminController::class, 'sedesIndex'])->name('admin.sedes.index');
+    Route::get('/admin/empleados',      [AdminController::class, 'empleadosIndex'])->name('admin.empleados.index');
+    Route::get('/admin/visitantes',     [AdminController::class, 'visitantesIndex'])->name('admin.visitantes.index');
+    Route::get('/admin/dispositivos',   [AdminController::class, 'dispositivosIndex'])->name('admin.dispositivos.index');
+    Route::get('/admin/permisos',       [AdminController::class, 'permisosIndex'])->name('admin.permisos.index');
+    Route::get('/admin/departamentos',  [AdminController::class, 'departamentosIndex'])->name('admin.departamentos.index');
+    Route::get('/admin/horarios',       [AdminController::class, 'horariosIndex'])->name('admin.horarios.index');
+    Route::get('/admin/festivos',       [AdminController::class, 'festivosIndex'])->name('admin.festivos.index');
+    Route::get('/admin/empresas',       [AdminController::class, 'empresasIndex'])->name('admin.empresas.index');
+    Route::get('/admin/reports/export', [ReportController::class, 'attendance'])->name('admin.reports.export');
 });
 
 Route::middleware(['auth', 'admin', 'admin.tenant', 'tenancy.session'])->group(function () {

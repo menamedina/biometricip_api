@@ -126,12 +126,13 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <span class="sidenav-user-name fw-bold">{{ auth()->user()->name ?? 'Admin' }}</span>
-                            <span class="fs-12 fw-semibold d-block">{{ auth()->user()->role === 'admin' ? 'Administrador' : 'Empleado' }}</span>
+                            <span class="fs-12 fw-semibold d-block">{{ ['admin' => 'Administrador', 'supervisor' => 'Supervisor', 'empleado' => 'Empleado'][auth()->user()->role] ?? auth()->user()->role }}</span>
                         </div>
                     </div>
                 </div>
 
                 <div id="sidenav-menu">
+                    @php $role = auth()->user()->role; @endphp
                     <ul class="side-nav">
                         <li class="side-nav-title mt-2">Menú Principal</li>
                         <li class="side-nav-item">
@@ -141,6 +142,7 @@
                             </a>
                         </li>
 
+                        @if(in_array($role, ['admin', 'supervisor']))
                         <li class="side-nav-title mt-2">Administración</li>
                         <li class="side-nav-item">
                             <a href="{{ route('admin.sedes.index') }}" class="side-nav-link {{ request()->routeIs('admin.sedes.*') ? 'active' : '' }}">
@@ -160,13 +162,13 @@
                                 <span class="menu-text">Visitantes</span>
                             </a>
                         </li>
-
                         <li class="side-nav-item">
                             <a href="{{ route('admin.dispositivos.index') }}" class="side-nav-link {{ request()->routeIs('admin.dispositivos.*') ? 'active' : '' }}">
                                 <span class="menu-icon"><i class="ti ti-fingerprint"></i></span>
                                 <span class="menu-text">Dispositivos</span>
                             </a>
                         </li>
+                        @endif
 
                         <li class="side-nav-title mt-2">Asistencia</li>
                         <li class="side-nav-item">
@@ -181,6 +183,8 @@
                                 <span class="menu-text">Resumen Marcación</span>
                             </a>
                         </li>
+
+                        @if(in_array($role, ['admin', 'supervisor']))
                         <li class="side-nav-item">
                             <a href="{{ route('admin.permisos.index') }}" class="side-nav-link {{ request()->routeIs('admin.permisos.*') ? 'active' : '' }}">
                                 <span class="menu-icon"><i class="ti ti-file-certificate"></i></span>
@@ -217,6 +221,7 @@
                                 <span class="menu-text">Festivos</span>
                             </a>
                         </li>
+                        @endif
 
                         @if(auth()->user()->admin_tenant ?? false)
                         <li class="side-nav-title mt-2">Super Admin</li>
