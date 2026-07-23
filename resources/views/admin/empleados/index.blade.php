@@ -219,38 +219,72 @@ function resetForm() {
 }
 
 async function loadCatalogos() {
-    // Cargar lista de empresas si es admin_tenant
     if (isAdminTenant) {
-        const resEmp  = await fetch('/api/empresas', { headers: { 'Authorization': `Bearer ${token}` } });
+        // admin_tenant: solo cargar lista de empresas; catálogos tenant se cargan al seleccionar empresa
+        const resEmp = await fetch('/api/empresas', { headers: { 'Authorization': `Bearer ${token}` } });
+        if (!resEmp.ok) {
+            console.error('Error /api/empresas:', resEmp.status, await resEmp.text());
+            return;
+        }
         const dataEmp = await resEmp.json();
-        const selEmp       = document.getElementById('empEmpresaId');
+        const selEmp        = document.getElementById('empEmpresaId');
         const filterEmpresa = document.getElementById('filterEmpresa');
         (dataEmp.data || []).forEach(e => {
             empresaMap[e.id] = e.nombre;
-            selEmp.innerHTML       += `<option value="${e.id}">${e.nombre}</option>`;
+            selEmp.innerHTML        += `<option value="${e.id}">${e.nombre}</option>`;
             filterEmpresa.innerHTML += `<option value="${e.id}">${e.nombre}</option>`;
         });
-        // admin_tenant: recargar sedes al cambiar empresa
-        selEmp.addEventListener('change', () => loadSedesParaEmpresa(selEmp.value));
+        // Al cambiar empresa: recargar catálogos tenant + sedes
+        selEmp.addEventListener('change', () => loadCatalogosParaEmpresa(selEmp.value));
+        return; // no llamar /api/catalogos sin tenant
     }
 
-    const res  = await fetch('/api/catalogos', { headers: { 'Authorization': `Bearer ${token}` } });
+    // Usuarios normales: cargar catálogos de su propio tenant
+    const res = await fetch('/api/catalogos', { headers: { 'Authorization': `Bearer ${token}` } });
+    if (!res.ok) { console.error('Error /api/catalogos:', res.status, await res.text()); return; }
     const data = await res.json();
+    poblarCatalogos(data);
+}
 
+async function loadCatalogosParaEmpresa(empresaId) {
+    if (!empresaId) {
+        renderSedeOptions([], []);
+        return;
+    }
+    const headers = { 'Authorization': `Bearer ${token}`, 'X-Empresa-Id': empresaId };
+    const [resCat, resSedes] = await Promise.all([
+        fetch('/api/catalogos', { headers }),
+        fetch('/api/sedes',     { headers }),
+    ]);
+    if (resCat.ok) {
+        const data = await resCat.json();
+        poblarCatalogos(data, true);
+    }
+    if (resSedes.ok) {
+        const dataSedes = await resSedes.json();
+        const sedes = dataSedes.data || [];
+        sedeMap = { ...sedeMap, ...Object.fromEntries(sedes.map(s => [s.id, s.nombre])) };
+        renderSedeOptions(sedes, []);
+    }
+}
+
+function poblarCatalogos(data, soloModal = false) {
     const deptos   = data.departamentos || [];
     const cargos   = data.cargos        || [];
     const horarios = data.horarios      || [];
     const sedes    = data.sedes         || [];
 
-    // Mapas id → nombre para resolver en tabla
     deptoMap = Object.fromEntries(deptos.map(d => [d.id, d.nombre]));
     cargoMap = Object.fromEntries(cargos.map(c => [c.id, c.nombre]));
     sedeMap  = Object.fromEntries(sedes.map(s => [s.id, s.nombre]));
 
-    // Selects del modal
     const selDepto   = document.getElementById('empDepartamento');
     const selCargo   = document.getElementById('empCargo');
     const selHorario = document.getElementById('empHorario');
+    selDepto.innerHTML   = '<option value="">— Sin departamento —</option>';
+    selCargo.innerHTML   = '<option value="">— Sin cargo —</option>';
+    selHorario.innerHTML = '<option value="">— Sin horario —</option>';
+
     deptos.filter(d => d.is_active).forEach(d => {
         selDepto.innerHTML += `<option value="${d.id}">${d.nombre}</option>`;
     });
@@ -261,14 +295,14 @@ async function loadCatalogos() {
         selHorario.innerHTML += `<option value="${h.id}">${h.nombre} (${h.hora_entrada?.slice(0,5)} - ${h.hora_salida?.slice(0,5)})</option>`;
     });
 
-    // Sedes (modal + filtro de tabla)
-    renderSedeOptions(sedes, []);
-
-    // Select del filtro de departamento
-    const filterDepto = document.getElementById('filterDepto');
-    deptos.forEach(d => {
-        filterDepto.innerHTML += `<option value="${d.id}">${d.nombre}</option>`;
-    });
+    if (!soloModal) {
+        renderSedeOptions(sedes, []);
+        const filterDepto = document.getElementById('filterDepto');
+        filterDepto.innerHTML = '<option value="">Todos los deptos.</option>';
+        deptos.forEach(d => {
+            filterDepto.innerHTML += `<option value="${d.id}">${d.nombre}</option>`;
+        });
+    }
 }
 
 function renderSedeOptions(sedes, selectedIds = []) {
@@ -339,6 +373,11 @@ async function loadEmpleados(page = 1) {
 
     try {
         const res  = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+        if (!res.ok) {
+            console.error('Error /api/empleados:', res.status, await res.text());
+            document.getElementById('empleadosTbody').innerHTML = `<tr><td colspan="12" class="text-center text-danger py-3">Error ${res.status} al cargar empleados</td></tr>`;
+            return;
+        }
         const data = await res.json();
         const tbody = document.getElementById('empleadosTbody');
         if (!data.data || data.data.length === 0) {
@@ -423,7 +462,8 @@ async function editEmpleado(id) {
                 selEmp.disabled = false;
                 selEmp.title = '';
             }
-            // Cargar sedes de la empresa del empleado con las ya asignadas marcadas
+            // Cargar catálogos y sedes del tenant de la empresa del empleado
+            await loadCatalogosParaEmpresa(e.empresa_id);
             await loadSedesParaEmpresa(e.empresa_id, e.sede_ids || []);
         } else if (e.empresa) {
             document.getElementById('empEmpresa').value = e.empresa;
