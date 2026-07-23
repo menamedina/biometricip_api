@@ -35,10 +35,6 @@ class LoginController extends Controller
                 return back()->withErrors(['email' => 'Credenciales incorrectas.'])->withInput();
             }
 
-            if ($user->role !== 'admin') {
-                return back()->withErrors(['email' => 'Solo los administradores pueden acceder.'])->withInput();
-            }
-
             if (!$user->is_active) {
                 return back()->withErrors(['email' => 'Tu cuenta ha sido desactivada.'])->withInput();
             }
