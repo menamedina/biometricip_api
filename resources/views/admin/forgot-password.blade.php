@@ -42,8 +42,10 @@
                         <label class="form-label">Correo electrónico</label>
                         <input type="email" name="email" class="form-control" placeholder="admin@biometricip.com" value="{{ old('email') }}" required autofocus>
                     </div>
-                    <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
-                        <i class="fa-solid fa-paper-plane me-1"></i> Enviar enlace de recuperación
+                    <button type="submit" id="btn-submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                        <span id="btn-icon"><i class="fa-solid fa-paper-plane me-1"></i></span>
+                        <span id="btn-spinner" class="spinner-border spinner-border-sm me-1 d-none" role="status"></span>
+                        <span id="btn-text">Enviar enlace de recuperación</span>
                     </button>
                 </form>
 
@@ -58,5 +60,17 @@
 
     <script src="{{ asset('assets/js/vendors.min.js') }}"></script>
     <script src="{{ asset('assets/js/app.js') }}"></script>
+    <script>
+        document.querySelector('form').addEventListener('submit', function () {
+            const btn     = document.getElementById('btn-submit');
+            const icon    = document.getElementById('btn-icon');
+            const spinner = document.getElementById('btn-spinner');
+            const text    = document.getElementById('btn-text');
+            btn.disabled = true;
+            icon.classList.add('d-none');
+            spinner.classList.remove('d-none');
+            text.textContent = 'Enviando...';
+        });
+    </script>
 </body>
 </html>
