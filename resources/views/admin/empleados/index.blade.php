@@ -154,6 +154,7 @@
                             <label class="form-label">Rol</label>
                             <select id="empRole" class="form-select">
                                 <option value="empleado">Empleado</option>
+                                <option value="supervisor">Supervisor</option>
                                 <option value="admin">Administrador</option>
                             </select>
                         </div>
@@ -346,7 +347,9 @@ async function loadEmpleados(page = 1) {
             tbody.innerHTML = data.data.map(e => {
                 const rolBadge = e.role === 'admin'
                     ? `<span class="badge bg-warning text-dark">${e.admin_tenant ? 'Admin multi-empresa' : 'Admin'}</span>`
-                    : '<span class="badge bg-secondary">Empleado</span>';
+                    : e.role === 'supervisor'
+                        ? '<span class="badge bg-info text-dark">Supervisor</span>'
+                        : '<span class="badge bg-secondary">Empleado</span>';
                 return `
                 <tr>
                     <td><span class="badge bg-primary">${e.codigo_empleado || '—'}</span></td>

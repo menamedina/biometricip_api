@@ -103,7 +103,7 @@ class EmpleadoController extends Controller
             'name'            => 'required|string|max:255',
             'email'           => 'required|email|unique:users,email',
             'password'        => 'required|string|min:6',
-            'role'            => 'nullable|in:admin,empleado',
+            'role'            => 'nullable|in:admin,supervisor,empleado',
             'tipo'            => 'nullable|in:usuario,kiosco',
             'admin_tenant'    => 'nullable|boolean',
             'departamento_id' => 'nullable|integer',
@@ -203,7 +203,7 @@ class EmpleadoController extends Controller
                     ->where('empresa_id', $efectivoEmpresaId)
                     ->ignore($empleado->id),
             ],
-            'role'            => 'nullable|in:admin,empleado',
+            'role'            => 'nullable|in:admin,supervisor,empleado',
             'tipo'            => 'nullable|in:usuario,kiosco',
             'admin_tenant'    => 'nullable|boolean',
             'empresa_id'      => 'nullable|integer',
@@ -247,11 +247,14 @@ class EmpleadoController extends Controller
 
     public function destroy(Request $request, int $id): JsonResponse
     {
-        $empleado = User::where('id', $id)
-            ->where('empresa_id', $request->user()->empresa_id)
-            ->where('role', 'empleado')
-            ->firstOrFail();
+        $authUser = $request->user();
+        $query = User::where('id', $id);
 
+        if (!$authUser->admin_tenant) {
+            $query->where('empresa_id', $authUser->empresa_id);
+        }
+
+        $empleado = $query->firstOrFail();
         $empleado->update(['is_active' => false]);
 
         return response()->json(['message' => 'Empleado desactivado correctamente.']);
