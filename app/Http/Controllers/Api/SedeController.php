@@ -36,9 +36,11 @@ class SedeController extends Controller
                 'radio_mts' => 'nullable|integer|min:10|max:5000',
                 'is_active' => 'nullable|boolean',
             ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e; // 422 — Laravel lo maneja correctamente
         } catch (\Throwable $e) {
-            Log::error('SedeController::store validación falló', ['error' => $e->getMessage()]);
-            throw $e;
+            Log::error('SedeController::store validación falló', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json(['message' => 'Error al validar: ' . $e->getMessage()], 500);
         }
 
         Log::info('SedeController::store validación OK', ['data' => $data]);
@@ -51,8 +53,8 @@ class SedeController extends Controller
             $sede = Sede::create($data);
             Log::info('SedeController::store sede creada', ['sede_id' => $sede->id]);
         } catch (\Throwable $e) {
-            Log::error('SedeController::store fallo al crear', ['error' => $e->getMessage()]);
-            throw $e;
+            Log::error('SedeController::store fallo al crear', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json(['message' => 'Error al crear la sede: ' . $e->getMessage()], 500);
         }
 
         return response()->json(['data' => $sede], 201);
