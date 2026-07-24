@@ -14,6 +14,16 @@
                     <i class="fa-solid fa-plus me-1"></i> Nueva Sede
                 </button>
             </div>
+            @if(auth()->user()->admin_tenant ?? false)
+            <div class="mt-3">
+                <div class="d-flex align-items-center gap-2">
+                    <label class="form-label mb-0 text-nowrap"><i class="fa-solid fa-building-user me-1"></i>Empresa:</label>
+                    <select id="filterEmpresaSedes" class="form-select form-select-sm w-auto" onchange="onFilterEmpresaChange()">
+                        <option value="">— Selecciona una empresa —</option>
+                    </select>
+                </div>
+            </div>
+            @endif
         </div>
     </div>
 
@@ -55,6 +65,14 @@
             <div class="modal-body">
                 <form id="sedeForm">
                     <input type="hidden" id="sedeId">
+                    @if(auth()->user()->admin_tenant ?? false)
+                    <div class="mb-3" id="sedeEmpresaRow">
+                        <label class="form-label">Empresa <span class="text-danger">*</span></label>
+                        <select id="sedeEmpresaId" class="form-select" required>
+                            <option value="">— Selecciona una empresa —</option>
+                        </select>
+                    </div>
+                    @endif
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Código</label>
@@ -198,6 +216,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 const token = localStorage.getItem('token');
+const isAdminTenant = {{ (auth()->user()->admin_tenant ?? false) ? 'true' : 'false' }};
+let currentEmpresaId = null; // empresa seleccionada para admin_tenant
 
 // ── Mapa Google Maps ──────────────────────────────────────────────────────────
 let gMap = null, gMarker = null, gCircle = null;
@@ -305,11 +325,46 @@ function resetForm() {
     document.getElementById('sedeActivo').checked = true;
     document.getElementById('sedeRadio').value = 150;
     clearSedeError();
+    if (isAdminTenant) {
+        // Pre-selecciona la empresa del filtro activo
+        const sel = document.getElementById('sedeEmpresaId');
+        if (sel) sel.value = currentEmpresaId || '';
+    }
+}
+
+function buildHeaders(extra = {}) {
+    const h = { 'Authorization': `Bearer ${token}`, ...extra };
+    if (isAdminTenant && currentEmpresaId) h['X-Empresa-Id'] = currentEmpresaId;
+    return h;
+}
+
+function onFilterEmpresaChange() {
+    const sel = document.getElementById('filterEmpresaSedes');
+    currentEmpresaId = sel.value || null;
+    loadSedes();
+}
+
+async function loadEmpresas() {
+    if (!isAdminTenant) return;
+    const res = await fetch('/api/empresas', { headers: { 'Authorization': `Bearer ${token}` } });
+    if (!res.ok) return;
+    const data = await res.json();
+    const filterSel = document.getElementById('filterEmpresaSedes');
+    const formSel   = document.getElementById('sedeEmpresaId');
+    (data.data || []).forEach(e => {
+        filterSel.innerHTML += `<option value="${e.id}">${e.nombre}</option>`;
+        if (formSel) formSel.innerHTML += `<option value="${e.id}">${e.nombre}</option>`;
+    });
 }
 
 async function loadSedes() {
+    if (isAdminTenant && !currentEmpresaId) {
+        document.getElementById('sedesTbody').innerHTML =
+            '<tr><td colspan="7" class="text-center text-muted py-3">Selecciona una empresa para ver sus sedes.</td></tr>';
+        return;
+    }
     try {
-        const res = await fetch('/api/sedes', { headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await fetch('/api/sedes', { headers: buildHeaders() });
         const data = await res.json();
         const tbody = document.getElementById('sedesTbody');
         if (!data.data || data.data.length === 0) {
@@ -346,6 +401,10 @@ function editSede(sede) {
     document.getElementById('sedeRadio').value = sede.radio_mts;
     document.getElementById('sedeActivo').checked = sede.is_active;
     document.getElementById('sedeModalTitle').textContent = 'Editar Sede';
+    if (isAdminTenant) {
+        const sel = document.getElementById('sedeEmpresaId');
+        if (sel) sel.value = currentEmpresaId || '';
+    }
     new bootstrap.Modal(document.getElementById('sedeModal')).show();
 }
 
@@ -356,6 +415,12 @@ async function saveSede() {
     const nombre = document.getElementById('sedeNombre').value.trim();
     const lat    = parseFloat(document.getElementById('sedeLat').value);
     const lng    = parseFloat(document.getElementById('sedeLng').value);
+
+    if (isAdminTenant) {
+        const empSel = document.getElementById('sedeEmpresaId');
+        if (!empSel || !empSel.value) { showSedeError('Debes seleccionar una empresa.'); return; }
+        currentEmpresaId = empSel.value;
+    }
 
     if (!codigo) { showSedeError('El código de la sede es obligatorio.'); return; }
     if (!nombre)  { showSedeError('El nombre de la sede es obligatorio.'); return; }
@@ -380,7 +445,7 @@ async function saveSede() {
     clearSedeError();
     try {
         const res = await fetch(url, {
-            method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            method, headers: buildHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify(payload)
         });
         if (res.ok) {
@@ -419,12 +484,15 @@ function clearSedeError() {
 async function deleteSede(id) {
     if (!confirm('¿Eliminar esta sede?')) return;
     try {
-        await fetch(`/api/sedes/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+        await fetch(`/api/sedes/${id}`, { method: 'DELETE', headers: buildHeaders() });
         loadSedes();
     } catch(e) { console.error(e); }
 }
 
-document.addEventListener('DOMContentLoaded', loadSedes);
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadEmpresas();
+    if (!isAdminTenant) loadSedes();
+});
 
 let qrInterval = null;
 let qrSedeId   = null;
@@ -453,7 +521,7 @@ async function showQR(sedeId, sedeName) {
 
 async function refreshQR() {
     try {
-        const res  = await fetch(`/api/sedes/${qrSedeId}/qr`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const res  = await fetch(`/api/sedes/${qrSedeId}/qr`, { headers: buildHeaders() });
         const data = await res.json();
 
         document.getElementById('qrCanvas').innerHTML = '';
@@ -490,7 +558,7 @@ async function showStaticQR(sedeId, sedeName, isEnabled) {
 
 async function loadStaticQR() {
     try {
-        const res  = await fetch(`/api/sedes/${staticQrSedeId}/qr-static`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const res  = await fetch(`/api/sedes/${staticQrSedeId}/qr-static`, { headers: buildHeaders() });
         if (!res.ok) { console.error('Error cargando QR estático'); return; }
         const data = await res.json();
 
@@ -509,7 +577,7 @@ async function loadStaticQR() {
 async function enableStaticQR() {
     try {
         await fetch(`/api/sedes/${staticQrSedeId}/qr-static/enable`,
-            { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+            { method: 'POST', headers: buildHeaders() });
         loadSedes();
         await loadStaticQR();
     } catch(e) { console.error(e); }
@@ -519,7 +587,7 @@ async function regenerateStaticQR() {
     if (!confirm('¿Regenerar el QR estático? Los QR impresos anteriores quedarán inválidos inmediatamente.')) return;
     try {
         await fetch(`/api/sedes/${staticQrSedeId}/qr-static/regenerar`,
-            { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+            { method: 'POST', headers: buildHeaders() });
         loadSedes();
         await loadStaticQR();
     } catch(e) { console.error(e); }
@@ -574,7 +642,7 @@ async function showWebQR(sedeId, sedeName, isEnabled) {
 
 async function loadWebQR() {
     try {
-        const res  = await fetch(`/api/sedes/${webQrSedeId}/qr-v3`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const res  = await fetch(`/api/sedes/${webQrSedeId}/qr-v3`, { headers: buildHeaders() });
         if (!res.ok) { console.error('Error cargando QR Web'); return; }
         const data = await res.json();
 
@@ -593,7 +661,7 @@ async function loadWebQR() {
 async function enableWebQR() {
     try {
         await fetch(`/api/sedes/${webQrSedeId}/qr-v3/enable`,
-            { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+            { method: 'POST', headers: buildHeaders() });
         loadSedes();
         await loadWebQR();
     } catch(e) { console.error(e); }
@@ -603,7 +671,7 @@ async function regenerateWebQR() {
     if (!confirm('¿Regenerar el QR Web? Los QR impresos anteriores quedarán inválidos inmediatamente.')) return;
     try {
         await fetch(`/api/sedes/${webQrSedeId}/qr-v3/regenerar`,
-            { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+            { method: 'POST', headers: buildHeaders() });
         loadSedes();
         await loadWebQR();
     } catch(e) { console.error(e); }
