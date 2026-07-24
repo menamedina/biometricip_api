@@ -66,19 +66,40 @@ class SedeController extends Controller
 
     public function update(Request $request, int $id): JsonResponse
     {
-        $sede = Sede::findOrFail($id);
+        Log::info('SedeController::update iniciado', ['id' => $id, 'payload' => $request->all(), 'user_id' => $request->user()?->id]);
 
-        $data = $request->validate([
-            'codigo'    => 'sometimes|string|unique:tenant.tbl_sedes,codigo,' . $id . '|max:20',
-            'nombre'    => 'sometimes|string|max:255',
-            'direccion' => 'nullable|string|max:500',
-            'lat'       => 'sometimes|numeric|between:-90,90',
-            'lng'       => 'sometimes|numeric|between:-180,180',
-            'radio_mts' => 'nullable|integer|min:10|max:5000',
-            'is_active' => 'nullable|boolean',
-        ]);
+        try {
+            $sede = Sede::findOrFail($id);
+        } catch (\Throwable $e) {
+            Log::error('SedeController::update sede no encontrada', ['id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Sede no encontrada.'], 404);
+        }
 
-        $sede->update($data);
+        try {
+            $data = $request->validate([
+                'codigo'    => 'sometimes|string|unique:tenant.tbl_sedes,codigo,' . $id . '|max:20',
+                'nombre'    => 'sometimes|string|max:255',
+                'direccion' => 'nullable|string|max:500',
+                'lat'       => 'sometimes|numeric|between:-90,90',
+                'lng'       => 'sometimes|numeric|between:-180,180',
+                'radio_mts' => 'nullable|integer|min:10|max:5000',
+                'is_active' => 'nullable|boolean',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('SedeController::update validación falló', ['id' => $id, 'errors' => $e->errors()]);
+            throw $e;
+        } catch (\Throwable $e) {
+            Log::error('SedeController::update error en validación', ['id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Error al validar: ' . $e->getMessage()], 500);
+        }
+
+        try {
+            $sede->update($data);
+            Log::info('SedeController::update sede actualizada', ['id' => $id]);
+        } catch (\Throwable $e) {
+            Log::error('SedeController::update fallo al actualizar', ['id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Error al actualizar la sede: ' . $e->getMessage()], 500);
+        }
 
         return response()->json(['data' => $sede]);
     }

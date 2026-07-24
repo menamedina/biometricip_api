@@ -333,7 +333,7 @@ function resetForm() {
 }
 
 function buildHeaders(extra = {}) {
-    const h = { 'Authorization': `Bearer ${token}`, ...extra };
+    const h = { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json', ...extra };
     if (isAdminTenant && currentEmpresaId) h['X-Empresa-Id'] = currentEmpresaId;
     return h;
 }
