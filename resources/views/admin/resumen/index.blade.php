@@ -11,9 +11,11 @@
                     <p class="text-muted mb-0">Entradas y salidas agrupadas por empleado y día</p>
                 </div>
                 <div>
+                    @if(auth()->user()->role !== 'empleado')
                     <button class="btn btn-primary btn-sm me-2" onclick="abrirModalManual()">
                         <i class="fa-solid fa-plus me-1"></i> Registro Manual
                     </button>
+                    @endif
                     <button class="btn btn-success btn-sm" onclick="exportar()">
                         <i class="fa-solid fa-file-csv me-1"></i> Exportar CSV
                     </button>
@@ -167,9 +169,11 @@
 
 @push('scripts')
 <script>
-const csrfToken = '{{ csrf_token() }}';
+const csrfToken  = '{{ csrf_token() }}';
+const isEmpleado = {{ auth()->user()->role === 'empleado' ? 'true' : 'false' }};
+const myUserId   = {{ auth()->id() }};
 let deptoMap = {};
-let allRegistros = []; // guardar todos los registros para acceder al editar
+let allRegistros = [];
 
 // ── Inicialización ────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -177,6 +181,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const lunes = inicioSemana();
     document.getElementById('dateFrom').value = lunes;
     document.getElementById('dateTo').value   = hoy;
+
+    if (isEmpleado) {
+        document.getElementById('filterEmpleado').closest('.col-md-3').style.display = 'none';
+        document.getElementById('filterDepto').closest('.col-md-3').style.display    = 'none';
+    }
 
     cargarFiltros();
     cargarResumen();
@@ -220,8 +229,8 @@ async function cargarFiltros() {
 async function cargarResumen() {
     const from    = document.getElementById('dateFrom').value;
     const to      = document.getElementById('dateTo').value;
-    const userId  = document.getElementById('filterEmpleado').value;
-    const deptoId = document.getElementById('filterDepto').value;
+    const userId  = isEmpleado ? myUserId : document.getElementById('filterEmpleado').value;
+    const deptoId = isEmpleado ? ''       : document.getElementById('filterDepto').value;
 
     if (!from || !to) { alert('Selecciona el rango de fechas.'); return; }
 
@@ -326,8 +335,8 @@ async function cargarResumen() {
             const deptoNombre = deptoMap[g.user?.departamento_id] || g.user?.departamento || '—';
             const fechaFmt    = g.fecha.split('-').reverse().join('/');
 
-            // Botón para agregar registro en ese día para ese usuario
-            const btnAdd = `<button class="btn btn-outline-primary btn-sm py-0 px-1" onclick="abrirModalManualPre(${g.user?.id}, '${g.fecha}')" title="Agregar registro"><i class="fa-solid fa-plus fa-xs"></i></button>`;
+            // Botón para agregar registro en ese día para ese usuario (solo admin/supervisor)
+            const btnAdd = isEmpleado ? '' : `<button class="btn btn-outline-primary btn-sm py-0 px-1" onclick="abrirModalManualPre(${g.user?.id}, '${g.fecha}')" title="Agregar registro"><i class="fa-solid fa-plus fa-xs"></i></button>`;
 
             filas += `<tr>
                 <td>${g.user?.name ?? 'N/A'}</td>

@@ -99,17 +99,19 @@
 
 @push('scripts')
 <script>
-const csrfToken = '{{ csrf_token() }}';
-let recordsPage = 1;
+const csrfToken  = '{{ csrf_token() }}';
+const isEmpleado = {{ auth()->user()->role === 'empleado' ? 'true' : 'false' }};
+const myUserId   = {{ auth()->id() }};
+let recordsPage  = 1;
 
 async function loadRecords(page = 1) {
     recordsPage = page;
-    const date = document.getElementById('filterDate').value;
-    const tipo = document.getElementById('filterTipo').value;
-    const empId = document.getElementById('filterEmpleado').value;
+    const date  = document.getElementById('filterDate').value;
+    const tipo  = document.getElementById('filterTipo').value;
+    const empId = isEmpleado ? myUserId : document.getElementById('filterEmpleado').value;
     let url = `/admin/attendance/records?page=${page}&per_page=20`;
-    if (date) url += `&date=${date}`;
-    if (tipo) url += `&tipo=${tipo}`;
+    if (date)  url += `&date=${date}`;
+    if (tipo)  url += `&tipo=${tipo}`;
     if (empId) url += `&user_id=${empId}`;
 
     try {
@@ -189,6 +191,13 @@ async function verFoto(id) {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => { loadRecords(); loadEmpleadosFilter(); });
+document.addEventListener('DOMContentLoaded', () => {
+    if (isEmpleado) {
+        document.getElementById('filterEmpleado').closest('.col-md-3').style.display = 'none';
+    } else {
+        loadEmpleadosFilter();
+    }
+    loadRecords();
+});
 </script>
 @endpush
