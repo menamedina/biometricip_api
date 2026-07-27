@@ -230,18 +230,17 @@
                 <input type="hidden" name="search_cargo" value="{{ $searchCargo }}">
                 <div class="modal-body">
                     <p class="text-muted small mb-3">
-                        El archivo CSV debe tener las columnas en este orden:
-                        <code>nombre, descripcion, is_active</code><br>
-                        <span class="text-muted">La primera fila (encabezado) se omite. <code>is_active</code> es opcional (1 = activo, 0 = inactivo).</span>
+                        El archivo debe tener las columnas: <code>nombre</code>, <code>descripcion</code>, <code>is_active</code>.<br>
+                        La primera fila (encabezado) se omite. <code>is_active</code> es opcional (1 = activo, 0 = inactivo).
                     </p>
                     <div class="mb-3">
-                        <a id="importTemplateLink" href="#" download class="btn btn-outline-secondary btn-sm mb-3">
-                            <i class="fa-solid fa-download me-1"></i> Descargar plantilla
+                        <a id="importTemplateLink" href="#" class="btn btn-outline-secondary btn-sm">
+                            <i class="fa-solid fa-download me-1"></i> Descargar plantilla Excel
                         </a>
                     </div>
                     <div class="mb-0">
-                        <label class="form-label">Archivo CSV <span class="text-danger">*</span></label>
-                        <input type="file" name="file" class="form-control" accept=".csv,.txt" required>
+                        <label class="form-label">Archivo Excel / CSV <span class="text-danger">*</span></label>
+                        <input type="file" name="file" class="form-control" accept=".xlsx,.xls,.csv" required>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -437,22 +436,16 @@ function acHighlight(listId, items) {
 }
 
 // ── Import ────────────────────────────────────────────────────────────────────
-const importDeptoUrl = "{{ route('admin.departamentos.import') }}";
-const importCargoUrl = "{{ route('admin.cargos.import') }}";
-
-const deptoTemplate = "nombre,descripcion,is_active\nRecursos Humanos,Gestión del personal,1\nTI,Tecnología e innovación,1\n";
-const cargoTemplate = "nombre,descripcion,is_active\nGerente,Dirección general,1\nAnalista,Análisis de datos,1\n";
+const importDeptoUrl    = "{{ route('admin.departamentos.import') }}";
+const importCargoUrl    = "{{ route('admin.cargos.import') }}";
+const templateDeptoUrl  = "{{ route('admin.departamentos.template') }}";
+const templateCargoUrl  = "{{ route('admin.cargos.template') }}";
 
 function openImportModal(type) {
     const isDepto = type === 'depto';
     document.getElementById('importModalTitle').textContent = isDepto ? 'Importar Departamentos' : 'Importar Cargos';
-    document.getElementById('importForm').action = isDepto ? importDeptoUrl : importCargoUrl;
-
-    const blob = new Blob([isDepto ? deptoTemplate : cargoTemplate], { type: 'text/csv' });
-    const link = document.getElementById('importTemplateLink');
-    link.href = URL.createObjectURL(blob);
-    link.download = isDepto ? 'plantilla_departamentos.csv' : 'plantilla_cargos.csv';
-
+    document.getElementById('importForm').action            = isDepto ? importDeptoUrl : importCargoUrl;
+    document.getElementById('importTemplateLink').href      = isDepto ? templateDeptoUrl : templateCargoUrl;
     document.querySelector('#importForm input[type=file]').value = '';
     new bootstrap.Modal(document.getElementById('importModal')).show();
 }

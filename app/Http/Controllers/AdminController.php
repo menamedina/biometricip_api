@@ -2,7 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\CargosTemplateExport;
+use App\Exports\DepartamentosTemplateExport;
 use App\Helpers\TenantHelper;
+use App\Imports\CargosImport;
+use App\Imports\DepartamentosImport;
 use App\Models\Cargo;
 use App\Models\Departamento;
 use App\Models\TenantTabla;
@@ -11,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
+use Maatwebsite\Excel\Facades\Excel;
 
 class AdminController extends Controller
 {
@@ -109,41 +114,22 @@ class AdminController extends Controller
             ->with('success', 'Departamento eliminado.');
     }
 
+    public function departamentosTemplate()
+    {
+        return Excel::download(new DepartamentosTemplateExport(), 'plantilla_departamentos.xlsx');
+    }
+
     public function departamentosImport(Request $request)
     {
-        $request->validate(['file' => 'required|file|mimes:csv,txt|max:2048']);
+        $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv|max:5120']);
         $back = ['search_depto' => $request->input('search_depto'), 'search_cargo' => $request->input('search_cargo')];
 
-        $handle   = fopen($request->file('file')->getRealPath(), 'r');
-        $header   = fgetcsv($handle); // skip header row
-        $existing = Departamento::pluck('nombre')->map(fn($n) => mb_strtolower(trim($n)))->toArray();
-        $seenInFile = [];
-        $imported = 0;
-        $skipped  = [];
+        $import = new DepartamentosImport();
+        Excel::import($import, $request->file('file'));
 
-        while (($row = fgetcsv($handle)) !== false) {
-            $nombre = trim($row[0] ?? '');
-            if ($nombre === '') continue;
-
-            $key = mb_strtolower($nombre);
-            if (in_array($key, $existing) || in_array($key, $seenInFile)) {
-                $skipped[] = $nombre;
-                continue;
-            }
-
-            Departamento::create([
-                'nombre'      => $nombre,
-                'descripcion' => trim($row[1] ?? ''),
-                'is_active'   => isset($row[2]) ? (bool) $row[2] : true,
-            ]);
-            $seenInFile[] = $key;
-            $imported++;
-        }
-        fclose($handle);
-
-        $msg = "Importación completada: {$imported} registros importados.";
-        if ($skipped) {
-            $msg .= ' Omitidos por nombre duplicado: ' . implode(', ', $skipped) . '.';
+        $msg = "Importación completada: {$import->imported} registros importados.";
+        if ($import->skipped) {
+            $msg .= ' Omitidos por nombre duplicado: ' . implode(', ', $import->skipped) . '.';
         }
 
         return redirect()->route('admin.departamentos.index', $back)->with('success', $msg);
@@ -192,41 +178,22 @@ class AdminController extends Controller
             ->with('success', 'Cargo eliminado.');
     }
 
+    public function cargosTemplate()
+    {
+        return Excel::download(new CargosTemplateExport(), 'plantilla_cargos.xlsx');
+    }
+
     public function cargosImport(Request $request)
     {
-        $request->validate(['file' => 'required|file|mimes:csv,txt|max:2048']);
+        $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv|max:5120']);
         $back = ['search_depto' => $request->input('search_depto'), 'search_cargo' => $request->input('search_cargo')];
 
-        $handle   = fopen($request->file('file')->getRealPath(), 'r');
-        $header   = fgetcsv($handle); // skip header row
-        $existing = Cargo::pluck('nombre')->map(fn($n) => mb_strtolower(trim($n)))->toArray();
-        $seenInFile = [];
-        $imported = 0;
-        $skipped  = [];
+        $import = new CargosImport();
+        Excel::import($import, $request->file('file'));
 
-        while (($row = fgetcsv($handle)) !== false) {
-            $nombre = trim($row[0] ?? '');
-            if ($nombre === '') continue;
-
-            $key = mb_strtolower($nombre);
-            if (in_array($key, $existing) || in_array($key, $seenInFile)) {
-                $skipped[] = $nombre;
-                continue;
-            }
-
-            Cargo::create([
-                'nombre'      => $nombre,
-                'descripcion' => trim($row[1] ?? ''),
-                'is_active'   => isset($row[2]) ? (bool) $row[2] : true,
-            ]);
-            $seenInFile[] = $key;
-            $imported++;
-        }
-        fclose($handle);
-
-        $msg = "Importación completada: {$imported} registros importados.";
-        if ($skipped) {
-            $msg .= ' Omitidos por nombre duplicado: ' . implode(', ', $skipped) . '.';
+        $msg = "Importación completada: {$import->imported} registros importados.";
+        if ($import->skipped) {
+            $msg .= ' Omitidos por nombre duplicado: ' . implode(', ', $import->skipped) . '.';
         }
 
         return redirect()->route('admin.departamentos.index', $back)->with('success', $msg);

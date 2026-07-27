@@ -111,11 +111,13 @@ Route::middleware(['auth', 'admin', 'role:admin,supervisor', 'tenancy.session'])
     Route::post  ('/admin/departamentos',          [AdminController::class, 'departamentosStore'])->name('admin.departamentos.store');
     Route::put   ('/admin/departamentos/{id}',     [AdminController::class, 'departamentosUpdate'])->name('admin.departamentos.update');
     Route::delete('/admin/departamentos/{id}',     [AdminController::class, 'departamentosDestroy'])->name('admin.departamentos.destroy');
-    Route::post  ('/admin/departamentos/import',   [AdminController::class, 'departamentosImport'])->name('admin.departamentos.import');
+    Route::post  ('/admin/departamentos/import',    [AdminController::class, 'departamentosImport'])->name('admin.departamentos.import');
+    Route::get   ('/admin/departamentos/template', [AdminController::class, 'departamentosTemplate'])->name('admin.departamentos.template');
     Route::post  ('/admin/cargos',                 [AdminController::class, 'cargosStore'])->name('admin.cargos.store');
     Route::put   ('/admin/cargos/{id}',            [AdminController::class, 'cargosUpdate'])->name('admin.cargos.update');
     Route::delete('/admin/cargos/{id}',            [AdminController::class, 'cargosDestroy'])->name('admin.cargos.destroy');
-    Route::post  ('/admin/cargos/import',          [AdminController::class, 'cargosImport'])->name('admin.cargos.import');
+    Route::post  ('/admin/cargos/import',           [AdminController::class, 'cargosImport'])->name('admin.cargos.import');
+    Route::get   ('/admin/cargos/template',        [AdminController::class, 'cargosTemplate'])->name('admin.cargos.template');
     Route::get('/admin/horarios',       [AdminController::class, 'horariosIndex'])->name('admin.horarios.index');
     Route::get('/admin/festivos',       [AdminController::class, 'festivosIndex'])->name('admin.festivos.index');
     Route::get('/admin/empresas',       [AdminController::class, 'empresasIndex'])->name('admin.empresas.index');
