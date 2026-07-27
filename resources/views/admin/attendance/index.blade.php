@@ -99,7 +99,7 @@
 
 @push('scripts')
 <script>
-const token = localStorage.getItem('token');
+const csrfToken = '{{ csrf_token() }}';
 let recordsPage = 1;
 
 async function loadRecords(page = 1) {
@@ -107,13 +107,13 @@ async function loadRecords(page = 1) {
     const date = document.getElementById('filterDate').value;
     const tipo = document.getElementById('filterTipo').value;
     const empId = document.getElementById('filterEmpleado').value;
-    let url = `/api/attendance?page=${page}&per_page=20`;
+    let url = `/admin/attendance/records?page=${page}&per_page=20`;
     if (date) url += `&date=${date}`;
     if (tipo) url += `&tipo=${tipo}`;
     if (empId) url += `&user_id=${empId}`;
 
     try {
-        const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await fetch(url, { headers: { 'X-CSRF-TOKEN': csrfToken } });
         const data = await res.json();
         const tbody = document.getElementById('recordsTbody');
         if (!data.data || data.data.length === 0) {
@@ -159,7 +159,7 @@ function renderRecordsPagination(data) {
 
 async function loadEmpleadosFilter() {
     try {
-        const res = await fetch('/api/empleados?per_page=200', { headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await fetch('/admin/empleados/list?per_page=200', { headers: { 'X-CSRF-TOKEN': csrfToken } });
         const data = await res.json();
         const sel = document.getElementById('filterEmpleado');
         (data.data || []).forEach(e => {
@@ -180,7 +180,7 @@ async function verFoto(id) {
     const modal = new bootstrap.Modal(document.getElementById('modalFoto'));
     modal.show();
     try {
-        const res = await fetch(`/api/attendance/${id}/photo`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await fetch(`/admin/attendance/${id}/photo`, { headers: { 'X-CSRF-TOKEN': csrfToken } });
         if (!res.ok) { body.innerHTML = '<p class="text-muted">Sin foto disponible</p>'; return; }
         const data = await res.json();
         body.innerHTML = `<img src="${data.foto_base64}" class="img-fluid rounded" style="max-height:500px;">`;

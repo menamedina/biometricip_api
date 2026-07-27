@@ -104,11 +104,12 @@ Route::middleware(['auth', 'admin', 'tenancy.session'])->group(function () {
     Route::get('/admin',            [AdminController::class, 'dashboard'])->name('admin.dashboard');
     Route::get('/admin/attendance', [AdminController::class, 'attendanceIndex'])->name('admin.attendance.index');
     Route::get('/admin/resumen',    [AdminController::class, 'resumenIndex'])->name('admin.resumen.index');
-    Route::get ('/admin/attendance/records',  [ApiAttendanceController::class, 'index']);
-    Route::get ('/admin/attendance/stats',    [ApiAttendanceController::class, 'stats']);
-    Route::put ('/admin/attendance/{id}',     [ApiAttendanceController::class, 'update']);
-    Route::post('/admin/attendance/manual',   [ApiAttendanceController::class, 'storeManual']);
-    Route::get ('/admin/catalogos',           [\App\Http\Controllers\Api\DepartamentoController::class, 'catalogos']);
+    Route::get ('/admin/attendance/records',      [ApiAttendanceController::class, 'index']);
+    Route::get ('/admin/attendance/stats',        [ApiAttendanceController::class, 'stats']);
+    Route::post('/admin/attendance/manual',       [ApiAttendanceController::class, 'storeManual']);
+    Route::put ('/admin/attendance/{id}',         [ApiAttendanceController::class, 'update']);
+    Route::get ('/admin/attendance/{id}/photo',   [ApiAttendanceController::class, 'getPhoto']);
+    Route::get ('/admin/catalogos',               [\App\Http\Controllers\Api\DepartamentoController::class, 'catalogos']);
 });
 
 // Solo admin y supervisor
