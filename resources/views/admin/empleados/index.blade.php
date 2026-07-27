@@ -275,8 +275,10 @@ let deptoMap   = {};
 let cargoMap   = {};
 let sedeMap    = {};
 let empresaMap = {};
+let currentEmpleadoId = null;
 
 function resetForm() {
+    currentEmpleadoId = null;
     document.getElementById('empleadoForm').reset();
     document.getElementById('empleadoId').value = '';
     document.getElementById('empPassword').required = true;
@@ -501,6 +503,7 @@ async function editEmpleado(id) {
         if (!res.ok) { alert('Error ' + res.status + ' al cargar empleado'); return; }
         const data = await res.json();
         const e = data.data;
+        currentEmpleadoId = e.id;
         document.getElementById('empleadoId').value      = e.id;
 
         if (isAdminTenant) {
@@ -551,7 +554,7 @@ async function editEmpleado(id) {
 }
 
 async function saveEmpleado() {
-    const id = document.getElementById('empleadoId').value;
+    const id = currentEmpleadoId || document.getElementById('empleadoId').value || null;
     const deptoVal     = document.getElementById('empDepartamento').value;
     const cargoVal     = document.getElementById('empCargo').value;
     const horarioVal   = document.getElementById('empHorario').value;
