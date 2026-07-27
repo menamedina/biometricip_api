@@ -111,6 +111,7 @@ class EmpleadoController extends Controller
             'cargo_id'        => 'nullable|integer',
             'horario_id'      => 'nullable|integer',
             'empleador_id'    => 'nullable|integer',
+            'lider_id'        => 'nullable|integer|exists:users,id',
             'sede_ids'        => 'nullable|array',
             'sede_ids.*'      => 'integer',
             'cedula'          => 'required|string|max:20',
@@ -131,6 +132,7 @@ class EmpleadoController extends Controller
             'cargo_id'        => $data['cargo_id'] ?? null,
             'horario_id'      => $data['horario_id'] ?? null,
             'empleador_id'    => $data['empleador_id'] ?? null,
+            'lider_id'        => $data['lider_id'] ?? null,
             'cedula'          => $data['cedula'] ?? null,
             'telefono'        => $data['telefono'] ?? null,
         ]);
@@ -218,6 +220,7 @@ class EmpleadoController extends Controller
             'cargo_id'        => 'nullable|integer',
             'horario_id'      => 'nullable|integer',
             'empleador_id'    => 'nullable|integer',
+            'lider_id'        => 'nullable|integer|exists:users,id',
             'sede_ids'        => 'nullable|array',
             'sede_ids.*'      => 'integer',
             'cedula'          => 'nullable|string|max:20',
@@ -459,6 +462,9 @@ class EmpleadoController extends Controller
             : null;
         $data['empleador'] = $user->empleador_id
             ? Empleador::find($user->empleador_id)?->nombre
+            : null;
+        $data['lider'] = $user->lider_id
+            ? User::find($user->lider_id)?->name
             : null;
 
         $data['sede_ids'] = UserSede::where('user_id', $user->id)

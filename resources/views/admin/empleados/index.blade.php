@@ -150,6 +150,12 @@
                                 <option value="">— Sin empleador —</option>
                             </select>
                         </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Líder</label>
+                            <select id="empLider" class="form-select">
+                                <option value="">— Sin líder —</option>
+                            </select>
+                        </div>
                         <div class="col-12 mb-3">
                             <label class="form-label">Sedes asignadas</label>
                             <div id="empSedesContainer" class="border rounded p-2" style="min-height:42px; max-height:160px; overflow-y:auto; background:#fff;">
@@ -233,6 +239,7 @@ function initCatalogos() {
         return;
     }
 
+    cargarLideres();
     poblarCatalogos({
         departamentos: @json($deptos),
         cargos:        @json($cargos),
@@ -255,6 +262,21 @@ async function loadCatalogosParaEmpresa(empresaId) {
         sedeMap = { ...sedeMap, ...Object.fromEntries(sedes.map(s => [s.id, s.nombre])) };
         renderSedeOptions(sedes, []);
     }
+    await cargarLideres(empresaId);
+}
+
+async function cargarLideres(empresaId = null, selectedId = null) {
+    const url = empresaId
+        ? `/admin/empleados/lideres?empresa_id=${empresaId}`
+        : '/admin/empleados/lideres';
+    const res = await fetch(url);
+    if (!res.ok) return;
+    const lideres = (await res.json()).data || [];
+    const sel = document.getElementById('empLider');
+    sel.innerHTML = '<option value="">— Sin líder —</option>';
+    lideres.forEach(l => {
+        sel.innerHTML += `<option value="${l.id}" ${l.id == selectedId ? 'selected' : ''}>${l.name}${l.codigo_empleado ? ' ('+l.codigo_empleado+')' : ''}</option>`;
+    });
 }
 
 function poblarCatalogos(data, soloModal = false) {
@@ -430,6 +452,7 @@ async function editEmpleado(id) {
             // Cargar catálogos y sedes del tenant de la empresa del empleado
             await loadCatalogosParaEmpresa(e.empresa_id);
             await loadSedesParaEmpresa(e.empresa_id, e.sede_ids || []);
+            await cargarLideres(e.empresa_id, e.lider_id);
         } else if (e.empresa) {
             document.getElementById('empEmpresa').value = e.empresa;
             document.getElementById('empEmpresaRow').style.display = '';
@@ -449,6 +472,7 @@ async function editEmpleado(id) {
         document.getElementById('empCargo').value        = e.cargo_id || '';
         document.getElementById('empHorario').value      = e.horario_id || '';
         document.getElementById('empEmpleador').value    = e.empleador_id || '';
+        if (!isAdminTenant) document.getElementById('empLider').value = e.lider_id || '';
         // Para admin no-tenant, marcar las sedes ya asignadas
         if (!isAdminTenant) {
             document.querySelectorAll('.emp-sede-check').forEach(cb => {
@@ -477,6 +501,7 @@ async function saveEmpleado() {
         cargo_id:         cargoVal     ? parseInt(cargoVal)     : null,
         horario_id:       horarioVal   ? parseInt(horarioVal)   : null,
         empleador_id:     empleadorVal ? parseInt(empleadorVal) : null,
+        lider_id:         document.getElementById('empLider').value ? parseInt(document.getElementById('empLider').value) : null,
         sede_ids:         getSelectedSedeIds(),
         role:             document.getElementById('empRole').value,
         is_active:        document.getElementById('empActivo').checked,

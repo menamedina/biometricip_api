@@ -28,6 +28,7 @@ class User extends Authenticatable
         'is_active',
         'empresa_id',
         'empleador_id',
+        'lider_id',
         'codigo_empleado',
         'departamento_id',
         'cargo_id',

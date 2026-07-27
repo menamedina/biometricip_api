@@ -62,6 +62,19 @@ class AdminController extends Controller
         ]);
     }
 
+    public function empleadosLideres(Request $request): JsonResponse
+    {
+        $authUser  = auth()->user();
+        $empresaId = $request->integer('empresa_id') ?: $authUser->empresa_id;
+
+        $lideres = User::where('empresa_id', $empresaId)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'codigo_empleado']);
+
+        return response()->json(['data' => $lideres]);
+    }
+
     public function empleadosSedes(Request $request): JsonResponse
     {
         $empresaId = $request->integer('empresa_id');
