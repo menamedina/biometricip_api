@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Exports\CargosTemplateExport;
 use App\Exports\DepartamentosTemplateExport;
+use App\Exports\EmpleadosTemplateExport;
 use App\Helpers\TenantHelper;
 use App\Imports\CargosImport;
 use App\Imports\DepartamentosImport;
+use App\Imports\EmpleadosImport;
 use App\Models\Cargo;
 use App\Models\Departamento;
 use App\Models\Empleador;
@@ -46,6 +48,52 @@ class AdminController extends Controller
         $empresas    = $isAdminTenant ? Empresa::orderBy('nombre')->get() : collect();
 
         return view('admin.empleados.index', compact('deptos', 'cargos', 'horarios', 'sedes', 'empleadores', 'empresas'));
+    }
+
+    public function empleadosTemplate(Request $request)
+    {
+        $authUser  = auth()->user();
+        $empresaId = $authUser->admin_tenant
+            ? (int) $request->input('empresa_id', 0)
+            : (int) $authUser->empresa_id;
+
+        if (!$empresaId) {
+            return back()->with('error', 'Selecciona una empresa para descargar la plantilla.');
+        }
+
+        if ($authUser->admin_tenant) {
+            TenantHelper::switchTenant($empresaId);
+        }
+
+        return Excel::download(new EmpleadosTemplateExport($empresaId), 'plantilla_empleados.xlsx');
+    }
+
+    public function empleadosImport(Request $request)
+    {
+        $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv|max:10240']);
+
+        $authUser  = auth()->user();
+        $empresaId = $authUser->admin_tenant
+            ? (int) $request->input('empresa_id', 0)
+            : (int) $authUser->empresa_id;
+
+        if (!$empresaId) {
+            return back()->with('error', 'Selecciona una empresa para importar.');
+        }
+
+        if ($authUser->admin_tenant) {
+            TenantHelper::switchTenant($empresaId);
+        }
+
+        $import = new EmpleadosImport($empresaId);
+        Excel::import($import, $request->file('file'));
+
+        $msg = "Importación completada: {$import->created} creados, {$import->updated} actualizados.";
+        if ($import->skipped) {
+            $msg .= ' Omitidos: ' . implode(', ', $import->skipped) . '.';
+        }
+
+        return response()->json(['message' => $msg]);
     }
 
     public function empleadosCatalogos(Request $request): JsonResponse

@@ -10,9 +10,14 @@
                     <h4 class="mb-1"><i class="fa-solid fa-users me-2 text-primary"></i>Empleados</h4>
                     <p class="text-muted mb-0">Gestión del personal</p>
                 </div>
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#empleadoModal" onclick="resetForm()">
-                    <i class="fa-solid fa-plus me-1"></i> Nuevo Empleado
-                </button>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-secondary" onclick="openImportEmpleados()">
+                        <i class="fa-solid fa-file-import me-1"></i> Importar
+                    </button>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#empleadoModal" onclick="resetForm()">
+                        <i class="fa-solid fa-plus me-1"></i> Nuevo Empleado
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -186,6 +191,52 @@
         </div>
     </div>
 </div>
+{{-- Modal Import Empleados --}}
+<div class="modal fade" id="importEmpleadosModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa-solid fa-file-import me-2"></i>Importar Empleados</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-3">
+                    El archivo debe seguir la plantilla. Si el <strong>email ya existe</strong> el empleado se <strong>actualiza</strong>; si no existe se <strong>crea</strong>.<br>
+                    La hoja <em>Listas</em> contiene los valores válidos para los campos con desplegable.
+                </p>
+                @if(auth()->user()->admin_tenant)
+                <div class="mb-3">
+                    <label class="form-label">Empresa <span class="text-danger">*</span></label>
+                    <select id="importEmpresaId" class="form-select form-select-sm">
+                        <option value="">— Seleccionar empresa —</option>
+                        @foreach($empresas as $emp)
+                        <option value="{{ $emp->id }}">{{ $emp->nombre }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                @endif
+                <div class="mb-3">
+                    <a id="importEmpleadosTemplateLink" href="{{ route('admin.empleados.template') }}"
+                        class="btn btn-outline-secondary btn-sm">
+                        <i class="fa-solid fa-download me-1"></i> Descargar plantilla Excel
+                    </a>
+                </div>
+                <div class="mb-0">
+                    <label class="form-label">Archivo Excel <span class="text-danger">*</span></label>
+                    <input type="file" id="importEmpleadosFile" class="form-control" accept=".xlsx,.xls,.csv">
+                </div>
+                <div id="importEmpleadosResult" class="mt-3" style="display:none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="ejecutarImportEmpleados()">
+                    <i class="fa-solid fa-file-import me-1"></i> Importar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- Modal Rostros --}}
 <div class="modal fade" id="rostrosModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
@@ -619,6 +670,91 @@ async function eliminarRostro(imageId) {
             alert(err.message || 'Error al eliminar');
         }
     } catch(e) { alert('Error: ' + e.message); }
+}
+
+// ── Import Empleados ──────────────────────────────────────────────────────────
+function openImportEmpleados() {
+    document.getElementById('importEmpleadosFile').value = '';
+    const result = document.getElementById('importEmpleadosResult');
+    result.style.display = 'none';
+    result.innerHTML = '';
+    new bootstrap.Modal(document.getElementById('importEmpleadosModal')).show();
+}
+
+@if(auth()->user()->admin_tenant)
+document.addEventListener('change', function (e) {
+    if (e.target && e.target.id === 'importEmpresaId') {
+        const empresaId = e.target.value;
+        const link = document.getElementById('importEmpleadosTemplateLink');
+        link.href = empresaId
+            ? `/admin/empleados/template?empresa_id=${empresaId}`
+            : '{{ route('admin.empleados.template') }}';
+    }
+});
+@endif
+
+async function ejecutarImportEmpleados() {
+    const fileInput = document.getElementById('importEmpleadosFile');
+    const result    = document.getElementById('importEmpleadosResult');
+
+    @if(auth()->user()->admin_tenant)
+    const empresaId = document.getElementById('importEmpresaId').value;
+    if (!empresaId) {
+        result.style.display = '';
+        result.innerHTML = '<div class="alert alert-warning mb-0">Selecciona una empresa antes de importar.</div>';
+        return;
+    }
+    @endif
+
+    if (!fileInput.files.length) {
+        result.style.display = '';
+        result.innerHTML = '<div class="alert alert-warning mb-0">Selecciona un archivo Excel para importar.</div>';
+        return;
+    }
+
+    const btn = document.querySelector('#importEmpleadosModal .btn-primary');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Importando...';
+    result.style.display = 'none';
+
+    try {
+        const fd = new FormData();
+        fd.append('file', fileInput.files[0]);
+        @if(auth()->user()->admin_tenant)
+        fd.append('empresa_id', document.getElementById('importEmpresaId').value);
+        @endif
+
+        const res  = await fetch('/admin/empleados/import', {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrfToken },
+            body: fd,
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+            let html = `<div class="alert alert-success mb-0">
+                <strong>Importación exitosa</strong><br>
+                Creados: <strong>${data.created}</strong> &nbsp;|&nbsp;
+                Actualizados: <strong>${data.updated}</strong>`;
+            if (data.skipped && data.skipped.length) {
+                html += `<br><small class="text-muted">Omitidos: ${data.skipped.join(', ')}</small>`;
+            }
+            html += '</div>';
+            result.innerHTML = html;
+            loadEmpleados();
+        } else {
+            const msg = data.errors
+                ? Object.values(data.errors).flat().join('<br>')
+                : (data.message || 'Error al importar');
+            result.innerHTML = `<div class="alert alert-danger mb-0">${msg}</div>`;
+        }
+    } catch(e) {
+        result.innerHTML = `<div class="alert alert-danger mb-0">Error: ${e.message}</div>`;
+    } finally {
+        result.style.display = '';
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-file-import me-1"></i> Importar';
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => { initCatalogos(); loadEmpleados(); });

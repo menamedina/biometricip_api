@@ -109,6 +109,8 @@ Route::middleware(['auth', 'admin', 'role:admin,supervisor', 'tenancy.session'])
     Route::get   ('/admin/empleados/tenant-catalogs',  [AdminController::class,       'empleadosCatalogos']);
     Route::get   ('/admin/empleados/tenant-sedes',     [AdminController::class,       'empleadosSedes']);
     Route::get   ('/admin/empleados/lideres',          [AdminController::class,       'empleadosLideres']);
+    Route::get   ('/admin/empleados/template',        [AdminController::class,       'empleadosTemplate'])->name('admin.empleados.template');
+    Route::post  ('/admin/empleados/import',          [AdminController::class,       'empleadosImport'])->name('admin.empleados.import');
     Route::get   ('/admin/empleados/{id}/detail',      [ApiEmpleadoController::class, 'show'])->where('id', '[0-9]+');
     Route::post  ('/admin/empleados',                  [ApiEmpleadoController::class, 'store']);
     Route::put   ('/admin/empleados/{id}',             [ApiEmpleadoController::class, 'update'])->where('id', '[0-9]+');
