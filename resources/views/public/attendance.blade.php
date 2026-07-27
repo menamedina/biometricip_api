@@ -178,23 +178,27 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Teléfono</label>
+                        <label class="form-label fw-semibold">Teléfono <span class="text-danger">*</span></label>
                         <input type="tel" id="telefono" class="form-control" placeholder="Ej: 3001234567" inputmode="numeric" autocomplete="off">
+                        <div class="invalid-feedback" id="telefonoError"></div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">EPS</label>
+                        <label class="form-label fw-semibold">EPS <span class="text-danger">*</span></label>
                         <input type="text" id="eps" class="form-control" placeholder="Ej: Sura" autocomplete="off">
+                        <div class="invalid-feedback" id="epsError"></div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">ARL</label>
+                        <label class="form-label fw-semibold">ARL <span class="text-danger">*</span></label>
                         <input type="text" id="arl" class="form-control" placeholder="Ej: Positiva" autocomplete="off">
+                        <div class="invalid-feedback" id="arlError"></div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Empresa</label>
+                        <label class="form-label fw-semibold">Empresa <span class="text-danger">*</span></label>
                         <input type="text" id="empresa" class="form-control" placeholder="Ej: Servicios ABC S.A.S" autocomplete="off">
+                        <div class="invalid-feedback" id="empresaError"></div>
                     </div>
 
                     {{-- Aviso cuando se pre-llenaron datos previos --}}
@@ -367,10 +371,7 @@ async function continuarVisitante() {
     document.getElementById('btnContinuarSpinner').classList.add('d-none');
     document.getElementById('btnContinuar').disabled = false;
 
-    // Enfocar "A quién visita" solo si es visitante nuevo (sin datos previos)
-    if (!datosPreviosEncontrados) {
-        document.getElementById('personaVisita').focus();
-    }
+    // Sin autofocus — el usuario navega manualmente por los campos
     checkReady();
 }
 
@@ -436,21 +437,26 @@ document.getElementById('photoInput').addEventListener('change', function () {
     reader.readAsDataURL(file);
 });
 
-['cedula','nombre','personaVisita'].forEach(id => {
+['cedula','nombre','telefono','eps','arl','empresa','personaVisita'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', checkReady);
 });
 
 function checkReady() {
     const cedula = document.getElementById('cedula').value.trim();
-    const fotoOpcional = tipoSeleccionado === 'salida'; // opcional en salida para ambos tipos
+    const fotoOpcional = tipoSeleccionado === 'salida';
     let ok = tipoSeleccionado && cedula.length >= 5 && (fotoOpcional || fotoBase64);
 
-    // Campos extra para visitante entrada
     if (tipoUsuario === 'visitante' && tipoSeleccionado === 'entrada') {
         const nombre        = document.getElementById('nombre').value.trim();
+        const telefono      = document.getElementById('telefono').value.trim();
+        const eps           = document.getElementById('eps').value.trim();
+        const arl           = document.getElementById('arl').value.trim();
+        const empresa       = document.getElementById('empresa').value.trim();
         const personaVisita = document.getElementById('personaVisita').value.trim();
-        ok = ok && nombre.length >= 2 && personaVisita.length >= 2;
+        ok = ok && nombre.length >= 2 && telefono.length >= 7
+                && eps.length >= 2 && arl.length >= 2
+                && empresa.length >= 2 && personaVisita.length >= 2;
     }
 
     document.getElementById('btnSubmit').disabled = !ok;
@@ -537,23 +543,24 @@ async function submitForm() {
     let nombre = '', personaVisita = '';
 
     if (esVisitanteEntrada) {
-        nombre        = document.getElementById('nombre').value.trim();
-        personaVisita = document.getElementById('personaVisita').value.trim();
+        const validarCampo = (id, errId, msg, minLen = 2) => {
+            const val = document.getElementById(id).value.trim();
+            if (val.length < minLen) {
+                document.getElementById(id).classList.add('is-invalid');
+                document.getElementById(errId).textContent = msg;
+                ok = false;
+                return '';
+            }
+            document.getElementById(id).classList.remove('is-invalid');
+            return val;
+        };
 
-        if (nombre.length < 2) {
-            document.getElementById('nombre').classList.add('is-invalid');
-            document.getElementById('nombreError').textContent = 'El nombre es obligatorio.';
-            ok = false;
-        } else {
-            document.getElementById('nombre').classList.remove('is-invalid');
-        }
-        if (personaVisita.length < 2) {
-            document.getElementById('personaVisita').classList.add('is-invalid');
-            document.getElementById('personaVisitaError').textContent = 'Indica a quién visitas.';
-            ok = false;
-        } else {
-            document.getElementById('personaVisita').classList.remove('is-invalid');
-        }
+        nombre        = validarCampo('nombre',       'nombreError',       'El nombre es obligatorio.');
+        validarCampo('telefono',     'telefonoError',   'El teléfono es obligatorio.', 7);
+        validarCampo('eps',          'epsError',         'La EPS es obligatoria.');
+        validarCampo('arl',          'arlError',         'La ARL es obligatoria.');
+        validarCampo('empresa',      'empresaError',     'La empresa es obligatoria.');
+        personaVisita = validarCampo('personaVisita', 'personaVisitaError', 'Indica a quién visitas.');
     }
 
     if (!ok) return;

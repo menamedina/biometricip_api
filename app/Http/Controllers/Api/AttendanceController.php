@@ -59,6 +59,7 @@ class AttendanceController extends Controller
             'qr_value'       => 'nullable|string',
             'lat'            => 'nullable|numeric|between:-90,90',
             'lng'            => 'nullable|numeric|between:-180,180',
+            'accuracy'       => 'nullable|integer|min:0',
             'metodo'         => 'required|in:qr,biometrico,reconocimiento_facial,foto',
             'foto_evidencia' => 'nullable|string',
             'tipo'           => 'required|in:entrada,salida',
@@ -157,7 +158,8 @@ class AttendanceController extends Controller
             'metodo' => $request->metodo,
         ]);
 
-        $geocercaValidada = $distancia <= $sede->radio_mts;
+        $accuracy = min((int) $request->input('accuracy', 0), 250);
+        $geocercaValidada = $distancia <= ($sede->radio_mts + $accuracy);
         if (!$geocercaValidada && $request->metodo !== 'foto') {
             return response()->json([
                 'message' => 'Estás fuera del rango permitido de la oficina.',

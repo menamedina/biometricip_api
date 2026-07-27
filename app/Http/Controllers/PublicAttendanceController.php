@@ -59,6 +59,7 @@ class PublicAttendanceController extends Controller
             'arl'            => 'nullable|string|max:100',
             'empresa'        => 'nullable|string|max:255',
             'persona_visita' => 'nullable|string|max:255',
+            // Validación estricta se hace manualmente más abajo para visitante+entrada
             'lat'            => 'required|numeric|between:-90,90',
             'lng'            => 'required|numeric|between:-180,180',
             'accuracy'       => 'nullable|integer|min:0',
@@ -85,13 +86,20 @@ class PublicAttendanceController extends Controller
             ], 422);
         }
 
-        // Validación manual para visitante entrada
+        // Validación campos obligatorios para visitante entrada
         if ($request->tipo_usuario === 'visitante' && $request->tipo === 'entrada') {
-            if (empty($request->nombre)) {
-                return response()->json(['message' => 'El nombre es obligatorio.'], 422);
-            }
-            if (empty($request->persona_visita)) {
-                return response()->json(['message' => '¿A quién visitas? Este campo es obligatorio.'], 422);
+            $camposRequeridos = [
+                'nombre'         => 'El nombre es obligatorio.',
+                'telefono'       => 'El teléfono es obligatorio.',
+                'eps'            => 'La EPS es obligatoria.',
+                'arl'            => 'La ARL es obligatoria.',
+                'empresa'        => 'La empresa es obligatoria.',
+                'persona_visita' => '¿A quién visitas? Este campo es obligatorio.',
+            ];
+            foreach ($camposRequeridos as $campo => $mensaje) {
+                if (empty($request->$campo)) {
+                    return response()->json(['message' => $mensaje], 422);
+                }
             }
         }
 
