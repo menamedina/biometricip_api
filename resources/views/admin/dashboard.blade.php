@@ -14,6 +14,7 @@
     </div>
 </div>
 
+@if(auth()->user()->role !== 'empleado')
 {{-- Tarjetas de estadísticas --}}
 <div class="row g-3 mb-3">
     <div class="col-6 col-xl-3">
@@ -71,7 +72,7 @@
 </div>
 
 {{-- Barra de asistencia --}}
-<div class="card border-0 shadow-sm mb-3">
+<div class="card border-0 shadow-sm mb-3" id="barraAsistencia">
     <div class="card-body py-3">
         <div class="d-flex justify-content-between align-items-center mb-2">
             <span class="fw-semibold small">Tasa de asistencia hoy</span>
@@ -87,9 +88,11 @@
     </div>
 </div>
 
+@endif {{-- fin bloque no-empleado --}}
+
 {{-- Contenido principal --}}
 <div class="row g-3">
-    <div class="col-lg-7">
+    <div class="{{ auth()->user()->role === 'empleado' ? 'col-12' : 'col-lg-7' }}">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3">
                 <h5 class="mb-0 fw-semibold"><i class="fa-solid fa-list-check me-1 text-primary"></i> Registros de hoy</h5>
@@ -114,6 +117,7 @@
         </div>
     </div>
 
+    @if(auth()->user()->role !== 'empleado')
     <div class="col-lg-5">
         <div class="card border-0 shadow-sm mb-3">
             <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3">
@@ -140,6 +144,7 @@
             </div>
         </div>
     </div>
+    @endif {{-- fin bloque QR+mapa --}}
 </div>
 
 @push('styles')
@@ -186,13 +191,14 @@ function tipoBadge(tipo) {
     return `<span class="badge bg-light text-dark">${tipoLabel(tipo)}</span>`;
 }
 
+const esEmpleado = {{ auth()->user()->role === 'empleado' ? 'true' : 'false' }};
+
 function googleMapsReadyDashboard() {
     gmapsReady = true;
     initMap();
     loadDashboard();
-    loadQR();
+    if (!esEmpleado) { loadQR(); setInterval(loadQR, 30000); }
     setInterval(loadDashboard, 30000);
-    setInterval(loadQR, 30000);
 }
 
 function initMap(lat, lng, radio, nombre, direccion) {
@@ -229,7 +235,7 @@ function initMap(lat, lng, radio, nombre, direccion) {
 }
 
 async function loadDashboard() {
-    try {
+    if (!esEmpleado) try {
         const res   = await fetch('/api/attendance/stats', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
         const stats = await res.json();
         const total    = stats.total_empleados || 0;
@@ -254,7 +260,7 @@ async function loadDashboard() {
     } catch(e) { console.error('Stats:', e); }
 
     try {
-        const res  = await fetch('/api/attendance?per_page=20', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
+        const res  = await fetch('/api/attendance?per_page=20&only_mine=' + (esEmpleado ? 1 : 0), { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
         const data = await res.json();
         const tbody = document.getElementById('attendanceTbody');
 
@@ -349,10 +355,8 @@ function refreshQR() { loadQR(); }
 
 document.addEventListener('DOMContentLoaded', () => {
     if (!gmapsReady) {
-        // Google Maps aún no cargó — loadDashboard y loadQR
-        // se llaman desde googleMapsReadyDashboard()
         loadDashboard();
-        loadQR();
+        if (!esEmpleado) loadQR();
     }
 });
 </script>
