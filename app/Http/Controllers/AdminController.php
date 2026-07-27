@@ -391,6 +391,27 @@ class AdminController extends Controller
                 ? \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $salidaRaw)
                 : \Carbon\Carbon::now();
             $v->minutos_en_sede = max(0, (int) $entrada->diffInMinutes($fin));
+
+            // Última inducción de esta cédula en esta sede
+            $ultimaInduccion = Visitante::where('cedula', $v->cedula)
+                ->where('sede_id', $v->sede_id)
+                ->whereNotNull('induccion_fecha')
+                ->orderBy('induccion_fecha', 'desc')
+                ->value('induccion_fecha');
+
+            if ($ultimaInduccion) {
+                $carbon = \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $ultimaInduccion);
+                $v->ultima_induccion_fecha  = $carbon->format('d/m/Y H:i');
+                $v->ultima_induccion_hace   = $carbon->diffForHumans(now(), ['parts' => 2, 'join' => true]);
+                $v->ultima_induccion_meses  = (int) $carbon->diffInMonths(now());
+                $v->ultima_induccion_vencida = $carbon->lt(now()->subMonths(12));
+            } else {
+                $v->ultima_induccion_fecha   = null;
+                $v->ultima_induccion_hace    = null;
+                $v->ultima_induccion_meses   = null;
+                $v->ultima_induccion_vencida = null;
+            }
+
             unset($v->imagenes);
             return $v;
         });

@@ -84,6 +84,7 @@
                                     <th>Salida</th>
                                     <th>Tiempo en sede</th>
                                     <th>Inducción</th>
+                                    <th>Última inducción</th>
                                     <th>Foto</th>
                                     <th></th>
                                 </tr>
@@ -236,7 +237,7 @@ async function loadVisitantes() {
     const tbody = document.getElementById('visitantesTbody');
 
     if (!data.data || data.data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="13" class="text-center text-muted py-3">Sin registros</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="14" class="text-center text-muted py-3">Sin registros</td></tr>';
         return;
     }
 
@@ -255,6 +256,7 @@ async function loadVisitantes() {
             <td><small>${v.hora_salida ? formatDT(v.hora_salida) : '<span class="badge bg-warning text-dark">En sede</span>'}</small></td>
             <td><small>${tiempoEnSede(v)}</small></td>
             <td>${badgeInduccion(v)}</td>
+            <td>${badgeUltimaInduccion(v)}</td>
             <td>${v.imagen_entrada ? `<button class="btn btn-sm btn-outline-primary" onclick="verFoto(${v.id})"><i class="ti ti-photo"></i></button>` : '—'}</td>
             <td>${botonForzarSalida(v)}</td>
         </tr>
@@ -279,6 +281,18 @@ function tiempoEnSede(v) {
     if (v.hora_salida) return formatMins(v.minutos_en_sede);
     // Activo: base del servidor + segundos transcurridos desde que cargó la página
     return `<span class="text-warning fw-semibold" data-minutos="${v.minutos_en_sede}">⏳ ${formatMins(v.minutos_en_sede)}</span>`;
+}
+
+function badgeUltimaInduccion(v) {
+    if (!v.ultima_induccion_fecha) {
+        return '<span class="text-muted small">Sin registro</span>';
+    }
+    const color = v.ultima_induccion_vencida ? 'text-danger' : 'text-success';
+    const icono = v.ultima_induccion_vencida ? 'ti-alert-triangle' : 'ti-circle-check';
+    return `<div>
+        <small class="d-block fw-semibold">${v.ultima_induccion_fecha}</small>
+        <small class="${color}"><i class="ti ${icono} me-1"></i>${v.ultima_induccion_hace}</small>
+    </div>`;
 }
 
 function badgeInduccion(v) {
