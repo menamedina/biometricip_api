@@ -196,7 +196,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" onclick="saveEmpleado()">Guardar</button>
+                <button type="button" id="btnGuardarEmpleado" class="btn btn-primary" onclick="saveEmpleado()">Guardar</button>
             </div>
         </div>
     </div>
@@ -279,6 +279,7 @@ let currentEmpleadoId = null;
 
 function resetForm() {
     currentEmpleadoId = null;
+    document.getElementById('btnGuardarEmpleado').onclick = () => saveEmpleado(null);
     document.getElementById('empleadoForm').reset();
     document.getElementById('empleadoId').value = '';
     document.getElementById('empPassword').required = true;
@@ -504,6 +505,7 @@ async function editEmpleado(id) {
         const data = await res.json();
         const e = data.data;
         currentEmpleadoId = e.id;
+        document.getElementById('btnGuardarEmpleado').onclick = () => saveEmpleado(e.id);
         document.getElementById('empleadoId').value      = e.id;
 
         if (isAdminTenant) {
@@ -553,8 +555,8 @@ async function editEmpleado(id) {
     } catch(e) { console.error(e); }
 }
 
-async function saveEmpleado() {
-    const id = currentEmpleadoId || document.getElementById('empleadoId').value || null;
+async function saveEmpleado(id) {
+    if (id === undefined) id = currentEmpleadoId || document.getElementById('empleadoId').value || null;
     const deptoVal     = document.getElementById('empDepartamento').value;
     const cargoVal     = document.getElementById('empCargo').value;
     const horarioVal   = document.getElementById('empHorario').value;
