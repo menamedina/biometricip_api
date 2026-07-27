@@ -89,6 +89,12 @@ Route::middleware(['auth:sanctum', 'tenancy'])->group(function () {
         Route::put   ('/cargos/{id}',             [DepartamentoController::class, 'updateCargo']);
         Route::delete('/cargos/{id}',             [DepartamentoController::class, 'destroyCargo']);
 
+        // Empleadores
+        Route::get   ('/empleadores',             [DepartamentoController::class, 'empleadores']);
+        Route::post  ('/empleadores',             [DepartamentoController::class, 'storeEmpleador']);
+        Route::put   ('/empleadores/{id}',        [DepartamentoController::class, 'updateEmpleador']);
+        Route::delete('/empleadores/{id}',        [DepartamentoController::class, 'destroyEmpleador']);
+
         // Horarios
         Route::apiResource('horarios', HorarioController::class);
 

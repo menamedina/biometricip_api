@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Cargo;
 use App\Models\Departamento;
+use App\Models\Empleador;
 use App\Models\Horario;
 use App\Models\Sede;
 use Illuminate\Http\JsonResponse;
@@ -12,7 +13,7 @@ use Illuminate\Http\Request;
 
 class DepartamentoController extends Controller
 {
-    // ── Catálogos combinados (deptos + cargos + horarios en una sola llamada) ─
+    // ── Catálogos combinados (deptos + cargos + horarios + empleadores en una sola llamada) ─
     public function catalogos(): JsonResponse
     {
         try {
@@ -21,6 +22,7 @@ class DepartamentoController extends Controller
                 'cargos'        => Cargo::orderBy('nombre')->get(),
                 'horarios'      => Horario::where('is_active', true)->orderBy('nombre')->get(),
                 'sedes'         => Sede::where('is_active', true)->orderBy('nombre')->get(),
+                'empleadores'   => Empleador::where('is_active', true)->orderBy('nombre')->get(),
             ]);
         } catch (\Throwable $e) {
             return response()->json([
@@ -28,6 +30,7 @@ class DepartamentoController extends Controller
                 'cargos'        => [],
                 'horarios'      => [],
                 'sedes'         => [],
+                'empleadores'   => [],
             ]);
         }
     }
@@ -108,5 +111,42 @@ class DepartamentoController extends Controller
     {
         Cargo::findOrFail($id)->delete();
         return response()->json(['message' => 'Cargo eliminado.']);
+    }
+
+    // ── Empleadores ──────────────────────────────────────────────────────────
+
+    public function empleadores(): JsonResponse
+    {
+        return response()->json(['data' => Empleador::orderBy('nombre')->get()]);
+    }
+
+    public function storeEmpleador(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'nombre'      => 'required|string|max:150|unique:tenant.tbl_empleador,nombre',
+            'descripcion' => 'nullable|string|max:255',
+            'is_active'   => 'nullable|boolean',
+        ]);
+        $data['is_active'] ??= true;
+
+        return response()->json(['data' => Empleador::create($data)], 201);
+    }
+
+    public function updateEmpleador(Request $request, int $id): JsonResponse
+    {
+        $empleador = Empleador::findOrFail($id);
+        $data      = $request->validate([
+            'nombre'      => 'sometimes|string|max:150|unique:tenant.tbl_empleador,nombre,' . $id,
+            'descripcion' => 'nullable|string|max:255',
+            'is_active'   => 'nullable|boolean',
+        ]);
+        $empleador->update($data);
+        return response()->json(['data' => $empleador]);
+    }
+
+    public function destroyEmpleador(int $id): JsonResponse
+    {
+        Empleador::findOrFail($id)->delete();
+        return response()->json(['message' => 'Empleador eliminado.']);
     }
 }

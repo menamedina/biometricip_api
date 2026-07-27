@@ -144,6 +144,12 @@
                                 <option value="">— Sin horario —</option>
                             </select>
                         </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Empleador</label>
+                            <select id="empEmpleador" class="form-select">
+                                <option value="">— Sin empleador —</option>
+                            </select>
+                        </div>
                         <div class="col-12 mb-3">
                             <label class="form-label">Sedes asignadas</label>
                             <div id="empSedesContainer" class="border rounded p-2" style="min-height:42px; max-height:160px; overflow-y:auto; background:#fff;">
@@ -278,12 +284,14 @@ function poblarCatalogos(data, soloModal = false) {
     cargoMap = Object.fromEntries(cargos.map(c => [c.id, c.nombre]));
     sedeMap  = Object.fromEntries(sedes.map(s => [s.id, s.nombre]));
 
-    const selDepto   = document.getElementById('empDepartamento');
-    const selCargo   = document.getElementById('empCargo');
-    const selHorario = document.getElementById('empHorario');
-    selDepto.innerHTML   = '<option value="">— Sin departamento —</option>';
-    selCargo.innerHTML   = '<option value="">— Sin cargo —</option>';
-    selHorario.innerHTML = '<option value="">— Sin horario —</option>';
+    const selDepto     = document.getElementById('empDepartamento');
+    const selCargo     = document.getElementById('empCargo');
+    const selHorario   = document.getElementById('empHorario');
+    const selEmpleador = document.getElementById('empEmpleador');
+    selDepto.innerHTML     = '<option value="">— Sin departamento —</option>';
+    selCargo.innerHTML     = '<option value="">— Sin cargo —</option>';
+    selHorario.innerHTML   = '<option value="">— Sin horario —</option>';
+    selEmpleador.innerHTML = '<option value="">— Sin empleador —</option>';
 
     deptos.filter(d => d.is_active).forEach(d => {
         selDepto.innerHTML += `<option value="${d.id}">${d.nombre}</option>`;
@@ -293,6 +301,9 @@ function poblarCatalogos(data, soloModal = false) {
     });
     horarios.filter(h => h.is_active).forEach(h => {
         selHorario.innerHTML += `<option value="${h.id}">${h.nombre} (${h.hora_entrada?.slice(0,5)} - ${h.hora_salida?.slice(0,5)})</option>`;
+    });
+    (catalogos.empleadores || []).filter(e => e.is_active).forEach(e => {
+        selEmpleador.innerHTML += `<option value="${e.id}">${e.nombre}</option>`;
     });
 
     if (!soloModal) {
@@ -483,6 +494,7 @@ async function editEmpleado(id) {
         document.getElementById('empDepartamento').value = e.departamento_id || '';
         document.getElementById('empCargo').value        = e.cargo_id || '';
         document.getElementById('empHorario').value      = e.horario_id || '';
+        document.getElementById('empEmpleador').value    = e.empleador_id || '';
         // Para admin no-tenant, marcar las sedes ya asignadas
         if (!isAdminTenant) {
             document.querySelectorAll('.emp-sede-check').forEach(cb => {
@@ -498,17 +510,19 @@ async function editEmpleado(id) {
 
 async function saveEmpleado() {
     const id = document.getElementById('empleadoId').value;
-    const deptoVal   = document.getElementById('empDepartamento').value;
-    const cargoVal   = document.getElementById('empCargo').value;
-    const horarioVal = document.getElementById('empHorario').value;
+    const deptoVal     = document.getElementById('empDepartamento').value;
+    const cargoVal     = document.getElementById('empCargo').value;
+    const horarioVal   = document.getElementById('empHorario').value;
+    const empleadorVal = document.getElementById('empEmpleador').value;
     const payload = {
         name:             document.getElementById('empName').value,
         email:            document.getElementById('empEmail').value,
         cedula:           document.getElementById('empCedula').value,
         telefono:         document.getElementById('empTelefono').value,
-        departamento_id:  deptoVal   ? parseInt(deptoVal)   : null,
-        cargo_id:         cargoVal   ? parseInt(cargoVal)   : null,
-        horario_id:       horarioVal ? parseInt(horarioVal) : null,
+        departamento_id:  deptoVal     ? parseInt(deptoVal)     : null,
+        cargo_id:         cargoVal     ? parseInt(cargoVal)     : null,
+        horario_id:       horarioVal   ? parseInt(horarioVal)   : null,
+        empleador_id:     empleadorVal ? parseInt(empleadorVal) : null,
         sede_ids:         getSelectedSedeIds(),
         role:             document.getElementById('empRole').value,
         is_active:        document.getElementById('empActivo').checked,

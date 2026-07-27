@@ -48,6 +48,7 @@ VALUES
     ('tbl_fotos_asistencia',         'Fotos de evidencia de asistencia',                0, 1, 0, 1, 21, NOW(), NOW()),
     ('tbl_departamentos',            'Departamentos de la empresa',                     0, 1, 0, 1, 30, NOW(), NOW()),
     ('tbl_cargos',                   'Cargos / puestos de trabajo',                     0, 1, 0, 1, 31, NOW(), NOW()),
+    ('tbl_empleador',                'Empleadores dentro del tenant',                   0, 1, 0, 1, 32, NOW(), NOW()),
     ('tbl_horarios',                 'Horarios laborales',                              0, 1, 0, 1, 40, NOW(), NOW()),
     ('tbl_permisos',                 'Permisos de ausencia / llegada tarde',            0, 1, 0, 1, 50, NOW(), NOW()),
     ('tbl_festivos',                 'Días festivos',                                   0, 1, 0, 1, 60, NOW(), NOW()),

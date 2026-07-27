@@ -27,6 +27,7 @@ class User extends Authenticatable
         'admin_tenant',
         'is_active',
         'empresa_id',
+        'empleador_id',
         'codigo_empleado',
         'departamento_id',
         'cargo_id',

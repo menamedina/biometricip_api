@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AttendanceRecord;
 use App\Models\Cargo;
 use App\Models\Departamento;
+use App\Models\Empleador;
 use App\Models\Empresa;
 use App\Models\ImagenRostro;
 use App\Models\User;
@@ -109,6 +110,7 @@ class EmpleadoController extends Controller
             'departamento_id' => 'nullable|integer',
             'cargo_id'        => 'nullable|integer',
             'horario_id'      => 'nullable|integer',
+            'empleador_id'    => 'nullable|integer',
             'sede_ids'        => 'nullable|array',
             'sede_ids.*'      => 'integer',
             'cedula'          => 'required|string|max:20',
@@ -128,6 +130,7 @@ class EmpleadoController extends Controller
             'departamento_id' => $data['departamento_id'] ?? null,
             'cargo_id'        => $data['cargo_id'] ?? null,
             'horario_id'      => $data['horario_id'] ?? null,
+            'empleador_id'    => $data['empleador_id'] ?? null,
             'cedula'          => $data['cedula'] ?? null,
             'telefono'        => $data['telefono'] ?? null,
         ]);
@@ -214,6 +217,7 @@ class EmpleadoController extends Controller
             'departamento_id' => 'nullable|integer',
             'cargo_id'        => 'nullable|integer',
             'horario_id'      => 'nullable|integer',
+            'empleador_id'    => 'nullable|integer',
             'sede_ids'        => 'nullable|array',
             'sede_ids.*'      => 'integer',
             'cedula'          => 'nullable|string|max:20',
@@ -452,6 +456,9 @@ class EmpleadoController extends Controller
             : null;
         $data['empresa'] = $user->empresa_id
             ? Empresa::find($user->empresa_id)?->nombre
+            : null;
+        $data['empleador'] = $user->empleador_id
+            ? Empleador::find($user->empleador_id)?->nombre
             : null;
 
         $data['sede_ids'] = UserSede::where('user_id', $user->id)
