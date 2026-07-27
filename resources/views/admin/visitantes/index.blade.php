@@ -76,11 +76,14 @@
                                     <th>Cédula</th>
                                     <th>Visita a</th>
                                     <th>Sede</th>
+                                    <th>Empresa</th>
+                                    <th>Placa</th>
                                     <th>EPS / ARL</th>
                                     <th>Teléfono</th>
                                     <th>Entrada</th>
                                     <th>Salida</th>
                                     <th>Tiempo en sede</th>
+                                    <th>Inducción</th>
                                     <th>Foto</th>
                                     <th></th>
                                 </tr>
@@ -233,7 +236,7 @@ async function loadVisitantes() {
     const tbody = document.getElementById('visitantesTbody');
 
     if (!data.data || data.data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-3">Sin registros</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="13" class="text-center text-muted py-3">Sin registros</td></tr>';
         return;
     }
 
@@ -244,11 +247,14 @@ async function loadVisitantes() {
             <td>${v.cedula}</td>
             <td>${v.persona_visita ?? '—'}</td>
             <td><span class="badge bg-primary">${v.sede?.nombre ?? '—'}</span></td>
+            <td>${v.empresa ?? '—'}</td>
+            <td>${v.placa ? `<span class="badge bg-secondary">${v.placa}</span>` : '—'}</td>
             <td><small>${v.eps ?? '—'} / ${v.arl ?? '—'}</small></td>
             <td>${v.telefono ?? '—'}</td>
             <td><small>${formatDT(v.hora_entrada)}</small></td>
             <td><small>${v.hora_salida ? formatDT(v.hora_salida) : '<span class="badge bg-warning text-dark">En sede</span>'}</small></td>
             <td><small>${tiempoEnSede(v)}</small></td>
+            <td>${badgeInduccion(v)}</td>
             <td>${v.imagen_entrada ? `<button class="btn btn-sm btn-outline-primary" onclick="verFoto(${v.id})"><i class="ti ti-photo"></i></button>` : '—'}</td>
             <td>${botonForzarSalida(v)}</td>
         </tr>
@@ -273,6 +279,39 @@ function tiempoEnSede(v) {
     if (v.hora_salida) return formatMins(v.minutos_en_sede);
     // Activo: base del servidor + segundos transcurridos desde que cargó la página
     return `<span class="text-warning fw-semibold" data-minutos="${v.minutos_en_sede}">⏳ ${formatMins(v.minutos_en_sede)}</span>`;
+}
+
+function badgeInduccion(v) {
+    if (!v.induccion_requerida) {
+        return '<span class="badge bg-secondary">No requerida</span>';
+    }
+    if (v.induccion_fecha) {
+        const fecha = formatDT(v.induccion_fecha);
+        return `<span class="badge bg-success" title="${fecha}"><i class="ti ti-circle-check me-1"></i>Realizada</span>`;
+    }
+    return `<span class="badge bg-danger me-1"><i class="ti ti-alert-circle me-1"></i>Pendiente</span>
+            <button class="btn btn-xs btn-outline-success py-0 px-1" onclick="marcarInduccion(${v.id})" title="Marcar inducción realizada">
+                <i class="ti ti-check"></i>
+            </button>`;
+}
+
+async function marcarInduccion(id) {
+    const result = await Swal.fire({
+        title: '¿Inducción realizada?',
+        text: 'Se registrará que la inducción fue completada ahora.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, marcar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#198754',
+        cancelButtonColor: '#6c757d',
+    });
+    if (!result.isConfirmed) return;
+    await fetch(`/admin/visitantes/${id}/induccion`, {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': csrfToken },
+    });
+    loadVisitantes();
 }
 
 function botonForzarSalida(v) {

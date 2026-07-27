@@ -398,6 +398,26 @@ class AdminController extends Controller
         return response()->json($visitantes);
     }
 
+    private function induccionRequerida(string $cedula, int $sedeId): bool
+    {
+        $ultimaInduccion = Visitante::where('cedula', $cedula)
+            ->where('sede_id', $sedeId)
+            ->whereNotNull('induccion_fecha')
+            ->orderBy('induccion_fecha', 'desc')
+            ->value('induccion_fecha');
+
+        if (!$ultimaInduccion) return true;
+
+        return \Carbon\Carbon::parse($ultimaInduccion)->lt(now()->subMonths(12));
+    }
+
+    public function visitantesInduccion(int $id): JsonResponse
+    {
+        $visitante = Visitante::findOrFail($id);
+        $visitante->update(['induccion_fecha' => now()]);
+        return response()->json(['success' => true]);
+    }
+
     public function visitantesForzarSalida(int $id): JsonResponse
     {
         $visitante = Visitante::findOrFail($id);
@@ -432,19 +452,22 @@ class AdminController extends Controller
             'hora_entrada'   => 'nullable|date',
         ]);
 
+        $induccionRequerida = $this->induccionRequerida($request->cedula, (int) $request->sede_id);
+
         $visitante = Visitante::create([
-            'sede_id'        => $request->sede_id,
-            'user_id'        => auth()->id(),
-            'cedula'         => $request->cedula,
-            'nombre'         => $request->nombre,
-            'telefono'       => $request->telefono,
-            'eps'            => $request->eps,
-            'arl'            => $request->arl,
-            'empresa'        => $request->empresa,
-            'placa'          => $request->placa ? strtoupper($request->placa) : null,
-            'persona_visita' => $request->persona_visita,
-            'hora_entrada'   => $request->hora_entrada ?? now(),
-            'hora_salida'    => null,
+            'sede_id'             => $request->sede_id,
+            'user_id'             => auth()->id(),
+            'cedula'              => $request->cedula,
+            'nombre'              => $request->nombre,
+            'telefono'            => $request->telefono,
+            'eps'                 => $request->eps,
+            'arl'                 => $request->arl,
+            'empresa'             => $request->empresa,
+            'placa'               => $request->placa ? strtoupper($request->placa) : null,
+            'persona_visita'      => $request->persona_visita,
+            'hora_entrada'        => $request->hora_entrada ?? now(),
+            'hora_salida'         => null,
+            'induccion_requerida' => $induccionRequerida,
         ]);
 
         return response()->json(['success' => true, 'data' => $visitante]);

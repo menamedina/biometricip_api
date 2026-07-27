@@ -193,21 +193,35 @@ class PublicAttendanceController extends Controller
 
     // ── Visitante ────────────────────────────────────────────────────────────────
 
+    private function induccionRequerida(string $cedula, int $sedeId): bool
+    {
+        $ultimaInduccion = Visitante::where('cedula', $cedula)
+            ->where('sede_id', $sedeId)
+            ->whereNotNull('induccion_fecha')
+            ->orderBy('induccion_fecha', 'desc')
+            ->value('induccion_fecha');
+
+        if (!$ultimaInduccion) return true; // Primera vez o nunca ha hecho inducción
+
+        return \Carbon\Carbon::parse($ultimaInduccion)->lt(now()->subMonths(12));
+    }
+
     private function registrarVisitante(Request $request, Sede $sede, ?string $fotoFull, ?string $fotoThumb): JsonResponse
     {
         if ($request->tipo === 'entrada') {
             $visitante = Visitante::create([
-                'sede_id'        => $sede->id,
-                'nombre'         => $request->nombre,
-                'cedula'         => $request->cedula,
-                'telefono'       => $request->telefono,
-                'eps'            => $request->eps,
-                'arl'            => $request->arl,
-                'empresa'        => $request->empresa,
-                'placa'          => $request->placa,
-                'persona_visita' => $request->persona_visita,
-                'hora_entrada'   => now(),
-                'hora_salida'    => null,
+                'sede_id'             => $sede->id,
+                'nombre'              => $request->nombre,
+                'cedula'              => $request->cedula,
+                'telefono'            => $request->telefono,
+                'eps'                 => $request->eps,
+                'arl'                 => $request->arl,
+                'empresa'             => $request->empresa,
+                'placa'               => $request->placa,
+                'persona_visita'      => $request->persona_visita,
+                'hora_entrada'        => now(),
+                'hora_salida'         => null,
+                'induccion_requerida' => $this->induccionRequerida($request->cedula, $sede->id),
             ]);
 
             if ($fotoFull) {

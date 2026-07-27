@@ -16,8 +16,10 @@ class Visitante extends Model
     protected function casts(): array
     {
         return [
-            'hora_entrada' => 'datetime',
-            'hora_salida'  => 'datetime',
+            'hora_entrada'        => 'datetime',
+            'hora_salida'         => 'datetime',
+            'induccion_fecha'     => 'datetime',
+            'induccion_requerida' => 'boolean',
         ];
     }
 
