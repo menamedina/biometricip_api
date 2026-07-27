@@ -33,7 +33,11 @@ class AdminController extends Controller
 
     public function sedesIndex(): View
     {
-        return view('admin.sedes.index');
+        $empresas = auth()->user()->admin_tenant
+            ? Empresa::orderBy('nombre')->get(['id', 'nombre'])
+            : collect();
+
+        return view('admin.sedes.index', compact('empresas'));
     }
 
     public function empleadosIndex(): View

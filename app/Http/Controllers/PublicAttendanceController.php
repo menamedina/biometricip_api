@@ -58,12 +58,29 @@ class PublicAttendanceController extends Controller
             'eps'            => 'nullable|string|max:100',
             'arl'            => 'nullable|string|max:100',
             'persona_visita' => 'nullable|string|max:255',
+            'lat'            => 'required|numeric|between:-90,90',
+            'lng'            => 'required|numeric|between:-180,180',
         ], [
             'tipo_usuario.required'   => 'Indica si eres empleado o visitante.',
             'cedula.required'         => 'La cédula es obligatoria.',
             'tipo.required'           => 'Selecciona Entrada o Salida.',
             'foto_evidencia.required' => 'La foto es obligatoria.',
+            'lat.required'            => 'No se pudo obtener tu ubicación GPS.',
+            'lng.required'            => 'No se pudo obtener tu ubicación GPS.',
         ]);
+
+        // ── Validar geocerca ──────────────────────────────────────────────────
+        $distancia = $this->haversineDistance(
+            (float) $request->lat, (float) $request->lng,
+            (float) $sede->lat,    (float) $sede->lng
+        );
+
+        if ($distancia > $sede->radio_mts) {
+            return response()->json([
+                'success' => false,
+                'message' => "Estás a " . round($distancia) . " m de la sede. Debes estar dentro del radio de {$sede->radio_mts} m para registrarte.",
+            ], 422);
+        }
 
         // Validación manual para visitante entrada
         if ($request->tipo_usuario === 'visitante' && $request->tipo === 'entrada') {
@@ -80,7 +97,7 @@ class PublicAttendanceController extends Controller
             : [null, null];
 
         if ($request->tipo_usuario === 'empleado') {
-            return $this->registrarEmpleado($request, $sede, (int) $empresaId, $fotoFull, $fotoThumb);
+            return $this->registrarEmpleado($request, $sede, (int) $empresaId, $fotoFull, $fotoThumb, $distancia);
         }
 
         return $this->registrarVisitante($request, $sede, $fotoFull, $fotoThumb);
@@ -88,7 +105,7 @@ class PublicAttendanceController extends Controller
 
     // ── Empleado ────────────────────────────────────────────────────────────────
 
-    private function registrarEmpleado(Request $request, Sede $sede, int $empresaId, ?string $fotoFull, ?string $fotoThumb): JsonResponse
+    private function registrarEmpleado(Request $request, Sede $sede, int $empresaId, ?string $fotoFull, ?string $fotoThumb, float $distancia = 0): JsonResponse
     {
         $user = User::where('cedula', $request->cedula)
             ->where('empresa_id', $empresaId)
@@ -108,8 +125,8 @@ class PublicAttendanceController extends Controller
             'tipo'                  => $request->tipo,
             'metodo'                => 'qr_web',
             'qr_validado'           => true,
-            'geocerca_validada'     => false,
-            'distancia_oficina_mts' => null,
+            'geocerca_validada'     => true,
+            'distancia_oficina_mts' => round($distancia),
             'foto_evidencia'        => $fotoFull ? 'base64' : null,
             'fecha_hora'            => now(),
         ]);
@@ -216,6 +233,19 @@ class PublicAttendanceController extends Controller
         $thumbBase64 = $this->generarThumbnailBase64($decoded, $imageType, 40, 40);
 
         return [$base64Data, $thumbBase64 ?? $base64Data];
+    }
+
+    private function haversineDistance(float $lat1, float $lng1, float $lat2, float $lng2): float
+    {
+        $R  = 6371000; // Radio de la Tierra en metros
+        $φ1 = deg2rad($lat1);
+        $φ2 = deg2rad($lat2);
+        $Δφ = deg2rad($lat2 - $lat1);
+        $Δλ = deg2rad($lng2 - $lng1);
+
+        $a = sin($Δφ / 2) ** 2 + cos($φ1) * cos($φ2) * sin($Δλ / 2) ** 2;
+
+        return $R * 2 * atan2(sqrt($a), sqrt(1 - $a));
     }
 
     private function resolveEmpresaId(string $webToken): ?int

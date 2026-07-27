@@ -214,11 +214,16 @@
 </div>
 
 <script>
-const URL_POST = '{{ route("public.attendance.store", [$webToken, $sedeCode, $token]) }}';
+const URL_POST    = '{{ route("public.attendance.store", [$webToken, $sedeCode, $token]) }}';
+const SEDE_LAT    = {{ $sede->lat }};
+const SEDE_LNG    = {{ $sede->lng }};
+const SEDE_RADIO  = {{ $sede->radio_mts }};
 
 let tipoUsuario      = null;
 let tipoSeleccionado = null;
 let fotoBase64       = null;
+let userLat          = null;
+let userLng          = null;
 
 // ── Paso 1 ────────────────────────────────────────────────────────────────────
 function selectTipoUsuario(tipo) {
@@ -336,6 +341,28 @@ function checkReady() {
     document.getElementById('btnSubmit').disabled = !ok;
 }
 
+// ── GPS ───────────────────────────────────────────────────────────────────────
+function obtenerGPS() {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject(new Error('Tu navegador no soporta geolocalización.'));
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(
+            pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+            err => {
+                const msgs = {
+                    1: 'Debes permitir el acceso a tu ubicación para registrar asistencia.',
+                    2: 'No se pudo obtener tu ubicación. Verifica el GPS.',
+                    3: 'Tiempo de espera agotado al obtener ubicación.',
+                };
+                reject(new Error(msgs[err.code] || 'Error al obtener ubicación.'));
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+    });
+}
+
 // ── Submit ────────────────────────────────────────────────────────────────────
 async function submitForm() {
     const cedula = document.getElementById('cedula').value.trim();
@@ -386,11 +413,29 @@ async function submitForm() {
     document.getElementById('btnSpinner').classList.remove('d-none');
     document.getElementById('btnSubmit').disabled = true;
 
+    // ── Obtener GPS ───────────────────────────────────────────────────────────
+    try {
+        const pos = await obtenerGPS();
+        userLat = pos.lat;
+        userLng = pos.lng;
+    } catch (gpsErr) {
+        const box = document.getElementById('resultBox');
+        box.style.display = 'block';
+        box.className = 'alert alert-danger py-3 mb-3';
+        box.innerHTML = `<i class="fa-solid fa-location-crosshairs me-2"></i>${gpsErr.message}`;
+        document.getElementById('btnText').classList.remove('d-none');
+        document.getElementById('btnSpinner').classList.add('d-none');
+        document.getElementById('btnSubmit').disabled = false;
+        return;
+    }
+
     const payload = {
         tipo_usuario:   tipoUsuario,
         cedula:         cedula,
         tipo:           tipoSeleccionado,
         foto_evidencia: fotoBase64,
+        lat:            userLat,
+        lng:            userLng,
     };
 
     if (esVisitanteEntrada) {

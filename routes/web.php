@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\PublicAttendanceController;
 use App\Http\Controllers\Api\EmpleadoController as ApiEmpleadoController;
+use App\Http\Controllers\Api\SedeController as ApiSedeController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\AdmsController;
 use Illuminate\Support\Facades\Route;
@@ -103,7 +104,18 @@ Route::middleware(['auth', 'admin', 'tenancy.session'])->group(function () {
 
 // Solo admin y supervisor
 Route::middleware(['auth', 'admin', 'role:admin,supervisor', 'tenancy.session'])->group(function () {
-    Route::get('/admin/sedes',          [AdminController::class, 'sedesIndex'])->name('admin.sedes.index');
+    Route::get   ('/admin/sedes',                            [AdminController::class,  'sedesIndex'])->name('admin.sedes.index');
+    Route::get   ('/admin/sedes/list',                       [ApiSedeController::class, 'index']);
+    Route::post  ('/admin/sedes',                            [ApiSedeController::class, 'store']);
+    Route::put   ('/admin/sedes/{sede}',                     [ApiSedeController::class, 'update']);
+    Route::delete('/admin/sedes/{sede}',                     [ApiSedeController::class, 'destroy']);
+    Route::get   ('/admin/sedes/{sede}/qr',                  [ApiSedeController::class, 'qr']);
+    Route::get   ('/admin/sedes/{sede}/qr-static',           [ApiSedeController::class, 'qrStatic']);
+    Route::post  ('/admin/sedes/{sede}/qr-static/enable',    [ApiSedeController::class, 'enableStaticQR']);
+    Route::post  ('/admin/sedes/{sede}/qr-static/regenerar', [ApiSedeController::class, 'regenerateStaticQR']);
+    Route::get   ('/admin/sedes/{sede}/qr-v3',               [ApiSedeController::class, 'qrV3']);
+    Route::post  ('/admin/sedes/{sede}/qr-v3/enable',        [ApiSedeController::class, 'enableQRV3']);
+    Route::post  ('/admin/sedes/{sede}/qr-v3/regenerar',     [ApiSedeController::class, 'regenerateQRV3']);
     Route::get   ('/admin/empleados',                  [AdminController::class,       'empleadosIndex'])->name('admin.empleados.index');
     Route::get   ('/admin/empleados/list',             [ApiEmpleadoController::class, 'index']);
     Route::get   ('/admin/empleados/tenant-catalogs',  [AdminController::class,       'empleadosCatalogos']);
