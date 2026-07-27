@@ -1,0 +1,7 @@
+-- ============================================================
+-- BiometricIP — Agrega columna empresa a tbl_visitantes
+-- Ejecutar sobre cada BD tenant: biometricip_1, etc.
+-- ============================================================
+
+ALTER TABLE `tbl_visitantes`
+    ADD COLUMN `empresa` VARCHAR(255) NULL DEFAULT NULL AFTER `arl`;

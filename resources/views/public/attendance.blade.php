@@ -148,6 +148,25 @@
             {{-- Cuerpo del formulario — se muestra tras elegir tipo --}}
             <div id="formBody" class="d-none">
 
+                {{-- Cédula — siempre primero --}}
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Número de cédula <span class="text-danger">*</span></label>
+                    <input type="number" id="cedula" class="form-control form-control-lg"
+                           placeholder="Ej: 1234567890" inputmode="numeric" autocomplete="off">
+                    <div class="invalid-feedback" id="cedulaError"></div>
+                </div>
+
+                {{-- Continuar (solo visitante + entrada) --}}
+                <div id="cedulaContinuarBar" class="d-none mb-4">
+                    <button type="button" class="btn btn-primary btn-lg w-100" id="btnContinuar" onclick="continuarVisitante()"
+                            style="font-size:1.15rem;font-weight:700;padding:18px;border-radius:14px;min-height:60px;touch-action:manipulation;">
+                        <span id="btnContinuarText">Continuar <i class="fa-solid fa-arrow-right ms-1"></i></span>
+                        <span id="btnContinuarSpinner" class="d-none">
+                            <span class="spinner-border me-1"></span> Buscando...
+                        </span>
+                    </button>
+                </div>
+
                 {{-- Campos extra: solo visitante entrada --}}
                 <div id="visitanteFields" class="d-none">
                     <div class="section-divider">Datos del visitante</div>
@@ -174,31 +193,23 @@
                     </div>
 
                     <div class="mb-3">
+                        <label class="form-label fw-semibold">Empresa</label>
+                        <input type="text" id="empresa" class="form-control" placeholder="Ej: Servicios ABC S.A.S" autocomplete="off">
+                    </div>
+
+                    {{-- Aviso cuando se pre-llenaron datos previos --}}
+                    <div id="visitanteInfoBox" class="d-none alert alert-info d-flex align-items-start gap-2 py-2 px-3 mb-3" style="font-size:.9rem;border-radius:10px;">
+                        <i class="fa-solid fa-circle-info mt-1"></i>
+                        <span>Encontramos tu registro anterior. Verifica que la información sea correcta antes de continuar.</span>
+                    </div>
+
+                    <div class="mb-3">
                         <label class="form-label fw-semibold">¿A quién visita? <span class="text-danger">*</span></label>
                         <input type="text" id="personaVisita" class="form-control" placeholder="Nombre del empleado o área" autocomplete="off">
                         <div class="invalid-feedback" id="personaVisitaError"></div>
                     </div>
 
                     <div class="section-divider"></div>
-                </div>
-
-                {{-- Cédula --}}
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Número de cédula <span class="text-danger">*</span></label>
-                    <input type="number" id="cedula" class="form-control form-control-lg"
-                           placeholder="Ej: 1234567890" inputmode="numeric" autocomplete="off">
-                    <div class="invalid-feedback" id="cedulaError"></div>
-                </div>
-
-                {{-- Continuar (solo visitante + entrada) --}}
-                <div id="cedulaContinuarBar" class="d-none mb-4">
-                    <button type="button" class="btn btn-primary btn-lg w-100" id="btnContinuar" onclick="continuarVisitante()"
-                            style="font-size:1.15rem;font-weight:700;padding:18px;border-radius:14px;min-height:60px;touch-action:manipulation;">
-                        <span id="btnContinuarText">Continuar <i class="fa-solid fa-arrow-right ms-1"></i></span>
-                        <span id="btnContinuarSpinner" class="d-none">
-                            <span class="spinner-border me-1"></span> Buscando...
-                        </span>
-                    </button>
                 </div>
 
                 {{-- Foto --}}
@@ -245,11 +256,12 @@ function selectTipoUsuario(tipo) {
     tipoSeleccionado = null;
     fotoBase64       = null;
 
-    // Limpiar campos y errores
-    ['nombre','cedula','telefono','eps','arl','personaVisita'].forEach(id => {
+    // Limpiar campos, errores y deshabilitar
+    ['nombre','cedula','telefono','eps','arl','empresa','personaVisita'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) { el.value = ''; el.classList.remove('is-invalid'); }
+        if (el) { el.value = ''; el.classList.remove('is-invalid'); el.disabled = false; }
     });
+    document.getElementById('visitanteInfoBox').classList.add('d-none');
     ['nombreError','cedulaError','personaVisitaError','photoError'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.textContent = '';
@@ -284,6 +296,12 @@ function volverPaso1() {
 function nuevoRegistro() {
     document.getElementById('resultBox').style.display = 'none';
     document.getElementById('step1').style.display = 'block';
+    // Re-habilitar todos los campos por si quedaron deshabilitados
+    ['nombre','cedula','telefono','eps','arl','empresa','personaVisita'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.value = ''; el.disabled = false; }
+    });
+    document.getElementById('visitanteInfoBox').classList.add('d-none');
     tipoUsuario       = null;
     tipoSeleccionado  = null;
     fotoBase64        = null;
@@ -316,13 +334,26 @@ async function continuarVisitante() {
         });
         const data = await res.json();
 
+        const camposPrevios = ['nombre','telefono','eps','arl','empresa'];
+
         if (data.found) {
-            // Pre-llenar campos (persona_visita queda vacío)
-            if (data.nombre)   document.getElementById('nombre').value   = data.nombre;
-            if (data.telefono) document.getElementById('telefono').value = data.telefono;
-            if (data.eps)      document.getElementById('eps').value      = data.eps;
-            if (data.arl)      document.getElementById('arl').value      = data.arl;
+            // Pre-llenar y deshabilitar (persona_visita queda vacío y editable)
+            document.getElementById('cedula').disabled  = true;
+            document.getElementById('nombre').value     = data.nombre   || '';
+            document.getElementById('telefono').value   = data.telefono || '';
+            document.getElementById('eps').value        = data.eps      || '';
+            document.getElementById('arl').value        = data.arl      || '';
+            document.getElementById('empresa').value    = data.empresa  || '';
             document.getElementById('personaVisita').value = '';
+            camposPrevios.forEach(id => { document.getElementById(id).disabled = true; });
+            document.getElementById('visitanteInfoBox').classList.remove('d-none');
+        } else {
+            // Visitante nuevo: limpiar y dejar todo editable
+            camposPrevios.forEach(id => {
+                document.getElementById(id).value    = '';
+                document.getElementById(id).disabled = false;
+            });
+            document.getElementById('visitanteInfoBox').classList.add('d-none');
         }
     } catch (_) {
         // Si falla la búsqueda, se continúa con el form vacío
@@ -566,6 +597,7 @@ async function submitForm() {
         payload.telefono       = document.getElementById('telefono').value.trim() || null;
         payload.eps            = document.getElementById('eps').value.trim() || null;
         payload.arl            = document.getElementById('arl').value.trim() || null;
+        payload.empresa        = document.getElementById('empresa').value.trim() || null;
         payload.persona_visita = personaVisita;
     }
 

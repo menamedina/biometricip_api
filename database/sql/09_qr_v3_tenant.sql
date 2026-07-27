@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS `tbl_visitantes` (
     `telefono`         VARCHAR(20)     NULL DEFAULT NULL,
     `eps`              VARCHAR(100)    NULL DEFAULT NULL,
     `arl`              VARCHAR(100)    NULL DEFAULT NULL,
+    `empresa`          VARCHAR(255)    NULL DEFAULT NULL,
     `persona_visita`   VARCHAR(255)    NOT NULL,
     `hora_entrada`     DATETIME        NOT NULL,
     `hora_salida`      DATETIME        NULL DEFAULT NULL,

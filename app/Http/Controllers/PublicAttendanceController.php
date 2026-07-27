@@ -57,6 +57,7 @@ class PublicAttendanceController extends Controller
             'telefono'       => 'nullable|string|max:20',
             'eps'            => 'nullable|string|max:100',
             'arl'            => 'nullable|string|max:100',
+            'empresa'        => 'nullable|string|max:255',
             'persona_visita' => 'nullable|string|max:255',
             'lat'            => 'required|numeric|between:-90,90',
             'lng'            => 'required|numeric|between:-180,180',
@@ -130,6 +131,7 @@ class PublicAttendanceController extends Controller
             'telefono' => $visitante->telefono ?? '',
             'eps'      => $visitante->eps ?? '',
             'arl'      => $visitante->arl ?? '',
+            'empresa'  => $visitante->empresa ?? '',
         ]);
     }
 
@@ -191,6 +193,7 @@ class PublicAttendanceController extends Controller
                 'telefono'       => $request->telefono,
                 'eps'            => $request->eps,
                 'arl'            => $request->arl,
+                'empresa'        => $request->empresa,
                 'persona_visita' => $request->persona_visita,
                 'hora_entrada'   => now(),
                 'hora_salida'    => null,
