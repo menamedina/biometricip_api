@@ -14,13 +14,13 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class EmpleadosDatosSheet implements FromArray, WithHeadings, WithTitle, WithStyles, WithEvents
 {
-    // Columna en Datos → columna ID en hoja Listas (datos desde fila 3)
+    // Columna en Datos → columna auxiliar "id - nombre" en hoja Listas (cols N-R, desde fila 3)
     private const DROPDOWNS = [
-        'F' => 'Listas!$A$3:$A$1000',  // departamento_id
-        'G' => 'Listas!$C$3:$C$1000',  // cargo_id
-        'H' => 'Listas!$E$3:$E$1000',  // horario_id
-        'I' => 'Listas!$G$3:$G$1000',  // empleador_id
-        'J' => 'Listas!$I$3:$I$1000',  // lider_id
+        'F' => 'Listas!$N$3:$N$1000',  // departamento
+        'G' => 'Listas!$O$3:$O$1000',  // cargo
+        'H' => 'Listas!$P$3:$P$1000',  // horario
+        'I' => 'Listas!$Q$3:$Q$1000',  // empleador
+        'J' => 'Listas!$R$3:$R$1000',  // lider
         'K' => '"empleado,supervisor,admin"',
         'L' => '"1,0"',
     ];

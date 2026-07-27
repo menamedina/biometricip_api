@@ -13,6 +13,8 @@ class EmpleadosImport implements ToModel, WithHeadingRow, SkipsEmptyRows
     public int   $created  = 0;
     public int   $updated  = 0;
     public array $skipped  = [];
+    public array $createdList = [];
+    public array $updatedList = [];
 
     public function __construct(private int $empresaId) {}
 
@@ -65,6 +67,7 @@ class EmpleadosImport implements ToModel, WithHeadingRow, SkipsEmptyRows
 
             $existing->update($fields);
             $this->updated++;
+            $this->updatedList[] = $email;
             return null;
         }
 
@@ -72,6 +75,7 @@ class EmpleadosImport implements ToModel, WithHeadingRow, SkipsEmptyRows
         $pass = trim($row['password'] ?? '') ?: 'Cambiar123';
 
         $this->created++;
+        $this->createdList[] = $email;
         return new User([
             'name'            => $nombre,
             'email'           => $email,

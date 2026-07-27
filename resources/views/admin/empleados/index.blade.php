@@ -732,14 +732,23 @@ async function ejecutarImportEmpleados() {
         const data = await res.json();
 
         if (res.ok) {
-            let html = `<div class="alert alert-success mb-0">
-                <strong>Importación exitosa</strong><br>
-                Creados: <strong>${data.created}</strong> &nbsp;|&nbsp;
-                Actualizados: <strong>${data.updated}</strong>`;
-            if (data.skipped && data.skipped.length) {
-                html += `<br><small class="text-muted">Omitidos: ${data.skipped.join(', ')}</small>`;
-            }
-            html += '</div>';
+            const listHtml = (label, color, icon, list) => list.length
+                ? `<details class="mt-1"><summary class="text-${color} small fw-semibold" style="cursor:pointer;">
+                    <i class="fa-solid ${icon} me-1"></i>${label} (${list.length})</summary>
+                    <ul class="mb-0 mt-1 ps-3 small">${list.map(e => `<li>${e}</li>`).join('')}</ul>
+                   </details>` : '';
+
+            let html = `<div class="alert alert-success mb-2">
+                <strong>Importación completada</strong><br>
+                <i class="fa-solid fa-plus-circle text-success me-1"></i>Creados: <strong>${data.created}</strong>
+                &nbsp;|&nbsp;
+                <i class="fa-solid fa-pen text-primary me-1"></i>Actualizados: <strong>${data.updated}</strong>
+                &nbsp;|&nbsp;
+                <i class="fa-solid fa-ban text-warning me-1"></i>Omitidos: <strong>${data.skipped}</strong>
+            </div>`;
+            html += listHtml('Creados', 'success', 'fa-plus-circle', data.createdList || []);
+            html += listHtml('Actualizados', 'primary', 'fa-pen', data.updatedList || []);
+            html += listHtml('Omitidos', 'warning', 'fa-ban', data.skippedList || []);
             result.innerHTML = html;
             loadEmpleados();
         } else {

@@ -86,12 +86,14 @@ class AdminController extends Controller
         $import = new EmpleadosImport($empresaId);
         Excel::import($import, $request->file('file'));
 
-        $msg = "Importación completada: {$import->created} creados, {$import->updated} actualizados.";
-        if ($import->skipped) {
-            $msg .= ' Omitidos: ' . implode(', ', $import->skipped) . '.';
-        }
-
-        return response()->json(['message' => $msg]);
+        return response()->json([
+            'created'      => $import->created,
+            'updated'      => $import->updated,
+            'skipped'      => count($import->skipped),
+            'createdList'  => $import->createdList,
+            'updatedList'  => $import->updatedList,
+            'skippedList'  => $import->skipped,
+        ]);
     }
 
     public function empleadosCatalogos(Request $request): JsonResponse
