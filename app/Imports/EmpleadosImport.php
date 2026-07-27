@@ -3,18 +3,24 @@
 namespace App\Imports;
 
 use App\Models\User;
+use App\Models\UserSede;
 use Illuminate\Support\Facades\Hash;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Events\AfterImport;
 
-class EmpleadosImport implements ToModel, WithHeadingRow, SkipsEmptyRows
+class EmpleadosImport implements ToModel, WithHeadingRow, SkipsEmptyRows, WithEvents
 {
     public int   $created  = 0;
     public int   $updated  = 0;
     public array $skipped  = [];
     public array $createdList = [];
     public array $updatedList = [];
+
+    /** email => sede_id  — se procesa en afterImport */
+    private array $sedePending = [];
 
     public function __construct(private int $empresaId) {}
 
@@ -31,12 +37,12 @@ class EmpleadosImport implements ToModel, WithHeadingRow, SkipsEmptyRows
             return null;
         }
 
-        // Los campos de catálogo vienen como "id - nombre" o simplemente un entero
         $deptoId     = $this->parseId($row['departamento'] ?? '');
         $cargoId     = $this->parseId($row['cargo']        ?? '');
         $horarioId   = $this->parseId($row['horario']      ?? '');
         $empleadorId = $this->parseId($row['empleador']    ?? '');
         $liderId     = $this->parseId($row['lider']        ?? '');
+        $sedeId      = $this->parseId($row['sede']         ?? '');
 
         $rol = in_array($row['rol'] ?? '', ['empleado', 'supervisor', 'admin'])
                 ? $row['rol']
@@ -68,14 +74,20 @@ class EmpleadosImport implements ToModel, WithHeadingRow, SkipsEmptyRows
             $existing->update($fields);
             $this->updated++;
             $this->updatedList[] = $email;
+
+            if ($sedeId) $this->sedePending[$email] = $sedeId;
+
             return null;
         }
 
         // ── Crear nuevo ───────────────────────────────────────────────────────
         $pass = trim($row['password'] ?? '') ?: 'Cambiar123';
 
+        if ($sedeId) $this->sedePending[$email] = $sedeId;
+
         $this->created++;
         $this->createdList[] = $email;
+
         return new User([
             'name'            => $nombre,
             'email'           => $email,
@@ -95,21 +107,29 @@ class EmpleadosImport implements ToModel, WithHeadingRow, SkipsEmptyRows
         ]);
     }
 
+    public function registerEvents(): array
+    {
+        return [
+            AfterImport::class => function () {
+                foreach ($this->sedePending as $email => $sedeId) {
+                    $user = User::where('email', $email)->first();
+                    if (!$user) continue;
+                    UserSede::updateOrCreate(
+                        ['user_id' => $user->id, 'empresa_id' => $this->empresaId],
+                        ['sede_id' => $sedeId]
+                    );
+                }
+            },
+        ];
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    /**
-     * Extrae el ID numérico de un valor como "5 - Nombre" o simplemente "5".
-     * Retorna null si el valor está vacío o no tiene un entero válido al inicio.
-     */
     private function parseId(mixed $valor): ?int
     {
         $valor = trim((string) $valor);
         if ($valor === '') return null;
-
-        // Tomar la parte antes del primer " - " o todo el string
-        $parte = explode(' - ', $valor, 2)[0];
-        $id    = (int) $parte;
-
+        $id = (int) explode(' - ', $valor, 2)[0];
         return $id > 0 ? $id : null;
     }
 

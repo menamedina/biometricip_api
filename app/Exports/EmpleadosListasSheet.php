@@ -12,15 +12,18 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class EmpleadosListasSheet implements FromArray, WithTitle, WithEvents
 {
-    // Cols A-J: pares ID|Nombre por catálogo  (para BUSCARV)
-    // Cols L:   separador
-    // Cols N-R: columnas auxiliares "id - nombre" usadas por los dropdowns de Datos
+    // Cols A-L: pares ID|Nombre por catálogo (para BUSCARV)
+    //   A-B Depto, C-D Cargo, E-F Horario, G-H Empleador, I-J Lider, K-L Sede
+    //   M Rol, N Activo
+    // Cols P-V: auxiliares "id - nombre" usados por los dropdowns de Datos
+    //   P Depto, Q Cargo, R Horario, S Empleador, T Lider, U Sede
     private const GROUPS = [
-        ['colId' => 'A', 'colNombre' => 'B', 'aux' => 'N', 'label' => 'Departamento'],
-        ['colId' => 'C', 'colNombre' => 'D', 'aux' => 'O', 'label' => 'Cargo'],
-        ['colId' => 'E', 'colNombre' => 'F', 'aux' => 'P', 'label' => 'Horario'],
-        ['colId' => 'G', 'colNombre' => 'H', 'aux' => 'Q', 'label' => 'Empleador'],
-        ['colId' => 'I', 'colNombre' => 'J', 'aux' => 'R', 'label' => 'Lider'],
+        ['colId' => 'A', 'colNom' => 'B', 'aux' => 'P', 'label' => 'Departamento'],
+        ['colId' => 'C', 'colNom' => 'D', 'aux' => 'Q', 'label' => 'Cargo'],
+        ['colId' => 'E', 'colNom' => 'F', 'aux' => 'R', 'label' => 'Horario'],
+        ['colId' => 'G', 'colNom' => 'H', 'aux' => 'S', 'label' => 'Empleador'],
+        ['colId' => 'I', 'colNom' => 'J', 'aux' => 'T', 'label' => 'Lider'],
+        ['colId' => 'K', 'colNom' => 'L', 'aux' => 'U', 'label' => 'Sede'],
     ];
 
     public function __construct(
@@ -29,6 +32,7 @@ class EmpleadosListasSheet implements FromArray, WithTitle, WithEvents
         private Collection $horarios,
         private Collection $empleadores,
         private Collection $lideres,
+        private Collection $sedes,
     ) {}
 
     public function title(): string { return 'Listas'; }
@@ -41,18 +45,18 @@ class EmpleadosListasSheet implements FromArray, WithTitle, WithEvents
             $this->horarios->count(),
             $this->empleadores->count(),
             $this->lideres->count(),
+            $this->sedes->count(),
             3,
         );
 
         $roles   = ['empleado', 'supervisor', 'admin'];
         $activos = ['1', '0'];
 
-        // Fila 1: encabezados de grupo (se mergen en AfterSheet)
-        // Fila 2: sub-encabezados ID | Nombre
-        // A-J datos, K vacío, L-M: Rol/Activo, N separador header, N-R auxiliares
         $rows = [
-            ['Departamento', '', 'Cargo', '', 'Horario', '', 'Empleador', '', 'Lider', '', 'Rol', 'Activo', '', 'Desplegables (usar en hoja Empleados)', '', '', '', ''],
-            ['ID', 'Nombre', 'ID', 'Nombre', 'ID', 'Nombre', 'ID', 'Nombre', 'ID', 'Nombre', '', '', '', 'Departamento', 'Cargo', 'Horario', 'Empleador', 'Lider'],
+            // Fila 1: encabezados de grupo (se mergen en AfterSheet)
+            ['Departamento', '', 'Cargo', '', 'Horario', '', 'Empleador', '', 'Lider', '', 'Sede', '', 'Rol', 'Activo', '', 'Desplegables (usar en hoja Empleados)', '', '', '', '', ''],
+            // Fila 2: sub-encabezados
+            ['ID', 'Nombre', 'ID', 'Nombre', 'ID', 'Nombre', 'ID', 'Nombre', 'ID', 'Nombre', 'ID', 'Nombre', '', '', '', 'Departamento', 'Cargo', 'Horario', 'Empleador', 'Lider', 'Sede'],
         ];
 
         for ($i = 0; $i < $maxRows; $i++) {
@@ -61,14 +65,15 @@ class EmpleadosListasSheet implements FromArray, WithTitle, WithEvents
             $horario   = $this->horarios->get($i);
             $empleador = $this->empleadores->get($i);
             $lider     = $this->lideres->get($i);
+            $sede      = $this->sedes->get($i);
 
-            // Las fórmulas de las columnas auxiliares (N-R) se agregan en AfterSheet
             $rows[] = [
                 $depto?->id     ?? '', $depto?->nombre     ?? '',
                 $cargo?->id     ?? '', $cargo?->nombre     ?? '',
                 $horario?->id   ?? '', $horario?->nombre   ?? '',
                 $empleador?->id ?? '', $empleador?->nombre ?? '',
                 $lider?->id     ?? '', $lider?->name       ?? '',
+                $sede?->id      ?? '', $sede?->nombre      ?? '',
                 $roles[$i]   ?? '',
                 $activos[$i] ?? '',
             ];
@@ -83,33 +88,32 @@ class EmpleadosListasSheet implements FromArray, WithTitle, WithEvents
             AfterSheet::class => function (AfterSheet $event) {
                 $ws = $event->sheet->getDelegate();
 
-                // Autosize
-                foreach (array_merge(range('A', 'L'), range('N', 'R')) as $col) {
+                foreach (array_merge(range('A', 'N'), range('P', 'U')) as $col) {
                     $ws->getColumnDimension($col)->setAutoSize(true);
                 }
 
                 $lastRow = $ws->getHighestRow();
 
-                // ── Fila 1: merge grupos A-J y estilo ────────────────────────
+                // ── Fila 1: merge grupos + estilo ────────────────────────────
                 $groupStyle = [
                     'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
                     'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '2E75B6']],
                     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
                 ];
                 foreach (self::GROUPS as $g) {
-                    $ws->mergeCells("{$g['colId']}1:{$g['colNombre']}1");
-                    $ws->getStyle("{$g['colId']}1:{$g['colNombre']}1")->applyFromArray($groupStyle);
+                    $ws->mergeCells("{$g['colId']}1:{$g['colNom']}1");
+                    $ws->getStyle("{$g['colId']}1:{$g['colNom']}1")->applyFromArray($groupStyle);
                 }
-                $ws->getStyle('K1:L1')->applyFromArray($groupStyle);
+                $ws->getStyle('M1:N1')->applyFromArray($groupStyle);
 
-                // Encabezado sección auxiliar (N1 en adelante)
+                // Encabezado sección auxiliar
                 $auxHeaderStyle = [
                     'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
                     'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '70AD47']],
                     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
                 ];
-                $ws->mergeCells('N1:R1');
-                $ws->getStyle('N1:R1')->applyFromArray($auxHeaderStyle);
+                $ws->mergeCells('P1:U1');
+                $ws->getStyle('P1:U1')->applyFromArray($auxHeaderStyle);
 
                 // ── Fila 2: sub-encabezados ───────────────────────────────────
                 $subStyle = [
@@ -117,36 +121,33 @@ class EmpleadosListasSheet implements FromArray, WithTitle, WithEvents
                     'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'D9E1F2']],
                     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
                 ];
-                $ws->getStyle('A2:L2')->applyFromArray($subStyle);
+                $ws->getStyle('A2:N2')->applyFromArray($subStyle);
 
                 $auxSubStyle = [
                     'font'      => ['bold' => true],
                     'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E2EFDA']],
                     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
                 ];
-                $ws->getStyle('N2:R2')->applyFromArray($auxSubStyle);
+                $ws->getStyle('P2:U2')->applyFromArray($auxSubStyle);
 
-                // ── Columnas auxiliares: fórmulas "id - nombre" (fila 3+) ─────
-                // N = Departamento, O = Cargo, P = Horario, Q = Empleador, R = Lider
+                // ── Columnas auxiliares: fórmulas "id - nombre" ───────────────
                 $formulas = [
-                    'N' => ['id' => 'A', 'nom' => 'B'],
-                    'O' => ['id' => 'C', 'nom' => 'D'],
-                    'P' => ['id' => 'E', 'nom' => 'F'],
-                    'Q' => ['id' => 'G', 'nom' => 'H'],
-                    'R' => ['id' => 'I', 'nom' => 'J'],
+                    'P' => ['id' => 'A', 'nom' => 'B'],
+                    'Q' => ['id' => 'C', 'nom' => 'D'],
+                    'R' => ['id' => 'E', 'nom' => 'F'],
+                    'S' => ['id' => 'G', 'nom' => 'H'],
+                    'T' => ['id' => 'I', 'nom' => 'J'],
+                    'U' => ['id' => 'K', 'nom' => 'L'],
                 ];
                 for ($row = 3; $row <= $lastRow; $row++) {
                     foreach ($formulas as $auxCol => $src) {
-                        $id  = $src['id'];
-                        $nom = $src['nom'];
                         $ws->getCell("{$auxCol}{$row}")
-                           ->setValue("=IF({$id}{$row}=\"\",\"\",{$id}{$row}&\" - \"&{$nom}{$row})");
+                           ->setValue("=IF({$src['id']}{$row}=\"\",\"\",{$src['id']}{$row}&\" - \"&{$src['nom']}{$row})");
                     }
                 }
 
-                // Estilo fondo verde claro para auxiliares
                 if ($lastRow >= 3) {
-                    $ws->getStyle("N3:R{$lastRow}")->getFill()
+                    $ws->getStyle("P3:U{$lastRow}")->getFill()
                        ->setFillType(Fill::FILL_SOLID)
                        ->getStartColor()->setRGB('F0FFF0');
                 }

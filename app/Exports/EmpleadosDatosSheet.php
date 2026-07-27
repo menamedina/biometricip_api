@@ -14,15 +14,16 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class EmpleadosDatosSheet implements FromArray, WithHeadings, WithTitle, WithStyles, WithEvents
 {
-    // Columna en Datos → columna auxiliar "id - nombre" en hoja Listas (cols N-R, desde fila 3)
+    // Columna en Datos → columna auxiliar "id - nombre" en hoja Listas (cols P-U, desde fila 3)
     private const DROPDOWNS = [
-        'F' => 'Listas!$N$3:$N$1000',  // departamento
-        'G' => 'Listas!$O$3:$O$1000',  // cargo
-        'H' => 'Listas!$P$3:$P$1000',  // horario
-        'I' => 'Listas!$Q$3:$Q$1000',  // empleador
-        'J' => 'Listas!$R$3:$R$1000',  // lider
+        'F' => 'Listas!$P$3:$P$1000',  // departamento
+        'G' => 'Listas!$Q$3:$Q$1000',  // cargo
+        'H' => 'Listas!$R$3:$R$1000',  // horario
+        'I' => 'Listas!$S$3:$S$1000',  // empleador
+        'J' => 'Listas!$T$3:$T$1000',  // lider
         'K' => '"empleado,supervisor,admin"',
         'L' => '"1,0"',
+        'M' => 'Listas!$U$3:$U$1000',  // sede
     ];
 
     public function title(): string
@@ -45,13 +46,14 @@ class EmpleadosDatosSheet implements FromArray, WithHeadings, WithTitle, WithSty
             'lider',
             'rol',
             'activo',
+            'sede',
         ];
     }
 
     public function array(): array
     {
         return [
-            ['Juan Pérez', 'juan@empresa.com', '1234567890', '3001234567', '', '', '', '', '', '', 'empleado', '1'],
+            ['Juan Pérez', 'juan@empresa.com', '1234567890', '3001234567', '', '', '', '', '', '', 'empleado', '1', ''],
         ];
     }
 
@@ -71,14 +73,14 @@ class EmpleadosDatosSheet implements FromArray, WithHeadings, WithTitle, WithSty
             AfterSheet::class => function (AfterSheet $event) {
                 $ws = $event->sheet->getDelegate();
 
-                foreach (range('A', 'L') as $col) {
+                foreach (range('A', 'M') as $col) {
                     $ws->getColumnDimension($col)->setAutoSize(true);
                 }
 
                 $ws->freezePane('A2');
 
                 foreach (self::DROPDOWNS as $col => $formula) {
-                    for ($row = 3; $row <= 500; $row++) {
+                    for ($row = 2; $row <= 500; $row++) {
                         $validation = $ws->getCell("{$col}{$row}")->getDataValidation();
                         $validation->setType(DataValidation::TYPE_LIST);
                         $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);

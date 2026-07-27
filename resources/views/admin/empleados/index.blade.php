@@ -47,6 +47,16 @@
                                 <option value="">Todas las sedes</option>
                             </select>
                         </div>
+                        <div class="col-md-auto ms-auto d-flex align-items-center gap-2">
+                            <label class="form-label mb-0 text-muted small text-nowrap">Mostrar</label>
+                            <select class="form-select form-select-sm" id="perPageSelect" style="width:75px" onchange="loadEmpleados()">
+                                <option value="10">10</option>
+                                <option value="25" selected>25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                            <span class="text-muted small text-nowrap">registros</span>
+                        </div>
                     </div>
                 </div>
                 <div class="table-responsive">
@@ -414,7 +424,8 @@ async function loadEmpleados(page = 1) {
     const deptoId   = document.getElementById('filterDepto').value;
     const sedeId    = document.getElementById('filterSede').value;
     const empresaId = isAdminTenant ? document.getElementById('filterEmpresa').value : '';
-    let url = `/admin/empleados/list?page=${page}&per_page=15`;
+    const perPage = document.getElementById('perPageSelect').value;
+    let url = `/admin/empleados/list?page=${page}&per_page=${perPage}`;
     if (search)    url += `&search=${encodeURIComponent(search)}`;
     if (deptoId)   url += `&departamento_id=${deptoId}`;
     if (sedeId)    url += `&sede_id=${sedeId}`;
