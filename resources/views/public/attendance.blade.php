@@ -256,10 +256,10 @@ function selectTipoUsuario(tipo) {
     tipoSeleccionado = null;
     fotoBase64       = null;
 
-    // Limpiar campos, errores y deshabilitar
+    // Limpiar campos y errores
     ['nombre','cedula','telefono','eps','arl','empresa','personaVisita'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) { el.value = ''; el.classList.remove('is-invalid'); el.disabled = false; }
+        if (el) { el.value = ''; el.classList.remove('is-invalid'); }
     });
     document.getElementById('visitanteInfoBox').classList.add('d-none');
     ['nombreError','cedulaError','personaVisitaError','photoError'].forEach(id => {
@@ -296,10 +296,9 @@ function volverPaso1() {
 function nuevoRegistro() {
     document.getElementById('resultBox').style.display = 'none';
     document.getElementById('step1').style.display = 'block';
-    // Re-habilitar todos los campos por si quedaron deshabilitados
     ['nombre','cedula','telefono','eps','arl','empresa','personaVisita'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) { el.value = ''; el.disabled = false; }
+        if (el) el.value = '';
     });
     document.getElementById('visitanteInfoBox').classList.add('d-none');
     tipoUsuario       = null;
@@ -326,6 +325,7 @@ async function continuarVisitante() {
     document.getElementById('btnContinuarSpinner').classList.remove('d-none');
     document.getElementById('btnContinuar').disabled = true;
 
+    let datosPreviosEncontrados = false;
     try {
         const res  = await fetch(URL_BUSCAR_VISITANTE, {
             method: 'POST',
@@ -337,22 +337,18 @@ async function continuarVisitante() {
         const camposPrevios = ['nombre','telefono','eps','arl','empresa'];
 
         if (data.found) {
-            // Pre-llenar y deshabilitar (persona_visita queda vacío y editable)
-            document.getElementById('cedula').disabled  = true;
-            document.getElementById('nombre').value     = data.nombre   || '';
-            document.getElementById('telefono').value   = data.telefono || '';
-            document.getElementById('eps').value        = data.eps      || '';
-            document.getElementById('arl').value        = data.arl      || '';
-            document.getElementById('empresa').value    = data.empresa  || '';
+            datosPreviosEncontrados = true;
+            // Pre-llenar (editable — el usuario puede modificarlos)
+            document.getElementById('nombre').value   = data.nombre   || '';
+            document.getElementById('telefono').value = data.telefono || '';
+            document.getElementById('eps').value      = data.eps      || '';
+            document.getElementById('arl').value      = data.arl      || '';
+            document.getElementById('empresa').value  = data.empresa  || '';
             document.getElementById('personaVisita').value = '';
-            camposPrevios.forEach(id => { document.getElementById(id).disabled = true; });
             document.getElementById('visitanteInfoBox').classList.remove('d-none');
         } else {
-            // Visitante nuevo: limpiar y dejar todo editable
-            camposPrevios.forEach(id => {
-                document.getElementById(id).value    = '';
-                document.getElementById(id).disabled = false;
-            });
+            // Visitante nuevo: campos vacíos
+            camposPrevios.forEach(id => { document.getElementById(id).value = ''; });
             document.getElementById('visitanteInfoBox').classList.add('d-none');
         }
     } catch (_) {
@@ -371,8 +367,10 @@ async function continuarVisitante() {
     document.getElementById('btnContinuarSpinner').classList.add('d-none');
     document.getElementById('btnContinuar').disabled = false;
 
-    // Enfocar el campo "A quién visita"
-    document.getElementById('personaVisita').focus();
+    // Enfocar "A quién visita" solo si es visitante nuevo (sin datos previos)
+    if (!datosPreviosEncontrados) {
+        document.getElementById('personaVisita').focus();
+    }
     checkReady();
 }
 
