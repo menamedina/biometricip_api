@@ -19,7 +19,7 @@ class EmpleadosImport implements ToModel, WithHeadingRow, SkipsEmptyRows, WithEv
     public array $createdList = [];
     public array $updatedList = [];
 
-    /** email => sede_id  — se procesa en afterImport */
+    /** key => sede — se procesa en afterImport (user_id => sedeId para existentes, array para nuevos) */
     private array $sedePending = [];
 
     /** cedula => user_id — cargado al inicio desde la BD */
@@ -45,34 +45,22 @@ class EmpleadosImport implements ToModel, WithHeadingRow, SkipsEmptyRows, WithEv
 
         if (!$nombre || !$email) return null;
 
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $this->skipped[] = "{$email} (email inválido)";
+        if (!$cedula) {
+            $this->skipped[] = "{$nombre} (cédula obligatoria)";
             return null;
         }
 
-        // ── Validar cédula duplicada dentro de la empresa ─────────────────────
-        if ($cedula !== '') {
-            $existingUser = User::where('email', $email)->first();
-            $ownerId      = $existingUser?->id;
-
-            // Cédula en uso por OTRO usuario de la empresa
-            if (isset($this->cedulaMap[$cedula]) && $this->cedulaMap[$cedula] !== $ownerId) {
-                $this->skipped[] = "{$email} (cédula {$cedula} ya está en uso)";
-                return null;
-            }
-
-            // Cédula duplicada dentro del mismo archivo para un email diferente
-            if (isset($this->cedulasBatch[$cedula]) && $this->cedulasBatch[$cedula] !== $email) {
-                $this->skipped[] = "{$email} (cédula {$cedula} duplicada en el archivo)";
-                return null;
-            }
-
-            $this->cedulasBatch[$cedula] = $email;
-            // Reservar en el mapa para que filas siguientes del mismo archivo la detecten
-            if (!isset($this->cedulaMap[$cedula])) {
-                $this->cedulaMap[$cedula] = $ownerId ?? 0;
-            }
+        if ($email && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $this->skipped[] = "{$cedula} (email inválido: {$email})";
+            return null;
         }
+
+        // ── Cédula duplicada dentro del mismo archivo ─────────────────────────
+        if (isset($this->cedulasBatch[$cedula])) {
+            $this->skipped[] = "{$cedula} (duplicada en el archivo)";
+            return null;
+        }
+        $this->cedulasBatch[$cedula] = true;
 
         $deptoId     = $this->parseId($row['departamento'] ?? '');
         $cargoId     = $this->parseId($row['cargo']        ?? '');
@@ -89,13 +77,26 @@ class EmpleadosImport implements ToModel, WithHeadingRow, SkipsEmptyRows, WithEv
                     ? (bool)(int)$row['activo']
                     : true;
 
-        // ── Actualizar si el email ya existe ──────────────────────────────────
-        $existing = User::where('email', $email)->first();
+        // ── Buscar existente por cédula + empresa ─────────────────────────────
+        $existing = isset($this->cedulaMap[$cedula])
+            ? User::find($this->cedulaMap[$cedula])
+            : null;
 
         if ($existing) {
+            // Si el email cambia, verificar que no esté en uso por otro usuario
+            if ($email && $email !== $existing->email) {
+                $emailTaken = User::where('email', $email)
+                    ->where('id', '!=', $existing->id)
+                    ->exists();
+                if ($emailTaken) {
+                    $this->skipped[] = "{$cedula} (email {$email} ya está en uso por otro usuario)";
+                    return null;
+                }
+            }
+
             $fields = [
                 'name'            => $nombre,
-                'cedula'          => $cedula ?: $existing->cedula,
+                'cedula'          => $cedula,
                 'telefono'        => trim($row['telefono'] ?? '') ?: $existing->telefono,
                 'departamento_id' => $deptoId     ?? $existing->departamento_id,
                 'cargo_id'        => $cargoId     ?? $existing->cargo_id,
@@ -105,23 +106,33 @@ class EmpleadosImport implements ToModel, WithHeadingRow, SkipsEmptyRows, WithEv
                 'role'            => $rol,
                 'is_active'       => $isActive,
             ];
+            if ($email) $fields['email'] = $email;
 
             $existing->update($fields);
             $this->updated++;
-            $this->updatedList[] = $email;
+            $this->updatedList[] = $cedula . ($email ? " ({$email})" : '');
 
-            if ($sedeId) $this->sedePending[$email] = $sedeId;
+            if ($sedeId) $this->sedePending[$existing->id] = $sedeId;
 
             return null;
         }
 
         // ── Crear nuevo ───────────────────────────────────────────────────────
-        $pass = 'Cambiar123';
+        if (!$email) {
+            $this->skipped[] = "{$cedula} (email obligatorio para nuevos empleados)";
+            return null;
+        }
 
-        if ($sedeId) $this->sedePending[$email] = $sedeId;
+        // Verificar email único
+        if (User::where('email', $email)->exists()) {
+            $this->skipped[] = "{$cedula} (email {$email} ya está en uso)";
+            return null;
+        }
+
+        if ($sedeId) $this->sedePending['__new__' . $cedula] = ['sedeId' => $sedeId, 'cedula' => $cedula];
 
         $this->created++;
-        $this->createdList[] = $email;
+        $this->createdList[] = $cedula . " ({$email})";
 
         return new User([
             'name'            => $nombre,
@@ -146,11 +157,22 @@ class EmpleadosImport implements ToModel, WithHeadingRow, SkipsEmptyRows, WithEv
     {
         return [
             AfterImport::class => function () {
-                foreach ($this->sedePending as $email => $sedeId) {
-                    $user = User::where('email', $email)->first();
-                    if (!$user) continue;
+                foreach ($this->sedePending as $key => $value) {
+                    if (is_array($value)) {
+                        // Nuevo empleado: buscar por cédula
+                        $user = User::where('empresa_id', $this->empresaId)
+                            ->where('cedula', $value['cedula'])
+                            ->first();
+                        $userId = $user?->id;
+                        $sedeId = $value['sedeId'];
+                    } else {
+                        // Existente: key es user_id
+                        $userId = $key;
+                        $sedeId = $value;
+                    }
+                    if (!$userId) continue;
                     UserSede::updateOrCreate(
-                        ['user_id' => $user->id, 'empresa_id' => $this->empresaId],
+                        ['user_id' => $userId, 'empresa_id' => $this->empresaId],
                         ['sede_id' => $sedeId]
                     );
                 }

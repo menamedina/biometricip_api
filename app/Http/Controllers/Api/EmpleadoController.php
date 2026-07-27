@@ -53,7 +53,11 @@ class EmpleadoController extends Controller
             $query->whereHas('userSedes', fn($q) => $q->where('sede_id', $request->sede_id));
         }
 
-        $empleados = $query->with('userSedes')->orderBy('created_at', 'desc')->paginate($request->per_page ?? 20);
+        $allowed = ['name','email','cedula','codigo_empleado','role','departamento_id','cargo_id','is_active','created_at'];
+        $sortCol = in_array($request->sort, $allowed) ? $request->sort : 'name';
+        $sortDir = $request->dir === 'desc' ? 'desc' : 'asc';
+
+        $empleados = $query->with('userSedes')->orderBy($sortCol, $sortDir)->paginate($request->per_page ?? 20);
 
         $empleados->getCollection()->transform(function ($user) {
             $data            = $user->toArray();

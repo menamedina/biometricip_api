@@ -63,18 +63,18 @@
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th>Código</th>
-                                <th>Nombre</th>
-                                <th>Cédula</th>
-                                <th>Email</th>
+                                <th class="sortable" data-col="codigo_empleado">Código</th>
+                                <th class="sortable" data-col="name">Nombre</th>
+                                <th class="sortable" data-col="cedula">Cédula</th>
+                                <th class="sortable" data-col="email">Email</th>
                                 @if(auth()->user()->admin_tenant)
                                 <th>Empresa</th>
                                 @endif
-                                <th>Rol</th>
-                                <th>Departamento</th>
-                                <th>Cargo</th>
+                                <th class="sortable" data-col="role">Rol</th>
+                                <th class="sortable" data-col="departamento_id">Departamento</th>
+                                <th class="sortable" data-col="cargo_id">Cargo</th>
                                 <th>Sede</th>
-                                <th>Estado</th>
+                                <th class="sortable" data-col="is_active">Estado</th>
                                 <th>Rostros</th>
                                 <th>Acciones</th>
                             </tr>
@@ -238,8 +238,8 @@
                 <div id="importEmpleadosResult" class="mt-3" style="display:none;"></div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" onclick="ejecutarImportEmpleados()">
+                <button type="button" id="importEmpleadosCancelBtn" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" id="importEmpleadosSubmitBtn" class="btn btn-primary" onclick="ejecutarImportEmpleados()">
                     <i class="fa-solid fa-file-import me-1"></i> Importar
                 </button>
             </div>
@@ -268,6 +268,8 @@
 const csrfToken     = '{{ csrf_token() }}';
 const isAdminTenant = {{ auth()->user()->admin_tenant ? 'true' : 'false' }};
 let currentPage = 1;
+let sortBy  = 'name';
+let sortDir = 'asc';
 
 let deptoMap   = {};
 let cargoMap   = {};
@@ -425,7 +427,7 @@ async function loadEmpleados(page = 1) {
     const sedeId    = document.getElementById('filterSede').value;
     const empresaId = isAdminTenant ? document.getElementById('filterEmpresa').value : '';
     const perPage = document.getElementById('perPageSelect').value;
-    let url = `/admin/empleados/list?page=${page}&per_page=${perPage}`;
+    let url = `/admin/empleados/list?page=${page}&per_page=${perPage}&sort=${sortBy}&dir=${sortDir}`;
     if (search)    url += `&search=${encodeURIComponent(search)}`;
     if (deptoId)   url += `&departamento_id=${deptoId}`;
     if (sedeId)    url += `&sede_id=${sedeId}`;
@@ -733,8 +735,10 @@ async function ejecutarImportEmpleados() {
         return;
     }
 
-    const btn = document.querySelector('#importEmpleadosModal .btn-primary');
-    btn.disabled = true;
+    const btn       = document.getElementById('importEmpleadosSubmitBtn');
+    const cancelBtn = document.getElementById('importEmpleadosCancelBtn');
+    btn.disabled       = true;
+    cancelBtn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Importando...';
     result.style.display = 'none';
 
@@ -782,11 +786,43 @@ async function ejecutarImportEmpleados() {
         result.innerHTML = `<div class="alert alert-danger mb-0">Error: ${e.message}</div>`;
     } finally {
         result.style.display = '';
-        btn.disabled = false;
+        btn.disabled       = false;
+        cancelBtn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-file-import me-1"></i> Importar';
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => { initCatalogos(); loadEmpleados(); });
+function updateSortIcons() {
+    document.querySelectorAll('th.sortable').forEach(th => {
+        th.querySelectorAll('i.sort-icon').forEach(i => i.remove());
+        const icon = document.createElement('i');
+        if (th.dataset.col === sortBy) {
+            icon.className = `sort-icon fa-solid fa-sort-${sortDir === 'asc' ? 'up' : 'down'} ms-1 text-primary`;
+        } else {
+            icon.className = 'sort-icon fa-solid fa-sort ms-1 text-muted opacity-50';
+        }
+        th.appendChild(icon);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('th.sortable').forEach(th => {
+        th.style.cursor = 'pointer';
+        th.style.userSelect = 'none';
+        th.addEventListener('click', () => {
+            if (sortBy === th.dataset.col) {
+                sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortBy  = th.dataset.col;
+                sortDir = 'asc';
+            }
+            updateSortIcons();
+            loadEmpleados(1);
+        });
+    });
+    updateSortIcons();
+    initCatalogos();
+    loadEmpleados();
+});
 </script>
 @endpush
