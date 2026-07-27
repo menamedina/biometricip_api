@@ -10,9 +10,15 @@
                     <h4 class="mb-1"><i class="fa-solid fa-building me-2 text-primary"></i>Empresas</h4>
                     <p class="text-muted mb-0">Gestión multi-tenant de empresas</p>
                 </div>
+                @if(auth()->user()->admin_tenant)
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#empresaModal" onclick="resetForm()">
                     <i class="fa-solid fa-plus me-1"></i> Nueva Empresa
                 </button>
+                @else
+                <button class="btn btn-primary" disabled title="Solo administradores multi-empresa pueden crear empresas">
+                    <i class="fa-solid fa-plus me-1"></i> Nueva Empresa
+                </button>
+                @endif
             </div>
         </div>
     </div>

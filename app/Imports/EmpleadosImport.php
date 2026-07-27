@@ -137,7 +137,7 @@ class EmpleadosImport implements ToModel, WithHeadingRow, SkipsEmptyRows, WithEv
         return new User([
             'name'            => $nombre,
             'email'           => $email,
-            'password'        => Hash::make($pass),
+            'password'        => Hash::make(\Illuminate\Support\Str::random(12)),
             'cedula'          => $cedula,
             'telefono'        => trim($row['telefono'] ?? '') ?: null,
             'role'            => $rol,
