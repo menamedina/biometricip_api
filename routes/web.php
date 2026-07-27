@@ -136,6 +136,7 @@ Route::middleware(['auth', 'admin', 'role:admin,supervisor', 'tenancy.session'])
     Route::get   ('/admin/empleados/{id}/detail',      [ApiEmpleadoController::class, 'show'])->where('id', '[0-9]+');
     Route::post  ('/admin/empleados',                  [ApiEmpleadoController::class, 'store']);
     Route::put   ('/admin/empleados/{id}',             [ApiEmpleadoController::class, 'update'])->where('id', '[0-9]+');
+    Route::post  ('/admin/empleados/{id}/update',      [ApiEmpleadoController::class, 'update'])->where('id', '[0-9]+');
     Route::delete('/admin/empleados/{id}',             [ApiEmpleadoController::class, 'destroy'])->where('id', '[0-9]+');
     Route::get ('/admin/visitantes',                          [AdminController::class,      'visitantesIndex'])->name('admin.visitantes.index');
     Route::post('/admin/visitantes',                          [AdminController::class,      'visitantesStore'])->name('admin.visitantes.store');

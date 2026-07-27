@@ -585,8 +585,8 @@ async function saveEmpleado(id) {
     if (pass) payload.password = pass;
     if (!id) payload.password = pass || 'password123';
 
-    const url    = id ? `/admin/empleados/${id}` : '/admin/empleados';
-    const method = id ? 'PUT' : 'POST';
+    const url    = id ? `/admin/empleados/${id}/update` : '/admin/empleados';
+    const method = 'POST';
     const headers = { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken };
 
     try {
