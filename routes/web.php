@@ -135,9 +135,9 @@ Route::middleware(['auth', 'admin', 'role:admin,supervisor', 'tenancy.session'])
     Route::post  ('/admin/empleados/import',          [AdminController::class,       'empleadosImport'])->name('admin.empleados.import');
     Route::get   ('/admin/empleados/{id}/detail',      [ApiEmpleadoController::class, 'show'])->where('id', '[0-9]+');
     Route::post  ('/admin/empleados',                  [ApiEmpleadoController::class, 'store']);
-    Route::put   ('/admin/empleados/{id}',             [ApiEmpleadoController::class, 'update'])->where('id', '[0-9]+');
-    Route::post  ('/admin/empleados/{id}/update',      [ApiEmpleadoController::class, 'update'])->where('id', '[0-9]+');
-    Route::delete('/admin/empleados/{id}',             [ApiEmpleadoController::class, 'destroy'])->where('id', '[0-9]+');
+    Route::put   ('/admin/empleados/{token}',             [ApiEmpleadoController::class, 'update']);
+    Route::post  ('/admin/empleados/{token}/update',      [ApiEmpleadoController::class, 'update']);
+    Route::delete('/admin/empleados/{token}',             [ApiEmpleadoController::class, 'destroy']);
     Route::get ('/admin/visitantes',                          [AdminController::class,      'visitantesIndex'])->name('admin.visitantes.index');
     Route::post('/admin/visitantes',                          [AdminController::class,      'visitantesStore'])->name('admin.visitantes.store');
     Route::get ('/admin/visitantes/list',                     [AdminController::class,      'visitantesList'])->name('admin.visitantes.list');

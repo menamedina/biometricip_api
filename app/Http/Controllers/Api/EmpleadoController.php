@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Models\UserSede;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
@@ -174,8 +175,11 @@ class EmpleadoController extends Controller
         return response()->json(['data' => $data]);
     }
 
-    public function update(Request $request, int $id): JsonResponse
+    public function update(Request $request, string $token): JsonResponse
     {
+        try { $id = (int) Crypt::decryptString($token); }
+        catch (\Throwable $e) { return response()->json(['message' => 'ID inválido.'], 422); }
+
         $authUser  = $request->user();
         $empresaId = $authUser->admin_tenant
             ? ($request->integer('empresa_id') ?: null)
@@ -260,8 +264,11 @@ class EmpleadoController extends Controller
         return response()->json(['data' => $this->withNames($empleado->fresh())]);
     }
 
-    public function destroy(Request $request, int $id): JsonResponse
+    public function destroy(Request $request, string $token): JsonResponse
     {
+        try { $id = (int) Crypt::decryptString($token); }
+        catch (\Throwable $e) { return response()->json(['message' => 'ID inválido.'], 422); }
+
         $authUser = $request->user();
         $query = User::where('id', $id);
 
@@ -455,6 +462,7 @@ class EmpleadoController extends Controller
     private function withNames(User $user): array
     {
         $data = $user->toArray();
+        $data['encrypted_id'] = Crypt::encryptString((string) $user->id);
         $data['departamento'] = $user->departamento_id
             ? Departamento::find($user->departamento_id)?->nombre
             : null;

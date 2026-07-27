@@ -472,8 +472,8 @@ async function loadEmpleados(page = 1) {
                         </button>
                     </td>
                     <td>
-                        <button class="btn btn-sm btn-outline-primary me-1" onclick="editEmpleado(${e.id})"><i class="fa-solid fa-pen"></i></button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteEmpleado(${e.id})"><i class="fa-solid fa-trash"></i></button>
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="editEmpleado(${e.id}, '${e.encrypted_id}')"><i class="fa-solid fa-pen"></i></button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteEmpleado('${e.encrypted_id}')"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 </tr>`;
             }).join('');
@@ -498,15 +498,15 @@ function renderPagination(data) {
     nav.innerHTML = html;
 }
 
-async function editEmpleado(id) {
+async function editEmpleado(id, encryptedId) {
     try {
         const res = await fetch(`/admin/empleados/${id}/detail`);
         if (!res.ok) { alert('Error ' + res.status + ' al cargar empleado'); return; }
         const data = await res.json();
         const e = data.data;
-        currentEmpleadoId = e.id;
-        document.getElementById('btnGuardarEmpleado').onclick = () => saveEmpleado(e.id);
-        document.getElementById('empleadoId').value      = e.id;
+        currentEmpleadoId = encryptedId || e.encrypted_id;
+        document.getElementById('btnGuardarEmpleado').onclick = () => saveEmpleado(currentEmpleadoId);
+        document.getElementById('empleadoId').value      = currentEmpleadoId;
 
         if (isAdminTenant) {
             const selEmp = document.getElementById('empEmpresaId');
@@ -590,20 +590,19 @@ async function saveEmpleado(id) {
     const headers = { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' };
 
     try {
-        console.log('[saveEmpleado] url:', url, 'id:', id, 'payload:', payload);
         const res = await fetch(url, { method, headers, body: JSON.stringify(payload) });
-        console.log('[saveEmpleado] status:', res.status, 'ok:', res.ok);
         const text = await res.text();
-        console.log('[saveEmpleado] response text:', text.substring(0, 500));
         if (res.ok) {
             bootstrap.Modal.getInstance(document.getElementById('empleadoModal')).hide();
             loadEmpleados(currentPage);
+            Swal.fire({ icon: 'success', title: 'Guardado', text: 'Empleado actualizado correctamente.', timer: 1800, showConfirmButton: false });
         } else {
             try {
                 const err = JSON.parse(text);
-                alert(Object.values(err.errors || {}).flat().join('\n') || err.message || 'Error');
+                const msg = Object.values(err.errors || {}).flat().join('\n') || err.message || 'Error';
+                Swal.fire({ icon: 'error', title: 'Error', text: msg });
             } catch(_) {
-                alert('Error del servidor: ' + res.status);
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Error del servidor: ' + res.status });
             }
         }
     } catch(e) { console.error('[saveEmpleado] excepción:', e); }
