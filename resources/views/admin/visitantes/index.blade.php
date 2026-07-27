@@ -72,17 +72,17 @@
                         <table class="table table-hover mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th>Nombre</th>
-                                    <th>Cédula</th>
-                                    <th>Visita a</th>
-                                    <th>Sede</th>
-                                    <th>Empresa</th>
-                                    <th>Placa</th>
-                                    <th>EPS / ARL</th>
+                                    <th class="sortable" data-field="cedula">Cédula</th>
+                                    <th class="sortable" data-field="nombre">Nombre</th>
+                                    <th class="sortable" data-field="empresa">Empresa</th>
                                     <th>Teléfono</th>
-                                    <th>Entrada</th>
-                                    <th>Salida</th>
-                                    <th>Tiempo en sede</th>
+                                    <th>EPS / ARL</th>
+                                    <th>Placa</th>
+                                    <th class="sortable" data-field="persona_visita">Visita a</th>
+                                    <th class="sortable" data-field="sede">Sede</th>
+                                    <th class="sortable" data-field="hora_entrada">Entrada</th>
+                                    <th class="sortable" data-field="hora_salida">Salida</th>
+                                    <th class="sortable" data-field="minutos_en_sede">Tiempo en sede</th>
                                     <th>Inducción</th>
                                     <th>Última inducción</th>
                                     <th>Foto</th>
@@ -204,7 +204,10 @@
 <script>
 const csrfToken = '{{ csrf_token() }}';
 const sedesData = @json($sedes);
-let dataLoadedAt = null;
+let dataLoadedAt    = null;
+let visitantesData  = [];
+let sortField       = 'hora_entrada';
+let sortDir         = 'desc';
 
 // Fecha por defecto: hoy en hora local
 function localDateStr() {
@@ -237,21 +240,45 @@ async function loadVisitantes() {
     const tbody = document.getElementById('visitantesTbody');
 
     if (!data.data || data.data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="14" class="text-center text-muted py-3">Sin registros</td></tr>';
+        visitantesData = [];
+        tbody.innerHTML = '<tr><td colspan="15" class="text-center text-muted py-3">Sin registros</td></tr>';
         return;
     }
 
-    dataLoadedAt = new Date();
-    tbody.innerHTML = data.data.map(v => `
+    visitantesData = data.data;
+    dataLoadedAt   = new Date();
+    renderTabla();
+    actualizarIconosSort();
+}
+
+function sortValue(v, field) {
+    if (field === 'sede')          return v.sede?.nombre ?? '';
+    if (field === 'hora_entrada')  return v.hora_entrada ?? '';
+    if (field === 'hora_salida')   return v.hora_salida  ?? '';
+    if (field === 'minutos_en_sede') return v.minutos_en_sede ?? 0;
+    return (v[field] ?? '').toString().toLowerCase();
+}
+
+function renderTabla() {
+    const tbody = document.getElementById('visitantesTbody');
+    const sorted = [...visitantesData].sort((a, b) => {
+        const va = sortValue(a, sortField);
+        const vb = sortValue(b, sortField);
+        if (va < vb) return sortDir === 'asc' ? -1 :  1;
+        if (va > vb) return sortDir === 'asc' ?  1 : -1;
+        return 0;
+    });
+
+    tbody.innerHTML = sorted.map(v => `
         <tr>
-            <td><strong>${v.nombre ?? '—'}</strong></td>
             <td>${v.cedula}</td>
+            <td><strong>${v.nombre ?? '—'}</strong></td>
+            <td>${v.empresa ?? '—'}</td>
+            <td>${v.telefono ?? '—'}</td>
+            <td><small>${v.eps ?? '—'} / ${v.arl ?? '—'}</small></td>
+            <td>${v.placa ? `<span class="badge bg-secondary">${v.placa}</span>` : '—'}</td>
             <td>${v.persona_visita ?? '—'}</td>
             <td><span class="badge bg-primary">${v.sede?.nombre ?? '—'}</span></td>
-            <td>${v.empresa ?? '—'}</td>
-            <td>${v.placa ? `<span class="badge bg-secondary">${v.placa}</span>` : '—'}</td>
-            <td><small>${v.eps ?? '—'} / ${v.arl ?? '—'}</small></td>
-            <td>${v.telefono ?? '—'}</td>
             <td><small>${formatDT(v.hora_entrada)}</small></td>
             <td><small>${v.hora_salida ? formatDT(v.hora_salida) : '<span class="badge bg-warning text-dark">En sede</span>'}</small></td>
             <td><small>${tiempoEnSede(v)}</small></td>
@@ -261,6 +288,14 @@ async function loadVisitantes() {
             <td>${botonForzarSalida(v)}</td>
         </tr>
     `).join('');
+}
+
+function actualizarIconosSort() {
+    document.querySelectorAll('thead th.sortable').forEach(th => {
+        const field = th.dataset.field;
+        th.innerHTML = th.textContent.replace(/ [▲▼]$/, '') +
+            (field === sortField ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ' ⇅');
+    });
 }
 
 function parseDate(dt) {
@@ -423,7 +458,27 @@ setInterval(() => {
     });
 }, 30000);
 
-document.addEventListener('DOMContentLoaded', () => { loadSedes(); loadVisitantes(); });
+document.addEventListener('DOMContentLoaded', () => {
+    loadSedes();
+    loadVisitantes();
+
+    // Sorting por click en cabeceras
+    document.querySelectorAll('thead th.sortable').forEach(th => {
+        th.style.cursor = 'pointer';
+        th.style.userSelect = 'none';
+        th.addEventListener('click', () => {
+            const field = th.dataset.field;
+            if (sortField === field) {
+                sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortField = field;
+                sortDir   = 'asc';
+            }
+            renderTabla();
+            actualizarIconosSort();
+        });
+    });
+});
 
 // ── Registro manual ──────────────────────────────────────────────────────────
 function abrirRegistroManual() {
