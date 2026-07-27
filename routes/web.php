@@ -147,7 +147,11 @@ Route::middleware(['auth', 'admin', 'role:admin,supervisor', 'tenancy.session'])
     Route::delete('/admin/cargos/{id}',            [AdminController::class, 'cargosDestroy'])->name('admin.cargos.destroy');
     Route::post  ('/admin/cargos/import',           [AdminController::class, 'cargosImport'])->name('admin.cargos.import');
     Route::get   ('/admin/cargos/template',        [AdminController::class, 'cargosTemplate'])->name('admin.cargos.template');
-    Route::get('/admin/horarios',       [AdminController::class, 'horariosIndex'])->name('admin.horarios.index');
+    Route::get   ('/admin/horarios',          [AdminController::class, 'horariosIndex'])->name('admin.horarios.index');
+    Route::get   ('/admin/horarios/list',     [\App\Http\Controllers\Api\HorarioController::class, 'index']);
+    Route::post  ('/admin/horarios',          [\App\Http\Controllers\Api\HorarioController::class, 'store']);
+    Route::put   ('/admin/horarios/{id}',     [\App\Http\Controllers\Api\HorarioController::class, 'update']);
+    Route::delete('/admin/horarios/{id}',     [\App\Http\Controllers\Api\HorarioController::class, 'destroy']);
     Route::get('/admin/festivos',       [AdminController::class, 'festivosIndex'])->name('admin.festivos.index');
     Route::get('/admin/empresas',       [AdminController::class, 'empresasIndex'])->name('admin.empresas.index');
     Route::get('/admin/reports/export', [ReportController::class, 'attendance'])->name('admin.reports.export');

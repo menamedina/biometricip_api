@@ -82,10 +82,10 @@
 
 @push('scripts')
 <script>
-const token = localStorage.getItem('token');
+const csrfToken = '{{ csrf_token() }}';
 
 async function loadHorarios() {
-    const res  = await fetch('/api/horarios', { headers: { 'Authorization': `Bearer ${token}` } });
+    const res  = await fetch('/admin/horarios/list');
     const data = await res.json();
     const tbody = document.getElementById('horariosTbody');
     if (!data.data?.length) {
@@ -149,11 +149,11 @@ async function saveHorario() {
         duracion_almuerzo_min: parseInt(document.getElementById('hDuracion').value) || null,
         is_active:             document.getElementById('hActivo').checked,
     };
-    const url    = id ? `/api/horarios/${id}` : '/api/horarios';
+    const url    = id ? `/admin/horarios/${id}` : '/admin/horarios';
     const method = id ? 'PUT' : 'POST';
 
     const res = await fetch(url, {
-        method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        method, headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
         body: JSON.stringify(payload),
     });
     if (res.ok) {
@@ -167,7 +167,7 @@ async function saveHorario() {
 
 async function deleteHorario(id) {
     if (!confirm('¿Desactivar este horario?')) return;
-    await fetch(`/api/horarios/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+    await fetch(`/admin/horarios/${id}`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': csrfToken } });
     loadHorarios();
 }
 
