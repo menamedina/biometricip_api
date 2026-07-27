@@ -61,8 +61,9 @@ class EmpleadoController extends Controller
         $empleados = $query->with('userSedes')->orderBy($sortCol, $sortDir)->paginate($request->per_page ?? 20);
 
         $empleados->getCollection()->transform(function ($user) {
-            $data            = $user->toArray();
-            $data['sede_ids'] = $user->userSedes->pluck('sede_id')->values()->all();
+            $data               = $user->toArray();
+            $data['sede_ids']   = $user->userSedes->pluck('sede_id')->values()->all();
+            $data['encrypted_id'] = Crypt::encryptString((string) $user->id);
             return $data;
         });
 
