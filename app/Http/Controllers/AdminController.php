@@ -384,12 +384,12 @@ class AdminController extends Controller
         $visitantes->getCollection()->transform(function ($v) {
             $img = $v->imagenes->first();
             $v->imagen_entrada = $img?->thumbnail_base64;
-            // DB guarda en UTC; parsear raw para evitar desfase con APP_TIMEZONE=America/Bogota
-            $entrada = \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $v->getRawOriginal('hora_entrada'), 'UTC');
+            // DB guarda en hora Colombia (APP_TIMEZONE); comparar en la misma zona
+            $entrada   = \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $v->getRawOriginal('hora_entrada'));
             $salidaRaw = $v->getRawOriginal('hora_salida');
-            $fin = $salidaRaw
-                ? \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $salidaRaw, 'UTC')
-                : \Carbon\Carbon::now('UTC');
+            $fin       = $salidaRaw
+                ? \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $salidaRaw)
+                : \Carbon\Carbon::now();
             $v->minutos_en_sede = max(0, (int) $entrada->diffInMinutes($fin));
             unset($v->imagenes);
             return $v;
@@ -404,7 +404,7 @@ class AdminController extends Controller
         if ($visitante->hora_salida) {
             return response()->json(['message' => 'Ya tiene salida registrada.'], 422);
         }
-        $visitante->update(['hora_salida' => \Carbon\Carbon::now('UTC')]);
+        $visitante->update(['hora_salida' => now()]);
         return response()->json(['success' => true]);
     }
 

@@ -257,9 +257,8 @@ async function loadVisitantes() {
 
 function parseDate(dt) {
     if (!dt) return null;
-    // Laravel serializa datetime como ISO con Z; si viene sin Z (string raw) añadirla
-    if (dt.includes('Z') || dt.includes('+')) return new Date(dt);
-    return new Date(dt.replace(' ', 'T') + 'Z');
+    // Laravel serializa campos datetime con offset (-05:00); parsear directamente
+    return new Date(dt);
 }
 
 function formatMins(mins) {
@@ -402,12 +401,7 @@ async function guardarVisitanteManual() {
         arl:            document.getElementById('rm_arl').value.trim(),
         placa:          document.getElementById('rm_placa').value.trim().toUpperCase() || null,
         persona_visita: document.getElementById('rm_persona_visita').value.trim(),
-        // datetime-local devuelve hora local — convertir a UTC para consistencia con el DB
-        hora_entrada:   (() => {
-            const v = document.getElementById('rm_hora_entrada').value;
-            if (!v) return null;
-            return new Date(v).toISOString().replace('T', ' ').slice(0, 19);
-        })(),
+        hora_entrada:   document.getElementById('rm_hora_entrada').value || null,
     };
 
     // Validación básica
