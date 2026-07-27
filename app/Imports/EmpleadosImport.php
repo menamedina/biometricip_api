@@ -105,8 +105,6 @@ class EmpleadosImport implements ToModel, WithHeadingRow, SkipsEmptyRows, WithEv
                 'role'            => $rol,
                 'is_active'       => $isActive,
             ];
-            $pass = trim($row['password'] ?? '');
-            if ($pass) $fields['password'] = Hash::make($pass);
 
             $existing->update($fields);
             $this->updated++;
@@ -118,7 +116,7 @@ class EmpleadosImport implements ToModel, WithHeadingRow, SkipsEmptyRows, WithEv
         }
 
         // ── Crear nuevo ───────────────────────────────────────────────────────
-        $pass = trim($row['password'] ?? '') ?: 'Cambiar123';
+        $pass = 'Cambiar123';
 
         if ($sedeId) $this->sedePending[$email] = $sedeId;
 

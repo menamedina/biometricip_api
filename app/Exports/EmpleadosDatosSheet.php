@@ -16,14 +16,14 @@ class EmpleadosDatosSheet implements FromArray, WithHeadings, WithTitle, WithSty
 {
     // Columna en Datos → columna auxiliar "id - nombre" en hoja Listas (cols P-U, desde fila 3)
     private const DROPDOWNS = [
-        'F' => 'Listas!$P$3:$P$1000',  // departamento
-        'G' => 'Listas!$Q$3:$Q$1000',  // cargo
-        'H' => 'Listas!$R$3:$R$1000',  // horario
-        'I' => 'Listas!$S$3:$S$1000',  // empleador
-        'J' => 'Listas!$T$3:$T$1000',  // lider
-        'K' => '"empleado,supervisor,admin"',
-        'L' => 'Listas!$U$3:$U$1000',  // sede
-        'M' => '"1,0"',                 // activo
+        'E' => 'Listas!$P$3:$P$1000',  // departamento
+        'F' => 'Listas!$Q$3:$Q$1000',  // cargo
+        'G' => 'Listas!$R$3:$R$1000',  // horario
+        'H' => 'Listas!$S$3:$S$1000',  // empleador
+        'I' => 'Listas!$T$3:$T$1000',  // lider
+        'J' => '"empleado,supervisor,admin"',
+        'K' => 'Listas!$U$3:$U$1000',  // sede
+        'L' => '"1,0"',                 // activo
     ];
 
     public function title(): string
@@ -38,7 +38,6 @@ class EmpleadosDatosSheet implements FromArray, WithHeadings, WithTitle, WithSty
             'email *',
             'cedula *',
             'telefono',
-            'password',
             'departamento',
             'cargo',
             'horario',
@@ -53,7 +52,7 @@ class EmpleadosDatosSheet implements FromArray, WithHeadings, WithTitle, WithSty
     public function array(): array
     {
         return [
-            ['Juan Pérez', 'juan@empresa.com', '1234567890', '3001234567', '', '', '', '', '', '', 'empleado', '', '1'],
+            ['Juan Pérez', 'juan@empresa.com', '1234567890', '3001234567', '', '', '', '', '', 'empleado', '', '1'],
         ];
     }
 
@@ -73,7 +72,7 @@ class EmpleadosDatosSheet implements FromArray, WithHeadings, WithTitle, WithSty
             AfterSheet::class => function (AfterSheet $event) {
                 $ws = $event->sheet->getDelegate();
 
-                foreach (range('A', 'M') as $col) {
+                foreach (range('A', 'L') as $col) {
                     $ws->getColumnDimension($col)->setAutoSize(true);
                 }
 

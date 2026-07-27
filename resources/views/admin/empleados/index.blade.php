@@ -595,7 +595,17 @@ async function saveEmpleado() {
 }
 
 async function deleteEmpleado(id) {
-    if (!confirm('¿Desactivar este empleado?')) return;
+    const result = await Swal.fire({
+        title: '¿Desactivar empleado?',
+        text: 'El empleado quedará inactivo. Puedes reactivarlo después.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, desactivar',
+        cancelButtonText: 'Cancelar',
+    });
+    if (!result.isConfirmed) return;
     try {
         await fetch(`/admin/empleados/${id}`, {
             method: 'DELETE',
