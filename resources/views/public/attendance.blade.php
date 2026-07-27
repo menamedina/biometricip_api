@@ -6,6 +6,7 @@
     <title>Asistencia — {{ $sede->nombre }}</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { min-height: 100%; }
@@ -341,25 +342,59 @@ function checkReady() {
     document.getElementById('btnSubmit').disabled = !ok;
 }
 
-// ── GPS ───────────────────────────────────────────────────────────────────────
+// ── GPS — recolecta lecturas durante MAX_WAIT ms y usa la de menor error ───────
+const GPS_MAX_WAIT   = 12000; // ms esperando lecturas
+const GPS_MIN_ACC    = 30;    // m — si logramos esta precisión, paramos antes
+const GPS_ACC_CAP    = 250;   // m — máximo margen de error que enviamos al server
+
 function obtenerGPS() {
     return new Promise((resolve, reject) => {
         if (!navigator.geolocation) {
             reject(new Error('Tu navegador no soporta geolocalización.'));
             return;
         }
-        navigator.geolocation.getCurrentPosition(
-            pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+
+        let best     = null; // mejor lectura hasta ahora
+        let watchId  = null;
+        let timer    = null;
+
+        const done = () => {
+            navigator.geolocation.clearWatch(watchId);
+            clearTimeout(timer);
+            if (best) {
+                resolve({
+                    lat:      best.coords.latitude,
+                    lng:      best.coords.longitude,
+                    accuracy: Math.min(Math.round(best.coords.accuracy), GPS_ACC_CAP),
+                });
+            } else {
+                reject(new Error('No se pudo obtener una lectura GPS válida.'));
+            }
+        };
+
+        watchId = navigator.geolocation.watchPosition(
+            pos => {
+                if (!best || pos.coords.accuracy < best.coords.accuracy) {
+                    best = pos;
+                }
+                // Si la precisión ya es suficientemente buena, no esperamos más
+                if (best.coords.accuracy <= GPS_MIN_ACC) done();
+            },
             err => {
                 const msgs = {
                     1: 'Debes permitir el acceso a tu ubicación para registrar asistencia.',
-                    2: 'No se pudo obtener tu ubicación. Verifica el GPS.',
-                    3: 'Tiempo de espera agotado al obtener ubicación.',
+                    2: 'No se pudo obtener tu ubicación. Verifica el GPS activo.',
+                    3: 'Tiempo de espera agotado. Asegúrate de tener GPS activo.',
                 };
+                navigator.geolocation.clearWatch(watchId);
+                clearTimeout(timer);
                 reject(new Error(msgs[err.code] || 'Error al obtener ubicación.'));
             },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            { enableHighAccuracy: true, timeout: GPS_MAX_WAIT, maximumAge: 0 }
         );
+
+        // Tiempo máximo de espera — usamos la mejor lectura que hayamos conseguido
+        timer = setTimeout(done, GPS_MAX_WAIT);
     });
 }
 
@@ -419,13 +454,16 @@ async function submitForm() {
         userLat = pos.lat;
         userLng = pos.lng;
     } catch (gpsErr) {
-        const box = document.getElementById('resultBox');
-        box.style.display = 'block';
-        box.className = 'alert alert-danger py-3 mb-3';
-        box.innerHTML = `<i class="fa-solid fa-location-crosshairs me-2"></i>${gpsErr.message}`;
         document.getElementById('btnText').classList.remove('d-none');
         document.getElementById('btnSpinner').classList.add('d-none');
         document.getElementById('btnSubmit').disabled = false;
+        Swal.fire({
+            icon: 'error',
+            title: 'Ubicación requerida',
+            text: gpsErr.message,
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#4F46E5',
+        });
         return;
     }
 
@@ -472,20 +510,28 @@ async function submitForm() {
                 </div>`;
             document.getElementById('step2').style.display = 'none';
         } else {
-            box.className = 'alert alert-danger py-3 mb-3';
-            box.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-2"></i>${data.message || 'Error al registrar.'}`;
             document.getElementById('btnText').classList.remove('d-none');
             document.getElementById('btnSpinner').classList.add('d-none');
             document.getElementById('btnSubmit').disabled = false;
+            Swal.fire({
+                icon: 'error',
+                title: 'No se pudo registrar',
+                text: data.message || 'Error al registrar.',
+                confirmButtonText: 'Entendido',
+                confirmButtonColor: '#4F46E5',
+            });
         }
     } catch (e) {
-        const box = document.getElementById('resultBox');
-        box.style.display = 'block';
-        box.className = 'alert alert-danger py-3 mb-3';
-        box.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-2"></i>Error de conexión. Intenta de nuevo.';
         document.getElementById('btnText').classList.remove('d-none');
         document.getElementById('btnSpinner').classList.add('d-none');
         document.getElementById('btnSubmit').disabled = false;
+        Swal.fire({
+            icon: 'error',
+            title: 'Error de conexión',
+            text: 'Verifica tu conexión e intenta de nuevo.',
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#4F46E5',
+        });
     }
 }
 </script>

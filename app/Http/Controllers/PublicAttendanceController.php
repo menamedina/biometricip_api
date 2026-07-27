@@ -60,6 +60,7 @@ class PublicAttendanceController extends Controller
             'persona_visita' => 'nullable|string|max:255',
             'lat'            => 'required|numeric|between:-90,90',
             'lng'            => 'required|numeric|between:-180,180',
+            'accuracy'       => 'nullable|integer|min:0',
         ], [
             'tipo_usuario.required'   => 'Indica si eres empleado o visitante.',
             'cedula.required'         => 'La cédula es obligatoria.',
@@ -75,7 +76,8 @@ class PublicAttendanceController extends Controller
             (float) $sede->lat,    (float) $sede->lng
         );
 
-        if ($distancia > $sede->radio_mts) {
+        $accuracy = min((int) $request->input('accuracy', 0), 250);
+        if ($distancia > $sede->radio_mts + $accuracy) {
             return response()->json([
                 'success' => false,
                 'message' => "Estás a " . round($distancia) . " m de la sede. Debes estar dentro del radio de {$sede->radio_mts} m para registrarte.",
