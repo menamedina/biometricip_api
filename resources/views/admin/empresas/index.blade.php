@@ -42,7 +42,13 @@
                             </tr>
                         </thead>
                         <tbody id="empresasTbody">
+                            @if(!auth()->user()->admin_tenant)
+                            <tr><td colspan="9" class="text-center text-danger py-3">
+                                <i class="fa-solid fa-lock me-2"></i>No tienes permiso para ver esta información.
+                            </td></tr>
+                            @else
                             <tr><td colspan="9" class="text-center text-muted py-3">Cargando...</td></tr>
+                            @endif
                         </tbody>
                     </table>
                 </div>
@@ -326,7 +332,9 @@ async function activarEmpresa(id) {
     } catch(e) { console.error(e); }
 }
 
+@if(auth()->user()->admin_tenant)
 document.addEventListener('DOMContentLoaded', loadEmpresas);
+@endif
 
 // --- Token Agente ---
 
