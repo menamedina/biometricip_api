@@ -268,6 +268,16 @@ function volverPaso1() {
     document.getElementById('resultBox').style.display = 'none';
 }
 
+function nuevoRegistro() {
+    document.getElementById('resultBox').style.display = 'none';
+    document.getElementById('step1').style.display = 'block';
+    tipoUsuario      = null;
+    tipoSeleccionado = null;
+    fotoBase64       = null;
+    userLat          = null;
+    userLng          = null;
+}
+
 // ── Paso 2 ────────────────────────────────────────────────────────────────────
 function setTipo(tipo) {
     tipoSeleccionado = tipo;
@@ -501,13 +511,16 @@ async function submitForm() {
                 ? `<strong>${data.nombre}</strong>`
                 : (tipoUsuario === 'visitante' ? 'Visitante' : '');
             box.innerHTML = `
-                <div class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center gap-2 mb-3">
                     <i class="fa-solid fa-circle-check fa-2x text-success"></i>
                     <div>
                         <strong>${data.message}</strong><br>
                         <small>${quien} — ${tipoLabel}</small>
                     </div>
-                </div>`;
+                </div>
+                <button type="button" class="btn btn-outline-success w-100" style="font-weight:700;border-radius:12px;padding:14px;" onclick="nuevoRegistro()">
+                    <i class="fa-solid fa-rotate-left me-1"></i> Hacer otro registro
+                </button>`;
             document.getElementById('step2').style.display = 'none';
         } else {
             document.getElementById('btnText').classList.remove('d-none');
