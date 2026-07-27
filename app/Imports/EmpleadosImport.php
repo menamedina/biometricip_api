@@ -22,7 +22,20 @@ class EmpleadosImport implements ToModel, WithHeadingRow, SkipsEmptyRows, WithEv
     /** email => sede_id  — se procesa en afterImport */
     private array $sedePending = [];
 
-    public function __construct(private int $empresaId) {}
+    /** cedula => user_id — cargado al inicio desde la BD */
+    private array $cedulaMap = [];
+
+    /** cedulas ya asignadas en este lote (para evitar duplicados dentro del archivo) */
+    private array $cedulasBatch = [];
+
+    public function __construct(private int $empresaId)
+    {
+        $this->cedulaMap = User::where('empresa_id', $empresaId)
+            ->whereNotNull('cedula')
+            ->where('cedula', '!=', '')
+            ->pluck('id', 'cedula')
+            ->toArray();
+    }
 
     public function model(array $row): ?User
     {
@@ -35,6 +48,30 @@ class EmpleadosImport implements ToModel, WithHeadingRow, SkipsEmptyRows, WithEv
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $this->skipped[] = "{$email} (email inválido)";
             return null;
+        }
+
+        // ── Validar cédula duplicada dentro de la empresa ─────────────────────
+        if ($cedula !== '') {
+            $existingUser = User::where('email', $email)->first();
+            $ownerId      = $existingUser?->id;
+
+            // Cédula en uso por OTRO usuario de la empresa
+            if (isset($this->cedulaMap[$cedula]) && $this->cedulaMap[$cedula] !== $ownerId) {
+                $this->skipped[] = "{$email} (cédula {$cedula} ya está en uso)";
+                return null;
+            }
+
+            // Cédula duplicada dentro del mismo archivo para un email diferente
+            if (isset($this->cedulasBatch[$cedula]) && $this->cedulasBatch[$cedula] !== $email) {
+                $this->skipped[] = "{$email} (cédula {$cedula} duplicada en el archivo)";
+                return null;
+            }
+
+            $this->cedulasBatch[$cedula] = $email;
+            // Reservar en el mapa para que filas siguientes del mismo archivo la detecten
+            if (!isset($this->cedulaMap[$cedula])) {
+                $this->cedulaMap[$cedula] = $ownerId ?? 0;
+            }
         }
 
         $deptoId     = $this->parseId($row['departamento'] ?? '');

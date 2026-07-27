@@ -22,8 +22,8 @@ class EmpleadosDatosSheet implements FromArray, WithHeadings, WithTitle, WithSty
         'I' => 'Listas!$S$3:$S$1000',  // empleador
         'J' => 'Listas!$T$3:$T$1000',  // lider
         'K' => '"empleado,supervisor,admin"',
-        'L' => '"1,0"',
-        'M' => 'Listas!$U$3:$U$1000',  // sede
+        'L' => 'Listas!$U$3:$U$1000',  // sede
+        'M' => '"1,0"',                 // activo
     ];
 
     public function title(): string
@@ -45,15 +45,15 @@ class EmpleadosDatosSheet implements FromArray, WithHeadings, WithTitle, WithSty
             'empleador',
             'lider',
             'rol',
-            'activo',
             'sede',
+            'activo',
         ];
     }
 
     public function array(): array
     {
         return [
-            ['Juan Pérez', 'juan@empresa.com', '1234567890', '3001234567', '', '', '', '', '', '', 'empleado', '1', ''],
+            ['Juan Pérez', 'juan@empresa.com', '1234567890', '3001234567', '', '', '', '', '', '', 'empleado', '', '1'],
         ];
     }
 
