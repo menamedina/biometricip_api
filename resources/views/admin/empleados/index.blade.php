@@ -587,18 +587,26 @@ async function saveEmpleado(id) {
 
     const url    = id ? `/admin/empleados/${id}/update` : '/admin/empleados';
     const method = 'POST';
-    const headers = { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken };
+    const headers = { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' };
 
     try {
+        console.log('[saveEmpleado] url:', url, 'id:', id, 'payload:', payload);
         const res = await fetch(url, { method, headers, body: JSON.stringify(payload) });
+        console.log('[saveEmpleado] status:', res.status, 'ok:', res.ok);
+        const text = await res.text();
+        console.log('[saveEmpleado] response text:', text.substring(0, 500));
         if (res.ok) {
             bootstrap.Modal.getInstance(document.getElementById('empleadoModal')).hide();
             loadEmpleados(currentPage);
         } else {
-            const err = await res.json();
-            alert(Object.values(err.errors || {}).flat().join('\n') || err.message || 'Error');
+            try {
+                const err = JSON.parse(text);
+                alert(Object.values(err.errors || {}).flat().join('\n') || err.message || 'Error');
+            } catch(_) {
+                alert('Error del servidor: ' + res.status);
+            }
         }
-    } catch(e) { console.error(e); }
+    } catch(e) { console.error('[saveEmpleado] excepción:', e); }
 }
 
 async function deleteEmpleado(id) {
