@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\PublicAttendanceController;
+use App\Http\Controllers\Api\EmpleadoController as ApiEmpleadoController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\AdmsController;
 use Illuminate\Support\Facades\Route;
@@ -103,7 +104,14 @@ Route::middleware(['auth', 'admin', 'tenancy.session'])->group(function () {
 // Solo admin y supervisor
 Route::middleware(['auth', 'admin', 'role:admin,supervisor', 'tenancy.session'])->group(function () {
     Route::get('/admin/sedes',          [AdminController::class, 'sedesIndex'])->name('admin.sedes.index');
-    Route::get('/admin/empleados',      [AdminController::class, 'empleadosIndex'])->name('admin.empleados.index');
+    Route::get   ('/admin/empleados',                  [AdminController::class,       'empleadosIndex'])->name('admin.empleados.index');
+    Route::get   ('/admin/empleados/list',             [ApiEmpleadoController::class, 'index']);
+    Route::get   ('/admin/empleados/tenant-catalogs',  [AdminController::class,       'empleadosCatalogos']);
+    Route::get   ('/admin/empleados/tenant-sedes',     [AdminController::class,       'empleadosSedes']);
+    Route::get   ('/admin/empleados/{id}/detail',      [ApiEmpleadoController::class, 'show'])->where('id', '[0-9]+');
+    Route::post  ('/admin/empleados',                  [ApiEmpleadoController::class, 'store']);
+    Route::put   ('/admin/empleados/{id}',             [ApiEmpleadoController::class, 'update'])->where('id', '[0-9]+');
+    Route::delete('/admin/empleados/{id}',             [ApiEmpleadoController::class, 'destroy'])->where('id', '[0-9]+');
     Route::get('/admin/visitantes',     [AdminController::class, 'visitantesIndex'])->name('admin.visitantes.index');
     Route::get('/admin/dispositivos',   [AdminController::class, 'dispositivosIndex'])->name('admin.dispositivos.index');
     Route::get('/admin/permisos',       [AdminController::class, 'permisosIndex'])->name('admin.permisos.index');

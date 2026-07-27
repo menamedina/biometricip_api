@@ -9,8 +9,13 @@ use App\Imports\CargosImport;
 use App\Imports\DepartamentosImport;
 use App\Models\Cargo;
 use App\Models\Departamento;
+use App\Models\Empleador;
+use App\Models\Empresa;
+use App\Models\Horario;
+use App\Models\Sede;
 use App\Models\TenantTabla;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -31,7 +36,41 @@ class AdminController extends Controller
 
     public function empleadosIndex(): View
     {
-        return view('admin.empleados.index');
+        $isAdminTenant = auth()->user()->admin_tenant;
+
+        $deptos      = $isAdminTenant ? collect() : Departamento::where('is_active', true)->orderBy('nombre')->get();
+        $cargos      = $isAdminTenant ? collect() : Cargo::where('is_active', true)->orderBy('nombre')->get();
+        $horarios    = $isAdminTenant ? collect() : Horario::where('is_active', true)->orderBy('nombre')->get();
+        $sedes       = $isAdminTenant ? collect() : Sede::where('is_active', true)->orderBy('nombre')->get();
+        $empleadores = $isAdminTenant ? collect() : Empleador::where('is_active', true)->orderBy('nombre')->get();
+        $empresas    = $isAdminTenant ? Empresa::orderBy('nombre')->get() : collect();
+
+        return view('admin.empleados.index', compact('deptos', 'cargos', 'horarios', 'sedes', 'empleadores', 'empresas'));
+    }
+
+    public function empleadosCatalogos(Request $request): JsonResponse
+    {
+        $empresaId = $request->integer('empresa_id');
+        if ($empresaId && auth()->user()->admin_tenant) {
+            TenantHelper::switchTenant($empresaId);
+        }
+        return response()->json([
+            'departamentos' => Departamento::where('is_active', true)->orderBy('nombre')->get(),
+            'cargos'        => Cargo::where('is_active', true)->orderBy('nombre')->get(),
+            'horarios'      => Horario::where('is_active', true)->orderBy('nombre')->get(),
+            'empleadores'   => Empleador::where('is_active', true)->orderBy('nombre')->get(),
+        ]);
+    }
+
+    public function empleadosSedes(Request $request): JsonResponse
+    {
+        $empresaId = $request->integer('empresa_id');
+        if ($empresaId && auth()->user()->admin_tenant) {
+            TenantHelper::switchTenant($empresaId);
+        }
+        return response()->json([
+            'data' => Sede::where('is_active', true)->orderBy('nombre')->get(),
+        ]);
     }
 
     public function attendanceIndex(): View

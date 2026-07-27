@@ -198,15 +198,14 @@
 
 @push('scripts')
 <script>
-const token = localStorage.getItem('token');
+const csrfToken     = '{{ csrf_token() }}';
 const isAdminTenant = {{ auth()->user()->admin_tenant ? 'true' : 'false' }};
 let currentPage = 1;
 
-// Catálogos en memoria para resolver nombres
-let deptoMap    = {};
-let cargoMap    = {};
-let sedeMap     = {};
-let empresaMap  = {};
+let deptoMap   = {};
+let cargoMap   = {};
+let sedeMap    = {};
+let empresaMap = {};
 
 function resetForm() {
     document.getElementById('empleadoForm').reset();
@@ -216,7 +215,6 @@ function resetForm() {
     document.getElementById('empCodigoRow').style.display = 'none';
     document.getElementById('empActivo').checked = true;
     document.getElementById('empleadoModalTitle').textContent = 'Nuevo Usuario';
-    // Desmarcar todos los checkboxes de sede
     document.querySelectorAll('.emp-sede-check').forEach(cb => cb.checked = false);
     if (isAdminTenant) {
         document.getElementById('empEmpresaId').value = '';
@@ -224,61 +222,47 @@ function resetForm() {
     }
 }
 
-async function loadCatalogos() {
+function initCatalogos() {
     if (isAdminTenant) {
-        // admin_tenant: solo cargar lista de empresas; catálogos tenant se cargan al seleccionar empresa
-        const resEmp = await fetch('/api/empresas', { headers: { 'Authorization': `Bearer ${token}` } });
-        if (!resEmp.ok) {
-            console.error('Error /api/empresas:', resEmp.status, await resEmp.text());
-            return;
-        }
-        const dataEmp = await resEmp.json();
-        const selEmp        = document.getElementById('empEmpresaId');
-        const filterEmpresa = document.getElementById('filterEmpresa');
-        (dataEmp.data || []).forEach(e => {
-            empresaMap[e.id] = e.nombre;
-            selEmp.innerHTML        += `<option value="${e.id}">${e.nombre}</option>`;
-            filterEmpresa.innerHTML += `<option value="${e.id}">${e.nombre}</option>`;
-        });
-        // Al cambiar empresa: recargar catálogos tenant + sedes
-        selEmp.addEventListener('change', () => loadCatalogosParaEmpresa(selEmp.value));
-        return; // no llamar /api/catalogos sin tenant
+        @foreach($empresas as $emp)
+        empresaMap[{{ $emp->id }}] = '{{ addslashes($emp->nombre) }}';
+        document.getElementById('empEmpresaId').innerHTML  += `<option value="{{ $emp->id }}">{{ $emp->nombre }}</option>`;
+        document.getElementById('filterEmpresa').innerHTML += `<option value="{{ $emp->id }}">{{ $emp->nombre }}</option>`;
+        @endforeach
+        document.getElementById('empEmpresaId').addEventListener('change', e => loadCatalogosParaEmpresa(e.target.value));
+        return;
     }
 
-    // Usuarios normales: cargar catálogos de su propio tenant
-    const res = await fetch('/api/catalogos', { headers: { 'Authorization': `Bearer ${token}` } });
-    if (!res.ok) { console.error('Error /api/catalogos:', res.status, await res.text()); return; }
-    const data = await res.json();
-    poblarCatalogos(data);
+    poblarCatalogos({
+        departamentos: @json($deptos),
+        cargos:        @json($cargos),
+        horarios:      @json($horarios),
+        sedes:         @json($sedes),
+        empleadores:   @json($empleadores),
+    });
 }
 
 async function loadCatalogosParaEmpresa(empresaId) {
-    if (!empresaId) {
-        renderSedeOptions([], []);
-        return;
-    }
-    const headers = { 'Authorization': `Bearer ${token}`, 'X-Empresa-Id': empresaId };
+    if (!empresaId) { renderSedeOptions([], []); return; }
+
     const [resCat, resSedes] = await Promise.all([
-        fetch('/api/catalogos', { headers }),
-        fetch('/api/sedes',     { headers }),
+        fetch(`/admin/empleados/tenant-catalogs?empresa_id=${empresaId}`),
+        fetch(`/admin/empleados/tenant-sedes?empresa_id=${empresaId}`),
     ]);
-    if (resCat.ok) {
-        const data = await resCat.json();
-        poblarCatalogos(data, true);
-    }
+    if (resCat.ok)   poblarCatalogos(await resCat.json(), true);
     if (resSedes.ok) {
-        const dataSedes = await resSedes.json();
-        const sedes = dataSedes.data || [];
+        const sedes = (await resSedes.json()).data || [];
         sedeMap = { ...sedeMap, ...Object.fromEntries(sedes.map(s => [s.id, s.nombre])) };
         renderSedeOptions(sedes, []);
     }
 }
 
 function poblarCatalogos(data, soloModal = false) {
-    const deptos   = data.departamentos || [];
-    const cargos   = data.cargos        || [];
-    const horarios = data.horarios      || [];
-    const sedes    = data.sedes         || [];
+    const deptos      = data.departamentos || [];
+    const cargos      = data.cargos        || [];
+    const horarios    = data.horarios      || [];
+    const sedes       = data.sedes         || [];
+    const empleadores = data.empleadores   || [];
 
     deptoMap = Object.fromEntries(deptos.map(d => [d.id, d.nombre]));
     cargoMap = Object.fromEntries(cargos.map(c => [c.id, c.nombre]));
@@ -293,26 +277,16 @@ function poblarCatalogos(data, soloModal = false) {
     selHorario.innerHTML   = '<option value="">— Sin horario —</option>';
     selEmpleador.innerHTML = '<option value="">— Sin empleador —</option>';
 
-    deptos.filter(d => d.is_active).forEach(d => {
-        selDepto.innerHTML += `<option value="${d.id}">${d.nombre}</option>`;
-    });
-    cargos.filter(c => c.is_active).forEach(c => {
-        selCargo.innerHTML += `<option value="${c.id}">${c.nombre}</option>`;
-    });
-    horarios.filter(h => h.is_active).forEach(h => {
-        selHorario.innerHTML += `<option value="${h.id}">${h.nombre} (${h.hora_entrada?.slice(0,5)} - ${h.hora_salida?.slice(0,5)})</option>`;
-    });
-    (catalogos.empleadores || []).filter(e => e.is_active).forEach(e => {
-        selEmpleador.innerHTML += `<option value="${e.id}">${e.nombre}</option>`;
-    });
+    deptos.forEach(d => selDepto.innerHTML     += `<option value="${d.id}">${d.nombre}</option>`);
+    cargos.forEach(c => selCargo.innerHTML     += `<option value="${c.id}">${c.nombre}</option>`);
+    horarios.forEach(h => selHorario.innerHTML += `<option value="${h.id}">${h.nombre} (${h.hora_entrada?.slice(0,5)} - ${h.hora_salida?.slice(0,5)})</option>`);
+    empleadores.forEach(e => selEmpleador.innerHTML += `<option value="${e.id}">${e.nombre}</option>`);
 
     if (!soloModal) {
         renderSedeOptions(sedes, []);
         const filterDepto = document.getElementById('filterDepto');
         filterDepto.innerHTML = '<option value="">Todos los deptos.</option>';
-        deptos.forEach(d => {
-            filterDepto.innerHTML += `<option value="${d.id}">${d.nombre}</option>`;
-        });
+        deptos.forEach(d => filterDepto.innerHTML += `<option value="${d.id}">${d.nombre}</option>`);
     }
 }
 
@@ -350,19 +324,10 @@ function getSelectedSedeIds() {
 async function loadSedesParaEmpresa(empresaId, selectedIds = []) {
     const container = document.getElementById('empSedesContainer');
     container.innerHTML = '<span class="text-muted small">Cargando sedes...</span>';
-
-    if (!empresaId) {
-        renderSedeOptions([], []);
-        return;
-    }
-
+    if (!empresaId) { renderSedeOptions([], []); return; }
     try {
-        const headers = { 'Authorization': `Bearer ${token}` };
-        if (isAdminTenant) headers['X-Empresa-Id'] = empresaId;
-
-        const res   = await fetch(`/api/sedes`, { headers });
-        const data  = await res.json();
-        const sedes = data.data || [];
+        const res   = await fetch(`/admin/empleados/tenant-sedes?empresa_id=${empresaId}`);
+        const sedes = (await res.json()).data || [];
         sedeMap = { ...sedeMap, ...Object.fromEntries(sedes.map(s => [s.id, s.nombre])) };
         renderSedeOptions(sedes, selectedIds);
     } catch (e) {
@@ -372,20 +337,19 @@ async function loadSedesParaEmpresa(empresaId, selectedIds = []) {
 
 async function loadEmpleados(page = 1) {
     currentPage = page;
-    const search     = document.getElementById('filterSearch').value;
-    const deptoId    = document.getElementById('filterDepto').value;
-    const sedeId     = document.getElementById('filterSede').value;
-    const empresaId  = isAdminTenant ? document.getElementById('filterEmpresa').value : '';
-    let url = `/api/empleados?page=${page}&per_page=15`;
+    const search    = document.getElementById('filterSearch').value;
+    const deptoId   = document.getElementById('filterDepto').value;
+    const sedeId    = document.getElementById('filterSede').value;
+    const empresaId = isAdminTenant ? document.getElementById('filterEmpresa').value : '';
+    let url = `/admin/empleados/list?page=${page}&per_page=15`;
     if (search)    url += `&search=${encodeURIComponent(search)}`;
     if (deptoId)   url += `&departamento_id=${deptoId}`;
     if (sedeId)    url += `&sede_id=${sedeId}`;
     if (empresaId) url += `&empresa_id=${empresaId}`;
 
     try {
-        const res  = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await fetch(url);
         if (!res.ok) {
-            console.error('Error /api/empleados:', res.status, await res.text());
             document.getElementById('empleadosTbody').innerHTML = `<tr><td colspan="12" class="text-center text-danger py-3">Error ${res.status} al cargar empleados</td></tr>`;
             return;
         }
@@ -447,18 +411,8 @@ function renderPagination(data) {
 
 async function editEmpleado(id) {
     try {
-        // Obtener empresa_id del empleado desde la fila de la tabla
-        const row = document.querySelector(`button[onclick="editEmpleado(${id})"]`)?.closest('tr');
-        const empresaCellIndex = isAdminTenant ? 5 : -1;
-        const editHeaders = { 'Authorization': `Bearer ${token}` };
-
-        const res  = await fetch(`/api/empleados/${id}`, { headers: editHeaders });
-        if (!res.ok) {
-            const text = await res.text();
-            console.error('Error al cargar empleado:', res.status, text);
-            alert('Error ' + res.status + ': ' + (res.statusText || 'Error del servidor'));
-            return;
-        }
+        const res = await fetch(`/admin/empleados/${id}/detail`);
+        if (!res.ok) { alert('Error ' + res.status + ' al cargar empleado'); return; }
         const data = await res.json();
         const e = data.data;
         document.getElementById('empleadoId').value      = e.id;
@@ -537,20 +491,12 @@ async function saveEmpleado() {
     if (pass) payload.password = pass;
     if (!id) payload.password = pass || 'password123';
 
-    const url    = id ? `/api/empleados/${id}` : '/api/empleados';
+    const url    = id ? `/admin/empleados/${id}` : '/admin/empleados';
     const method = id ? 'PUT' : 'POST';
-
-    const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
-    if (isAdminTenant) {
-        const empId = payload.empresa_id || document.getElementById('empEmpresaId')?.value;
-        if (empId) headers['X-Empresa-Id'] = empId;
-    }
+    const headers = { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken };
 
     try {
-        const res = await fetch(url, {
-            method, headers,
-            body: JSON.stringify(payload)
-        });
+        const res = await fetch(url, { method, headers, body: JSON.stringify(payload) });
         if (res.ok) {
             bootstrap.Modal.getInstance(document.getElementById('empleadoModal')).hide();
             loadEmpleados(currentPage);
@@ -564,7 +510,10 @@ async function saveEmpleado() {
 async function deleteEmpleado(id) {
     if (!confirm('¿Desactivar este empleado?')) return;
     try {
-        await fetch(`/api/empleados/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+        await fetch(`/admin/empleados/${id}`, {
+            method: 'DELETE',
+            headers: { 'X-CSRF-TOKEN': csrfToken },
+        });
         loadEmpleados(currentPage);
     } catch(e) { console.error(e); }
 }
@@ -582,9 +531,7 @@ async function verRostros(empleadoId, nombre) {
 
 async function cargarRostros() {
     try {
-        const res  = await fetch(`/api/empleados/${rostrosEmpleadoId}/imagenes-rostro?con_imagen=true`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const res = await fetch(`/api/empleados/${rostrosEmpleadoId}/imagenes-rostro?con_imagen=true`);
         const data = await res.json();
         const imgs = data.data || [];
         const container = document.getElementById('rostrosContent');
@@ -637,7 +584,7 @@ async function eliminarRostro(imageId) {
     try {
         const res = await fetch(`/api/empleados/${rostrosEmpleadoId}/imagenes-rostro/${imageId}`, {
             method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: { 'X-CSRF-TOKEN': csrfToken },
         });
         if (res.ok) {
             await cargarRostros();
@@ -649,6 +596,6 @@ async function eliminarRostro(imageId) {
     } catch(e) { alert('Error: ' + e.message); }
 }
 
-document.addEventListener('DOMContentLoaded', () => { loadCatalogos().then(() => loadEmpleados()); });
+document.addEventListener('DOMContentLoaded', () => { initCatalogos(); loadEmpleados(); });
 </script>
 @endpush
