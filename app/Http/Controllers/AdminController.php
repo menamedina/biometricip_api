@@ -57,11 +57,10 @@ class AdminController extends Controller
             ? (int) $request->input('empresa_id', 0)
             : (int) $authUser->empresa_id;
 
-        if (!$empresaId) {
-            return back()->with('error', 'Selecciona una empresa para descargar la plantilla.');
-        }
-
         if ($authUser->admin_tenant) {
+            if (!$empresaId || !Empresa::where('id', $empresaId)->exists()) {
+                abort(422, 'Empresa no válida.');
+            }
             TenantHelper::switchTenant($empresaId);
         }
 
@@ -72,17 +71,16 @@ class AdminController extends Controller
     {
         $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv|max:10240']);
 
-        $authUser  = auth()->user();
-        $empresaId = $authUser->admin_tenant
-            ? (int) $request->input('empresa_id', 0)
-            : (int) $authUser->empresa_id;
-
-        if (!$empresaId) {
-            return back()->with('error', 'Selecciona una empresa para importar.');
-        }
+        $authUser = auth()->user();
 
         if ($authUser->admin_tenant) {
+            $empresaId = (int) $request->input('empresa_id', 0);
+            if (!$empresaId || !Empresa::where('id', $empresaId)->exists()) {
+                return response()->json(['message' => 'Empresa no válida.'], 422);
+            }
             TenantHelper::switchTenant($empresaId);
+        } else {
+            $empresaId = (int) $authUser->empresa_id;
         }
 
         $import = new EmpleadosImport($empresaId);
