@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\TenantHelper;
+use App\Models\Cargo;
+use App\Models\Departamento;
 use App\Models\TenantTabla;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -35,9 +38,99 @@ class AdminController extends Controller
         return view('admin.resumen.index');
     }
 
-    public function departamentosIndex(): View
+    public function departamentosIndex(Request $request): View
     {
-        return view('admin.departamentos.index');
+        $searchDepto = $request->input('search_depto', '');
+        $searchCargo = $request->input('search_cargo', '');
+
+        $deptos = Departamento::orderBy('nombre')
+            ->when($searchDepto, fn($q) => $q->where(function ($q) use ($searchDepto) {
+                $q->where('nombre', 'like', "%{$searchDepto}%")
+                  ->orWhere('descripcion', 'like', "%{$searchDepto}%");
+            }))
+            ->get();
+
+        $cargos = Cargo::orderBy('nombre')
+            ->when($searchCargo, fn($q) => $q->where(function ($q) use ($searchCargo) {
+                $q->where('nombre', 'like', "%{$searchCargo}%")
+                  ->orWhere('descripcion', 'like', "%{$searchCargo}%");
+            }))
+            ->get();
+
+        $allDeptoNames = Departamento::orderBy('nombre')->pluck('nombre');
+        $allCargoNames = Cargo::orderBy('nombre')->pluck('nombre');
+
+        return view('admin.departamentos.index', compact(
+            'deptos', 'cargos', 'searchDepto', 'searchCargo', 'allDeptoNames', 'allCargoNames'
+        ));
+    }
+
+    public function departamentosStore(Request $request)
+    {
+        $data = $request->validate([
+            'nombre'      => 'required|string|max:100|unique:tenant.tbl_departamentos,nombre',
+            'descripcion' => 'nullable|string|max:255',
+            'is_active'   => 'nullable|boolean',
+        ]);
+        $data['is_active'] = $request->boolean('is_active', true);
+        Departamento::create($data);
+        return redirect()->route('admin.departamentos.index', ['search_depto' => $request->input('search_depto'), 'search_cargo' => $request->input('search_cargo')])
+            ->with('success', 'Departamento creado.');
+    }
+
+    public function departamentosUpdate(Request $request, int $id)
+    {
+        $depto = Departamento::findOrFail($id);
+        $data  = $request->validate([
+            'nombre'      => 'required|string|max:100|unique:tenant.tbl_departamentos,nombre,' . $id,
+            'descripcion' => 'nullable|string|max:255',
+            'is_active'   => 'nullable|boolean',
+        ]);
+        $data['is_active'] = $request->boolean('is_active', true);
+        $depto->update($data);
+        return redirect()->route('admin.departamentos.index', ['search_depto' => $request->input('search_depto'), 'search_cargo' => $request->input('search_cargo')])
+            ->with('success', 'Departamento actualizado.');
+    }
+
+    public function departamentosDestroy(Request $request, int $id)
+    {
+        Departamento::findOrFail($id)->delete();
+        return redirect()->route('admin.departamentos.index', ['search_depto' => $request->input('search_depto'), 'search_cargo' => $request->input('search_cargo')])
+            ->with('success', 'Departamento eliminado.');
+    }
+
+    public function cargosStore(Request $request)
+    {
+        $data = $request->validate([
+            'nombre'      => 'required|string|max:100',
+            'descripcion' => 'nullable|string|max:255',
+            'is_active'   => 'nullable|boolean',
+        ]);
+        $data['is_active'] = $request->boolean('is_active', true);
+        Cargo::create($data);
+        return redirect()->route('admin.departamentos.index', ['search_depto' => $request->input('search_depto'), 'search_cargo' => $request->input('search_cargo')])
+            ->with('success', 'Cargo creado.');
+    }
+
+    public function cargosUpdate(Request $request, int $id)
+    {
+        $cargo = Cargo::findOrFail($id);
+        $data  = $request->validate([
+            'nombre'      => 'required|string|max:100',
+            'descripcion' => 'nullable|string|max:255',
+            'is_active'   => 'nullable|boolean',
+        ]);
+        $data['is_active'] = $request->boolean('is_active', true);
+        $cargo->update($data);
+        return redirect()->route('admin.departamentos.index', ['search_depto' => $request->input('search_depto'), 'search_cargo' => $request->input('search_cargo')])
+            ->with('success', 'Cargo actualizado.');
+    }
+
+    public function cargosDestroy(Request $request, int $id)
+    {
+        Cargo::findOrFail($id)->delete();
+        return redirect()->route('admin.departamentos.index', ['search_depto' => $request->input('search_depto'), 'search_cargo' => $request->input('search_cargo')])
+            ->with('success', 'Cargo eliminado.');
     }
 
     public function horariosIndex(): View

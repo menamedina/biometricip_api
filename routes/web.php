@@ -107,7 +107,13 @@ Route::middleware(['auth', 'admin', 'role:admin,supervisor', 'tenancy.session'])
     Route::get('/admin/visitantes',     [AdminController::class, 'visitantesIndex'])->name('admin.visitantes.index');
     Route::get('/admin/dispositivos',   [AdminController::class, 'dispositivosIndex'])->name('admin.dispositivos.index');
     Route::get('/admin/permisos',       [AdminController::class, 'permisosIndex'])->name('admin.permisos.index');
-    Route::get('/admin/departamentos',  [AdminController::class, 'departamentosIndex'])->name('admin.departamentos.index');
+    Route::get   ('/admin/departamentos',          [AdminController::class, 'departamentosIndex'])->name('admin.departamentos.index');
+    Route::post  ('/admin/departamentos',          [AdminController::class, 'departamentosStore'])->name('admin.departamentos.store');
+    Route::put   ('/admin/departamentos/{id}',     [AdminController::class, 'departamentosUpdate'])->name('admin.departamentos.update');
+    Route::delete('/admin/departamentos/{id}',     [AdminController::class, 'departamentosDestroy'])->name('admin.departamentos.destroy');
+    Route::post  ('/admin/cargos',                 [AdminController::class, 'cargosStore'])->name('admin.cargos.store');
+    Route::put   ('/admin/cargos/{id}',            [AdminController::class, 'cargosUpdate'])->name('admin.cargos.update');
+    Route::delete('/admin/cargos/{id}',            [AdminController::class, 'cargosDestroy'])->name('admin.cargos.destroy');
     Route::get('/admin/horarios',       [AdminController::class, 'horariosIndex'])->name('admin.horarios.index');
     Route::get('/admin/festivos',       [AdminController::class, 'festivosIndex'])->name('admin.festivos.index');
     Route::get('/admin/empresas',       [AdminController::class, 'empresasIndex'])->name('admin.empresas.index');
