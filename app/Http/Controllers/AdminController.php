@@ -6,6 +6,7 @@ use App\Helpers\TenantHelper;
 use App\Models\Cargo;
 use App\Models\Departamento;
 use App\Models\TenantTabla;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -94,9 +95,58 @@ class AdminController extends Controller
 
     public function departamentosDestroy(Request $request, int $id)
     {
-        Departamento::findOrFail($id)->delete();
-        return redirect()->route('admin.departamentos.index', ['search_depto' => $request->input('search_depto'), 'search_cargo' => $request->input('search_cargo')])
+        $depto = Departamento::findOrFail($id);
+        $back  = ['search_depto' => $request->input('search_depto'), 'search_cargo' => $request->input('search_cargo')];
+
+        if (User::where('departamento_id', $id)->exists()) {
+            $depto->update(['is_active' => false]);
+            return redirect()->route('admin.departamentos.index', $back)
+                ->with('success', 'El departamento tiene empleados asignados y fue deshabilitado en lugar de eliminado.');
+        }
+
+        $depto->delete();
+        return redirect()->route('admin.departamentos.index', $back)
             ->with('success', 'Departamento eliminado.');
+    }
+
+    public function departamentosImport(Request $request)
+    {
+        $request->validate(['file' => 'required|file|mimes:csv,txt|max:2048']);
+        $back = ['search_depto' => $request->input('search_depto'), 'search_cargo' => $request->input('search_cargo')];
+
+        $handle   = fopen($request->file('file')->getRealPath(), 'r');
+        $header   = fgetcsv($handle); // skip header row
+        $existing = Departamento::pluck('nombre')->map(fn($n) => mb_strtolower(trim($n)))->toArray();
+        $seenInFile = [];
+        $imported = 0;
+        $skipped  = [];
+
+        while (($row = fgetcsv($handle)) !== false) {
+            $nombre = trim($row[0] ?? '');
+            if ($nombre === '') continue;
+
+            $key = mb_strtolower($nombre);
+            if (in_array($key, $existing) || in_array($key, $seenInFile)) {
+                $skipped[] = $nombre;
+                continue;
+            }
+
+            Departamento::create([
+                'nombre'      => $nombre,
+                'descripcion' => trim($row[1] ?? ''),
+                'is_active'   => isset($row[2]) ? (bool) $row[2] : true,
+            ]);
+            $seenInFile[] = $key;
+            $imported++;
+        }
+        fclose($handle);
+
+        $msg = "Importación completada: {$imported} registros importados.";
+        if ($skipped) {
+            $msg .= ' Omitidos por nombre duplicado: ' . implode(', ', $skipped) . '.';
+        }
+
+        return redirect()->route('admin.departamentos.index', $back)->with('success', $msg);
     }
 
     public function cargosStore(Request $request)
@@ -128,9 +178,58 @@ class AdminController extends Controller
 
     public function cargosDestroy(Request $request, int $id)
     {
-        Cargo::findOrFail($id)->delete();
-        return redirect()->route('admin.departamentos.index', ['search_depto' => $request->input('search_depto'), 'search_cargo' => $request->input('search_cargo')])
+        $cargo = Cargo::findOrFail($id);
+        $back  = ['search_depto' => $request->input('search_depto'), 'search_cargo' => $request->input('search_cargo')];
+
+        if (User::where('cargo_id', $id)->exists()) {
+            $cargo->update(['is_active' => false]);
+            return redirect()->route('admin.departamentos.index', $back)
+                ->with('success', 'El cargo tiene empleados asignados y fue deshabilitado en lugar de eliminado.');
+        }
+
+        $cargo->delete();
+        return redirect()->route('admin.departamentos.index', $back)
             ->with('success', 'Cargo eliminado.');
+    }
+
+    public function cargosImport(Request $request)
+    {
+        $request->validate(['file' => 'required|file|mimes:csv,txt|max:2048']);
+        $back = ['search_depto' => $request->input('search_depto'), 'search_cargo' => $request->input('search_cargo')];
+
+        $handle   = fopen($request->file('file')->getRealPath(), 'r');
+        $header   = fgetcsv($handle); // skip header row
+        $existing = Cargo::pluck('nombre')->map(fn($n) => mb_strtolower(trim($n)))->toArray();
+        $seenInFile = [];
+        $imported = 0;
+        $skipped  = [];
+
+        while (($row = fgetcsv($handle)) !== false) {
+            $nombre = trim($row[0] ?? '');
+            if ($nombre === '') continue;
+
+            $key = mb_strtolower($nombre);
+            if (in_array($key, $existing) || in_array($key, $seenInFile)) {
+                $skipped[] = $nombre;
+                continue;
+            }
+
+            Cargo::create([
+                'nombre'      => $nombre,
+                'descripcion' => trim($row[1] ?? ''),
+                'is_active'   => isset($row[2]) ? (bool) $row[2] : true,
+            ]);
+            $seenInFile[] = $key;
+            $imported++;
+        }
+        fclose($handle);
+
+        $msg = "Importación completada: {$imported} registros importados.";
+        if ($skipped) {
+            $msg .= ' Omitidos por nombre duplicado: ' . implode(', ', $skipped) . '.';
+        }
+
+        return redirect()->route('admin.departamentos.index', $back)->with('success', $msg);
     }
 
     public function horariosIndex(): View

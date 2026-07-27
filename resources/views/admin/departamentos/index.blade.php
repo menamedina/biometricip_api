@@ -12,7 +12,13 @@
 
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
+            <i class="fa-solid fa-circle-check me-1"></i> {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+    @if($errors->any())
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ $errors->first() }}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     @endif
@@ -24,9 +30,15 @@
                 <div class="card-header d-block">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h5 class="mb-0"><i class="fa-solid fa-building-columns me-1"></i> Departamentos</h5>
-                        <button class="btn btn-sm btn-primary" onclick="openDeptoModal()">
-                            <i class="fa-solid fa-plus me-1"></i> Nuevo
-                        </button>
+                        <div class="d-flex gap-1">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="openImportModal('depto')"
+                                title="Importar CSV">
+                                <i class="fa-solid fa-file-import"></i>
+                            </button>
+                            <button class="btn btn-sm btn-primary" onclick="openDeptoModal()">
+                                <i class="fa-solid fa-plus me-1"></i> Nuevo
+                            </button>
+                        </div>
                     </div>
                     <form method="GET" action="{{ route('admin.departamentos.index') }}" id="formSearchDepto">
                         <input type="hidden" name="search_cargo" value="{{ $searchCargo }}">
@@ -113,9 +125,15 @@
                 <div class="card-header d-block">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h5 class="mb-0"><i class="fa-solid fa-user-tie me-1"></i> Cargos</h5>
-                        <button class="btn btn-sm btn-primary" onclick="openCargoModal()">
-                            <i class="fa-solid fa-plus me-1"></i> Nuevo
-                        </button>
+                        <div class="d-flex gap-1">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="openImportModal('cargo')"
+                                title="Importar CSV">
+                                <i class="fa-solid fa-file-import"></i>
+                            </button>
+                            <button class="btn btn-sm btn-primary" onclick="openCargoModal()">
+                                <i class="fa-solid fa-plus me-1"></i> Nuevo
+                            </button>
+                        </div>
                     </div>
                     <form method="GET" action="{{ route('admin.departamentos.index') }}" id="formSearchCargo">
                         <input type="hidden" name="search_depto" value="{{ $searchDepto }}">
@@ -194,6 +212,45 @@
                     </table>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+{{-- Modal Import --}}
+<div class="modal fade" id="importModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="importModalTitle">Importar CSV</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="importForm" method="POST" enctype="multipart/form-data">
+                @csrf
+                <input type="hidden" name="search_depto" value="{{ $searchDepto }}">
+                <input type="hidden" name="search_cargo" value="{{ $searchCargo }}">
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">
+                        El archivo CSV debe tener las columnas en este orden:
+                        <code>nombre, descripcion, is_active</code><br>
+                        <span class="text-muted">La primera fila (encabezado) se omite. <code>is_active</code> es opcional (1 = activo, 0 = inactivo).</span>
+                    </p>
+                    <div class="mb-3">
+                        <a id="importTemplateLink" href="#" download class="btn btn-outline-secondary btn-sm mb-3">
+                            <i class="fa-solid fa-download me-1"></i> Descargar plantilla
+                        </a>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label">Archivo CSV <span class="text-danger">*</span></label>
+                        <input type="file" name="file" class="form-control" accept=".csv,.txt" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa-solid fa-file-import me-1"></i> Importar
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -379,6 +436,27 @@ function acHighlight(listId, items) {
     items.forEach((li, i) => li.classList.toggle('ac-active', i === acCursor[listId]));
 }
 
+// ── Import ────────────────────────────────────────────────────────────────────
+const importDeptoUrl = "{{ route('admin.departamentos.import') }}";
+const importCargoUrl = "{{ route('admin.cargos.import') }}";
+
+const deptoTemplate = "nombre,descripcion,is_active\nRecursos Humanos,Gestión del personal,1\nTI,Tecnología e innovación,1\n";
+const cargoTemplate = "nombre,descripcion,is_active\nGerente,Dirección general,1\nAnalista,Análisis de datos,1\n";
+
+function openImportModal(type) {
+    const isDepto = type === 'depto';
+    document.getElementById('importModalTitle').textContent = isDepto ? 'Importar Departamentos' : 'Importar Cargos';
+    document.getElementById('importForm').action = isDepto ? importDeptoUrl : importCargoUrl;
+
+    const blob = new Blob([isDepto ? deptoTemplate : cargoTemplate], { type: 'text/csv' });
+    const link = document.getElementById('importTemplateLink');
+    link.href = URL.createObjectURL(blob);
+    link.download = isDepto ? 'plantilla_departamentos.csv' : 'plantilla_cargos.csv';
+
+    document.querySelector('#importForm input[type=file]').value = '';
+    new bootstrap.Modal(document.getElementById('importModal')).show();
+}
+
 // ── Modales ───────────────────────────────────────────────────────────────────
 const storeDeptoUrl  = "{{ route('admin.departamentos.store') }}";
 const updateDeptoUrl = (id) => `{{ url('admin/departamentos') }}/${id}`;
@@ -393,7 +471,11 @@ function openDeptoModal(data = null) {
     document.getElementById('deptoModalTitle').textContent = data ? 'Editar Departamento' : 'Nuevo Departamento';
     form.action = data ? updateDeptoUrl(data.id) : storeDeptoUrl;
     document.getElementById('deptoMethod').innerHTML  = data ? '<input type="hidden" name="_method" value="PUT">' : '';
-    new bootstrap.Modal(document.getElementById('deptoModal')).show();
+    const modal = new bootstrap.Modal(document.getElementById('deptoModal'));
+    document.getElementById('deptoModal').addEventListener('shown.bs.modal', () => {
+        document.getElementById('deptoNombre').focus();
+    }, { once: true });
+    modal.show();
 }
 
 function openCargoModal(data = null) {
@@ -404,7 +486,11 @@ function openCargoModal(data = null) {
     document.getElementById('cargoModalTitle').textContent = data ? 'Editar Cargo' : 'Nuevo Cargo';
     form.action = data ? updateCargoUrl(data.id) : storeCargoUrl;
     document.getElementById('cargoMethod').innerHTML  = data ? '<input type="hidden" name="_method" value="PUT">' : '';
-    new bootstrap.Modal(document.getElementById('cargoModal')).show();
+    const modal = new bootstrap.Modal(document.getElementById('cargoModal'));
+    document.getElementById('cargoModal').addEventListener('shown.bs.modal', () => {
+        document.getElementById('cargoNombre').focus();
+    }, { once: true });
+    modal.show();
 }
 </script>
 @endpush
