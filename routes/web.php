@@ -7,6 +7,9 @@ use App\Http\Controllers\Api\EmpleadoController as ApiEmpleadoController;
 use App\Http\Controllers\Api\SedeController as ApiSedeController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\AdmsController;
+use App\Http\Controllers\Api\AttendanceController as ApiAttendanceController;
+use App\Http\Controllers\Api\PermisoController as ApiPermisoController;
+use App\Http\Controllers\Api\DeviceController as ApiDeviceController;
 use Illuminate\Support\Facades\Route;
 
 // ZKTeco ADMS PUSH — sin autenticación ni CSRF
@@ -101,6 +104,8 @@ Route::middleware(['auth', 'admin', 'tenancy.session'])->group(function () {
     Route::get('/admin',            [AdminController::class, 'dashboard'])->name('admin.dashboard');
     Route::get('/admin/attendance', [AdminController::class, 'attendanceIndex'])->name('admin.attendance.index');
     Route::get('/admin/resumen',    [AdminController::class, 'resumenIndex'])->name('admin.resumen.index');
+    Route::get('/admin/attendance/records', [ApiAttendanceController::class, 'index']);
+    Route::get('/admin/attendance/stats',   [ApiAttendanceController::class, 'stats']);
 });
 
 // Solo admin y supervisor
@@ -166,6 +171,23 @@ Route::middleware(['auth', 'admin', 'role:admin,supervisor', 'tenancy.session'])
     Route::post  ('/admin/empresas/{id}/agent-token',   [\App\Http\Controllers\Api\EmpresaController::class, 'generateAgentToken']);
     Route::delete('/admin/empresas/{id}/agent-token',   [\App\Http\Controllers\Api\EmpresaController::class, 'revokeAgentToken']);
     Route::get('/admin/reports/export', [ReportController::class, 'attendance'])->name('admin.reports.export');
+    // Permisos
+    Route::get   ('/admin/permisos/list',            [ApiPermisoController::class, 'index']);
+    Route::post  ('/admin/permisos',                 [ApiPermisoController::class, 'store']);
+    Route::post  ('/admin/permisos/{id}/aprobar',    [ApiPermisoController::class, 'aprobar']);
+    Route::post  ('/admin/permisos/{id}/rechazar',   [ApiPermisoController::class, 'rechazar']);
+    Route::delete('/admin/permisos/{id}',            [ApiPermisoController::class, 'destroy']);
+    // Dispositivos biométricos
+    Route::post  ('/admin/dispositivos/ping',              [ApiDeviceController::class, 'ping']);
+    Route::get   ('/admin/dispositivos/list',              [ApiDeviceController::class, 'index']);
+    Route::post  ('/admin/dispositivos',                   [ApiDeviceController::class, 'store']);
+    Route::put   ('/admin/dispositivos/{id}',              [ApiDeviceController::class, 'update']);
+    Route::delete('/admin/dispositivos/{id}',              [ApiDeviceController::class, 'destroy']);
+    Route::get   ('/admin/dispositivos/{id}/test',         [ApiDeviceController::class, 'testConnection']);
+    Route::get   ('/admin/dispositivos/{id}/users',        [ApiDeviceController::class, 'deviceUsers']);
+    Route::post  ('/admin/dispositivos/{id}/sync',         [ApiDeviceController::class, 'syncAttendance']);
+    Route::post  ('/admin/dispositivos/{id}/clear',        [ApiDeviceController::class, 'clearDevice']);
+    Route::get   ('/admin/dispositivos/{id}/sync-history', [ApiDeviceController::class, 'syncHistory']);
 });
 
 Route::middleware(['auth', 'admin', 'admin.tenant', 'tenancy.session'])->group(function () {

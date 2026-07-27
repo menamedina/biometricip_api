@@ -167,6 +167,7 @@
 
 @push('scripts')
 <script>
+const csrfToken = '{{ csrf_token() }}';
 let gMap = null, officeMarker = null, geoCircle = null, attendanceMarkers = [];
 let qrSedeId = null, qrSedeName = null, qrSedeRadio = 150;
 let gmapsReady = false;
@@ -236,7 +237,7 @@ function initMap(lat, lng, radio, nombre, direccion) {
 
 async function loadDashboard() {
     if (!esEmpleado) try {
-        const res   = await fetch('/api/attendance/stats', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
+        const res   = await fetch('/admin/attendance/stats', { headers: { 'X-CSRF-TOKEN': csrfToken } });
         const stats = await res.json();
         const total    = stats.total_empleados || 0;
         const presentes = stats.presentes || 0;
@@ -260,7 +261,7 @@ async function loadDashboard() {
     } catch(e) { console.error('Stats:', e); }
 
     try {
-        const res  = await fetch('/api/attendance?per_page=20&only_mine=' + (esEmpleado ? 1 : 0), { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
+        const res  = await fetch('/admin/attendance/records?per_page=20&only_mine=' + (esEmpleado ? 1 : 0), { headers: { 'X-CSRF-TOKEN': csrfToken } });
         const data = await res.json();
         const tbody = document.getElementById('attendanceTbody');
 
@@ -320,7 +321,7 @@ async function loadQR() {
     icon.classList.add('fa-spin');
     try {
         if (!qrSedeId) {
-            const res  = await fetch('/api/sedes', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
+            const res  = await fetch('/admin/sedes/list', { headers: { 'X-CSRF-TOKEN': csrfToken } });
             const data = await res.json();
             const sede = data.data?.find(s => s.is_active) || data.data?.[0];
             if (!sede) {
@@ -338,7 +339,7 @@ async function loadQR() {
             if (gmapsReady) initMap(parseFloat(sede.lat), parseFloat(sede.lng), qrSedeRadio, sede.nombre, sede.direccion);
         }
 
-        const res  = await fetch(`/api/sedes/${qrSedeId}/qr`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
+        const res  = await fetch(`/admin/sedes/${qrSedeId}/qr`, { headers: { 'X-CSRF-TOKEN': csrfToken } });
         const data = await res.json();
         if (!data.qr_value) return;
 

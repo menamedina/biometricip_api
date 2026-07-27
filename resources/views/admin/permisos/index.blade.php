@@ -115,7 +115,7 @@
 
 @push('scripts')
 <script>
-const token = localStorage.getItem('token');
+const csrfToken = '{{ csrf_token() }}';
 const tipoLabels = {
     salida_temprana: 'Salida Temprana',
     llegada_tarde:   'Llegada Tarde',
@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function loadEmpleados() {
-    const res  = await fetch('/api/empleados?per_page=500', { headers: { 'Authorization': `Bearer ${token}` } });
+    const res  = await fetch('/admin/empleados/list?per_page=500', { headers: { 'X-CSRF-TOKEN': csrfToken } });
     const data = await res.json();
     const empleados = data.data || [];
     const sel = document.getElementById('filterEmpleado');
@@ -156,13 +156,13 @@ async function loadPermisos(page = 1) {
     const to      = document.getElementById('filterTo').value;
     const userId  = document.getElementById('filterEmpleado').value;
     const estado  = document.getElementById('filterEstado').value;
-    let url = `/api/permisos?page=${page}&per_page=20`;
+    let url = `/admin/permisos/list?page=${page}&per_page=20`;
     if (from)   url += `&date_from=${from}`;
     if (to)     url += `&date_to=${to}`;
     if (userId) url += `&user_id=${userId}`;
     if (estado) url += `&estado=${estado}`;
 
-    const res  = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+    const res  = await fetch(url, { headers: { 'X-CSRF-TOKEN': csrfToken } });
     const data = await res.json();
     const tbody = document.getElementById('permisosTbody');
     const items = data.data || [];
@@ -227,9 +227,9 @@ async function savePermiso() {
         horas_permiso: parseFloat(horas),
         motivo:        document.getElementById('pMotivo').value,
     };
-    const res = await fetch('/api/permisos', {
+    const res = await fetch('/admin/permisos', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
         body: JSON.stringify(payload),
     });
     if (res.ok) {
@@ -245,19 +245,19 @@ async function savePermiso() {
 
 async function aprobar(id) {
     if (!confirm('¿Aprobar este permiso?')) return;
-    await fetch(`/api/permisos/${id}/aprobar`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+    await fetch(`/admin/permisos/${id}/aprobar`, { method: 'POST', headers: { 'X-CSRF-TOKEN': csrfToken } });
     loadPermisos();
 }
 
 async function rechazar(id) {
     if (!confirm('¿Rechazar este permiso?')) return;
-    await fetch(`/api/permisos/${id}/rechazar`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+    await fetch(`/admin/permisos/${id}/rechazar`, { method: 'POST', headers: { 'X-CSRF-TOKEN': csrfToken } });
     loadPermisos();
 }
 
 async function eliminar(id) {
     if (!confirm('¿Eliminar este permiso?')) return;
-    await fetch(`/api/permisos/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+    await fetch(`/admin/permisos/${id}`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': csrfToken } });
     loadPermisos();
 }
 </script>

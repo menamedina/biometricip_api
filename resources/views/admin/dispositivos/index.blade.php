@@ -284,13 +284,13 @@
 
 @push('scripts')
 <script>
-const token = localStorage.getItem('token');
+const csrfToken = '{{ csrf_token() }}';
 let sedesCache = [];
 
 // ── Cargar sedes para el select ──────────────────────────────────────────────
 async function loadSedes() {
     try {
-        const res = await fetch('/api/sedes', { headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await fetch('/admin/sedes/list', { headers: { 'X-CSRF-TOKEN': csrfToken } });
         const data = await res.json();
         sedesCache = data.data || [];
         const select = document.getElementById('deviceSede');
@@ -302,7 +302,7 @@ async function loadSedes() {
 // ── Cargar dispositivos ──────────────────────────────────────────────────────
 async function loadDevices() {
     try {
-        const res = await fetch('/api/devices', { headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await fetch('/admin/dispositivos/list', { headers: { 'X-CSRF-TOKEN': csrfToken } });
         const devices = await res.json();
         const tbody = document.getElementById('devicesTbody');
 
@@ -401,7 +401,7 @@ async function saveDevice() {
         return;
     }
 
-    const url = id ? `/api/devices/${id}` : '/api/devices';
+    const url = id ? `/admin/dispositivos/${id}` : '/admin/dispositivos';
     const method = id ? 'PUT' : 'POST';
 
     try {
@@ -411,7 +411,7 @@ async function saveDevice() {
 
         const res = await fetch(url, {
             method,
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
             body: JSON.stringify(payload),
         });
 
@@ -443,7 +443,7 @@ async function deleteDevice(id) {
     });
     if (!result.isConfirmed) return;
     try {
-        await fetch(`/api/devices/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+        await fetch(`/admin/dispositivos/${id}`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': csrfToken } });
         Swal.fire({ icon: 'success', title: 'Eliminado', timer: 1500, showConfirmButton: false });
         loadDevices();
     } catch(e) { console.error(e); }
@@ -475,9 +475,9 @@ async function doPing() {
     result.style.display = 'none';
 
     try {
-        const res = await fetch('/api/devices/ping', {
+        const res = await fetch('/admin/dispositivos/ping', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
             body: JSON.stringify({ ip, puerto }),
         });
         const data = await res.json();
@@ -518,7 +518,7 @@ async function testDevice(id) {
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
 
     try {
-        const res = await fetch(`/api/devices/${id}/test`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await fetch(`/admin/dispositivos/${id}/test`, { headers: { 'X-CSRF-TOKEN': csrfToken } });
         const data = await res.json();
 
         if (res.ok && data.connected) {
@@ -551,9 +551,9 @@ async function syncDevice(id, nombre) {
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
 
     try {
-        const res = await fetch(`/api/devices/${id}/sync`, {
+        const res = await fetch(`/admin/dispositivos/${id}/sync`, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
+            headers: { 'X-CSRF-TOKEN': csrfToken },
         });
         const data = await res.json();
 
@@ -597,9 +597,9 @@ async function clearDevice(id, nombre) {
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
 
     try {
-        const res = await fetch(`/api/devices/${id}/clear`, {
+        const res = await fetch(`/admin/dispositivos/${id}/clear`, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
+            headers: { 'X-CSRF-TOKEN': csrfToken },
         });
         const data = await res.json();
 
@@ -629,7 +629,7 @@ async function showDeviceUsers(id, nombre) {
     new bootstrap.Modal(document.getElementById('usersModal')).show();
 
     try {
-        const res = await fetch(`/api/devices/${id}/users`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await fetch(`/admin/dispositivos/${id}/users`, { headers: { 'X-CSRF-TOKEN': csrfToken } });
         const data = await res.json();
 
         document.getElementById('usersTotal').textContent = data.total + ' total';
@@ -669,7 +669,7 @@ async function showSyncHistory(id, nombre) {
     new bootstrap.Modal(document.getElementById('syncHistoryModal')).show();
 
     try {
-        const res = await fetch(`/api/devices/${id}/sync-history`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await fetch(`/admin/dispositivos/${id}/sync-history`, { headers: { 'X-CSRF-TOKEN': csrfToken } });
         const logs = await res.json();
         const tbody = document.getElementById('syncHistoryTbody');
 
@@ -721,8 +721,8 @@ function searchEmpleados() {
         }
 
         try {
-            const res = await fetch(`/api/empleados?search=${encodeURIComponent(q)}&per_page=10`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+            const res = await fetch(`/admin/empleados/list?search=${encodeURIComponent(q)}&per_page=10`, {
+                headers: { 'X-CSRF-TOKEN': csrfToken }
             });
             const data = await res.json();
             const empleados = data.data || [];
@@ -761,9 +761,9 @@ async function asignarCedula(empleadoId, nombre) {
     if (!result.isConfirmed) return;
 
     try {
-        const res = await fetch(`/api/empleados/${empleadoId}`, {
+        const res = await fetch(`/admin/empleados/${empleadoId}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
             body: JSON.stringify({ cedula }),
         });
 
