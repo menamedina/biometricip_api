@@ -167,7 +167,7 @@
 
 @push('scripts')
 <script>
-const token = localStorage.getItem('token');
+const csrfToken = '{{ csrf_token() }}';
 let deptoMap = {};
 let allRegistros = []; // guardar todos los registros para acceder al editar
 
@@ -191,8 +191,8 @@ function inicioSemana() {
 
 async function cargarFiltros() {
     const [resE, resCat] = await Promise.all([
-        fetch('/api/empleados?per_page=500', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch('/api/catalogos',              { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch('/admin/empleados/list?per_page=500', { headers: { 'X-CSRF-TOKEN': csrfToken } }),
+        fetch('/admin/catalogos',                   { headers: { 'X-CSRF-TOKEN': csrfToken } }),
     ]);
     const dataE   = await resE.json();
     const dataCat = await resCat.json();
@@ -225,14 +225,14 @@ async function cargarResumen() {
 
     if (!from || !to) { alert('Selecciona el rango de fechas.'); return; }
 
-    let url = `/api/attendance?per_page=2000&date_from=${from}&date_to=${to}`;
+    let url = `/admin/attendance/records?per_page=2000&date_from=${from}&date_to=${to}`;
     if (userId)  url += `&user_id=${userId}`;
 
     const tbody = document.getElementById('resumenTbody');
     tbody.innerHTML = '<tr><td colspan="14" class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div> Cargando...</td></tr>';
 
     try {
-        const res  = await fetch(url, { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' } });
+        const res  = await fetch(url, { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
         if (!res.ok) {
             const err = await res.json().catch(() => ({}));
             throw new Error(err.message || `HTTP ${res.status}`);
@@ -371,10 +371,10 @@ async function guardarEdicion() {
     const tipo = document.getElementById('editTipo').value;
 
     try {
-        const res = await fetch(`/api/attendance/${id}`, {
+        const res = await fetch(`/admin/attendance/${id}`, {
             method: 'PUT',
             headers: {
-                'Authorization': `Bearer ${token}`,
+                'X-CSRF-TOKEN': csrfToken,
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
             },
@@ -424,10 +424,10 @@ async function guardarManual() {
     const fechaHora = `${fecha} ${hora}:00`;
 
     try {
-        const res = await fetch('/api/attendance/manual', {
+        const res = await fetch('/admin/attendance/manual', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${token}`,
+                'X-CSRF-TOKEN': csrfToken,
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
             },
