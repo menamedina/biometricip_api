@@ -68,7 +68,7 @@
 
 @push('scripts')
 <script>
-const token = localStorage.getItem('token');
+const csrfToken = '{{ csrf_token() }}';
 
 // Llenar select de años
 const currentYear = new Date().getFullYear();
@@ -82,9 +82,9 @@ for (let y = currentYear + 1; y >= currentYear - 2; y--) {
 
 async function loadFestivos() {
     const year = document.getElementById('filterYear').value;
-    let url = '/api/festivos';
+    let url = '/admin/festivos/list';
     if (year) url += `?year=${year}`;
-    const res  = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+    const res  = await fetch(url);
     const data = await res.json();
     const tbody = document.getElementById('festivosTbody');
     if (!data.data?.length) {
@@ -121,11 +121,11 @@ async function saveFestivo() {
     if (!fecha || !nombre) { showError('festivoError', 'Fecha y nombre son obligatorios.'); return; }
 
     const payload = { fecha, nombre, is_active: document.getElementById('fActivo').checked };
-    const url    = id ? `/api/festivos/${id}` : '/api/festivos';
+    const url    = id ? `/admin/festivos/${id}` : '/admin/festivos';
     const method = id ? 'PUT' : 'POST';
 
     const res = await fetch(url, {
-        method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        method, headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
         body: JSON.stringify(payload),
     });
     if (res.ok) {
@@ -139,7 +139,7 @@ async function saveFestivo() {
 
 async function deleteFestivo(id) {
     if (!confirm('¿Eliminar este festivo?')) return;
-    await fetch(`/api/festivos/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+    await fetch(`/admin/festivos/${id}`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': csrfToken } });
     loadFestivos();
 }
 

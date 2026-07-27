@@ -15,7 +15,8 @@ class EmpresaController extends Controller
 {
     private function checkAdminTenant(Request $request): ?JsonResponse
     {
-        if (!$request->user()->admin_tenant) {
+        $user = $request->user() ?? auth()->user();
+        if (!$user?->admin_tenant) {
             return response()->json(['message' => 'Acceso restringido a admin multi-empresa.'], 403);
         }
         return null;

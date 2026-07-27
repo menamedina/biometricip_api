@@ -67,6 +67,9 @@
                     <button class="sidenav-toggle-button btn btn-primary btn-icon">
                         <i class="ti ti-menu-4"></i>
                     </button>
+                    <span class="fw-semibold text-dark ms-2 d-none d-md-inline" style="font-size:1rem;">
+                        {{ auth()->user()->empresa?->nombre ?? 'BiometricIP' }}
+                    </span>
                 </div>
                 <ul class="list-unstyled topbar-nav float-end mb-0 d-flex align-items-center">
 
@@ -87,7 +90,6 @@
                             </span>
                             <span class="d-lg-block d-none">
                                 <span class="account-user-name">{{ auth()->user()->name ?? 'Admin' }}</span>
-                                <span class="account-position fw-semibold text-muted fs-12 d-block">{{ auth()->user()->empresa?->nombre ?? 'BiometricIP' }}</span>
                             </span>
                         </a>
                         <div class="dropdown-menu dropdown-menu-end">

@@ -152,8 +152,19 @@ Route::middleware(['auth', 'admin', 'role:admin,supervisor', 'tenancy.session'])
     Route::post  ('/admin/horarios',          [\App\Http\Controllers\Api\HorarioController::class, 'store']);
     Route::put   ('/admin/horarios/{id}',     [\App\Http\Controllers\Api\HorarioController::class, 'update']);
     Route::delete('/admin/horarios/{id}',     [\App\Http\Controllers\Api\HorarioController::class, 'destroy']);
-    Route::get('/admin/festivos',       [AdminController::class, 'festivosIndex'])->name('admin.festivos.index');
-    Route::get('/admin/empresas',       [AdminController::class, 'empresasIndex'])->name('admin.empresas.index');
+    Route::get   ('/admin/festivos',       [AdminController::class, 'festivosIndex'])->name('admin.festivos.index');
+    Route::get   ('/admin/festivos/list',  [\App\Http\Controllers\Api\FestivoController::class, 'index']);
+    Route::post  ('/admin/festivos',       [\App\Http\Controllers\Api\FestivoController::class, 'store']);
+    Route::put   ('/admin/festivos/{id}',  [\App\Http\Controllers\Api\FestivoController::class, 'update']);
+    Route::delete('/admin/festivos/{id}',  [\App\Http\Controllers\Api\FestivoController::class, 'destroy']);
+    Route::get   ('/admin/empresas',                    [AdminController::class, 'empresasIndex'])->name('admin.empresas.index');
+    Route::get   ('/admin/empresas/list',               [\App\Http\Controllers\Api\EmpresaController::class, 'index']);
+    Route::get   ('/admin/empresas/{id}',               [\App\Http\Controllers\Api\EmpresaController::class, 'showById']);
+    Route::post  ('/admin/empresas',                    [\App\Http\Controllers\Api\EmpresaController::class, 'store']);
+    Route::put   ('/admin/empresas/{id}',               [\App\Http\Controllers\Api\EmpresaController::class, 'updateById']);
+    Route::delete('/admin/empresas/{id}',               [\App\Http\Controllers\Api\EmpresaController::class, 'destroyById']);
+    Route::post  ('/admin/empresas/{id}/agent-token',   [\App\Http\Controllers\Api\EmpresaController::class, 'generateAgentToken']);
+    Route::delete('/admin/empresas/{id}/agent-token',   [\App\Http\Controllers\Api\EmpresaController::class, 'revokeAgentToken']);
     Route::get('/admin/reports/export', [ReportController::class, 'attendance'])->name('admin.reports.export');
 });
 

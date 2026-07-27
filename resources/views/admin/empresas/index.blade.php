@@ -182,7 +182,7 @@
 
 @push('scripts')
 <script>
-const token = localStorage.getItem('token');
+const csrfToken = '{{ csrf_token() }}';
 
 const planBadge = {
     bronce: '<span class="badge bg-warning text-dark">Bronce</span>',
@@ -208,9 +208,7 @@ function resetForm() {
 
 async function loadEmpresas() {
     try {
-        const res = await fetch('/api/empresas', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const res = await fetch('/admin/empresas/list');
         const data = await res.json();
         console.log('Empresas response:', res.status, data);
         if (!res.ok) {
@@ -250,9 +248,7 @@ async function loadEmpresas() {
 
 async function editEmpresa(id) {
     try {
-        const res = await fetch(`/api/empresas/${id}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const res = await fetch(`/admin/empresas/${id}`);
         const data = await res.json();
         const e = data.data;
 
@@ -291,13 +287,13 @@ async function saveEmpresa() {
         payload.admin_password = document.getElementById('frmAdminPassword').value;
     }
 
-    const url    = id ? `/api/empresas/${id}` : '/api/empresas';
+    const url    = id ? `/admin/empresas/${id}` : '/admin/empresas';
     const method = id ? 'PUT' : 'POST';
 
     try {
         const res = await fetch(url, {
             method,
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
             body: JSON.stringify(payload)
         });
         if (res.ok) {
@@ -313,9 +309,9 @@ async function saveEmpresa() {
 async function deleteEmpresa(id) {
     if (!confirm('¿Desactivar esta empresa?')) return;
     try {
-        await fetch(`/api/empresas/${id}`, {
+        await fetch(`/admin/empresas/${id}`, {
             method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: { 'X-CSRF-TOKEN': csrfToken }
         });
         loadEmpresas();
     } catch(e) { console.error(e); }
@@ -323,9 +319,9 @@ async function deleteEmpresa(id) {
 
 async function activarEmpresa(id) {
     try {
-        await fetch(`/api/empresas/${id}`, {
+        await fetch(`/admin/empresas/${id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
             body: JSON.stringify({ is_active: true })
         });
         loadEmpresas();
@@ -362,9 +358,9 @@ async function generateToken() {
     const dias = parseInt(document.getElementById('tokenDias').value) || 365;
 
     try {
-        const res = await fetch(`/api/empresas/${id}/agent-token`, {
+        const res = await fetch(`/admin/empresas/${id}/agent-token`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
             body: JSON.stringify({ vigencia_dias: dias }),
         });
         const data = await res.json();
@@ -388,9 +384,9 @@ async function revokeToken() {
     const id = document.getElementById('tokenEmpresaId').value;
 
     try {
-        const res = await fetch(`/api/empresas/${id}/agent-token`, {
+        const res = await fetch(`/admin/empresas/${id}/agent-token`, {
             method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` },
+            headers: { 'X-CSRF-TOKEN': csrfToken },
         });
         if (res.ok) {
             document.getElementById('tokenActual').style.display   = 'none';
