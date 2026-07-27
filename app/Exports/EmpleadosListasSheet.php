@@ -12,11 +12,8 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class EmpleadosListasSheet implements FromArray, WithTitle, WithEvents
 {
-    // Cols A-N: pares ID|Nombre por catálogo (para BUSCARV)
-    //   A-B Depto, C-D Cargo, E-F Horario, G-H Empleador, I-J Lider, K-L Sede, M Rol, N Activo
-    // Col O: separador
-    // Cols P-U: valores "id - nombre" directos usados por los dropdowns de Datos
-    //   P Depto, Q Cargo, R Horario, S Empleador, T Lider, U Sede
+    // Cols A-F: "id - nombre" por catálogo (referenciados por dropdowns de hoja Datos)
+    //   A Departamento, B Cargo, C Horario, D Empleador, E Lider, F Sede
 
     public function __construct(
         private Collection $deptos,
@@ -38,17 +35,12 @@ class EmpleadosListasSheet implements FromArray, WithTitle, WithEvents
             $this->empleadores->count(),
             $this->lideres->count(),
             $this->sedes->count(),
-            3,
+            1,
         );
 
-        $roles   = ['empleado', 'supervisor', 'admin'];
-        $activos = ['1', '0'];
-
+        // Fila 1: encabezados
         $rows = [
-            // Fila 1: encabezados de grupo (se mergen en AfterSheet)
-            ['Departamento', '', 'Cargo', '', 'Horario', '', 'Empleador', '', 'Lider', '', 'Sede', '', 'Rol', 'Activo', '', 'Desplegables (usar en hoja Empleados)', '', '', '', '', ''],
-            // Fila 2: sub-encabezados
-            ['ID', 'Nombre', 'ID', 'Nombre', 'ID', 'Nombre', 'ID', 'Nombre', 'ID', 'Nombre', 'ID', 'Nombre', '', '', '', 'Departamento', 'Cargo', 'Horario', 'Empleador', 'Lider', 'Sede'],
+            ['Departamento', 'Cargo', 'Horario', 'Empleador', 'Lider', 'Sede'],
         ];
 
         for ($i = 0; $i < $maxRows; $i++) {
@@ -60,18 +52,6 @@ class EmpleadosListasSheet implements FromArray, WithTitle, WithEvents
             $sede      = $this->sedes->get($i);
 
             $rows[] = [
-                // A-N: pares ID | Nombre
-                $depto?->id     ?? '', $depto?->nombre     ?? '',
-                $cargo?->id     ?? '', $cargo?->nombre     ?? '',
-                $horario?->id   ?? '', $horario?->nombre   ?? '',
-                $empleador?->id ?? '', $empleador?->nombre ?? '',
-                $lider?->id     ?? '', $lider?->name       ?? '',
-                $sede?->id      ?? '', $sede?->nombre      ?? '',
-                $roles[$i]   ?? '',
-                $activos[$i] ?? '',
-                // O: separador
-                '',
-                // P-U: "id - nombre" directos para dropdowns
                 $depto     ? "{$depto->id} - {$depto->nombre}"         : '',
                 $cargo     ? "{$cargo->id} - {$cargo->nombre}"         : '',
                 $horario   ? "{$horario->id} - {$horario->nombre}"     : '',
@@ -91,52 +71,25 @@ class EmpleadosListasSheet implements FromArray, WithTitle, WithEvents
                 $ws      = $event->sheet->getDelegate();
                 $lastRow = $ws->getHighestRow();
 
-                // Autosize
-                foreach (array_merge(range('A', 'N'), range('P', 'U')) as $col) {
+                foreach (range('A', 'F') as $col) {
                     $ws->getColumnDimension($col)->setAutoSize(true);
                 }
 
-                // ── Fila 1: merge grupos + estilo ────────────────────────────
-                $groupStyle = [
+                // Fila 1: encabezado azul centrado
+                $ws->getStyle('A1:F1')->applyFromArray([
                     'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
                     'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '2E75B6']],
                     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-                ];
-                $groups = [['A','B'],['C','D'],['E','F'],['G','H'],['I','J'],['K','L']];
-                foreach ($groups as [$c1, $c2]) {
-                    $ws->mergeCells("{$c1}1:{$c2}1");
-                    $ws->getStyle("{$c1}1:{$c2}1")->applyFromArray($groupStyle);
-                }
-                $ws->getStyle('M1:N1')->applyFromArray($groupStyle);
-
-                // Encabezado sección auxiliar (verde)
-                $ws->mergeCells('P1:U1');
-                $ws->getStyle('P1:U1')->applyFromArray([
-                    'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
-                    'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '70AD47']],
-                    'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
                 ]);
 
-                // ── Fila 2: sub-encabezados ───────────────────────────────────
-                $ws->getStyle('A2:N2')->applyFromArray([
-                    'font' => ['bold' => true],
-                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'D9E1F2']],
-                    'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-                ]);
-                $ws->getStyle('P2:U2')->applyFromArray([
-                    'font' => ['bold' => true],
-                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E2EFDA']],
-                    'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-                ]);
-
-                // Fondo verde claro para auxiliares
-                if ($lastRow >= 3) {
-                    $ws->getStyle("P3:U{$lastRow}")->getFill()
+                // Filas de datos: fondo verde muy claro
+                if ($lastRow >= 2) {
+                    $ws->getStyle("A2:F{$lastRow}")->getFill()
                        ->setFillType(Fill::FILL_SOLID)
                        ->getStartColor()->setRGB('F0FFF0');
                 }
 
-                $ws->freezePane('A3');
+                $ws->freezePane('A2');
             },
         ];
     }

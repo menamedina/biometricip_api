@@ -17,6 +17,7 @@ use App\Models\Horario;
 use App\Models\Sede;
 use App\Models\TenantTabla;
 use App\Models\User;
+use App\Models\Visitante;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -325,7 +326,128 @@ class AdminController extends Controller
 
     public function visitantesIndex(): View
     {
-        return view('admin.visitantes.index');
+        $sedes = Sede::where('is_active', true)->orderBy('nombre')->get(['id', 'nombre']);
+        return view('admin.visitantes.index', compact('sedes'));
+    }
+
+    public function visitantesList(Request $request)
+    {
+        $query = Visitante::with(['sede', 'imagenes' => fn ($q) => $q->where('tipo', 'entrada')])
+            ->orderBy('hora_entrada', 'desc');
+
+        if ($request->filled('sede_id'))  $query->where('sede_id', $request->sede_id);
+        if ($request->filled('desde'))    $query->whereDate('hora_entrada', '>=', $request->desde);
+        if ($request->filled('hasta'))    $query->whereDate('hora_entrada', '<=', $request->hasta);
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(fn ($q) => $q->where('cedula', 'like', "%{$s}%")->orWhere('nombre', 'like', "%{$s}%"));
+        }
+        if ($request->filled('estado')) {
+            $request->estado === 'en_sede'
+                ? $query->whereNull('hora_salida')
+                : $query->whereNotNull('hora_salida');
+        }
+
+        // Exportar Excel
+        if ($request->input('export') === 'xlsx') {
+            $rows = $query->get()->map(function ($v) {
+                $tz    = 'America/Bogota';
+                $entrada = \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $v->getRawOriginal('hora_entrada'), 'UTC')->setTimezone($tz);
+                $salidaRaw = $v->getRawOriginal('hora_salida');
+                $salida    = $salidaRaw ? \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $salidaRaw, 'UTC')->setTimezone($tz) : null;
+                $fin       = $salida ?? \Carbon\Carbon::now($tz);
+                $mins      = max(0, (int) $entrada->diffInMinutes($fin));
+                $h = intdiv($mins, 60); $m = $mins % 60;
+                return [
+                    'Nombre'        => $v->nombre,
+                    'Cédula'        => $v->cedula,
+                    'Visita a'      => $v->persona_visita,
+                    'Sede'          => $v->sede?->nombre,
+                    'Empresa'       => $v->empresa,
+                    'Teléfono'      => $v->telefono,
+                    'EPS'           => $v->eps,
+                    'ARL'           => $v->arl,
+                    'Placa'         => $v->placa,
+                    'Entrada'       => $entrada->format('d/m/Y H:i'),
+                    'Salida'        => $salida?->format('d/m/Y H:i') ?? 'En sede',
+                    'Tiempo en sede'=> $h > 0 ? "{$h}h {$m}m" : "{$m}m",
+                ];
+            });
+
+            return Excel::download(
+                new \App\Exports\SimpleCollectionExport($rows->toArray()),
+                'visitantes_' . now()->format('Ymd_Hi') . '.xlsx'
+            );
+        }
+
+        $visitantes = $query->paginate(50);
+        $visitantes->getCollection()->transform(function ($v) {
+            $img = $v->imagenes->first();
+            $v->imagen_entrada = $img?->thumbnail_base64;
+            // DB guarda en UTC; parsear raw para evitar desfase con APP_TIMEZONE=America/Bogota
+            $entrada = \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $v->getRawOriginal('hora_entrada'), 'UTC');
+            $salidaRaw = $v->getRawOriginal('hora_salida');
+            $fin = $salidaRaw
+                ? \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $salidaRaw, 'UTC')
+                : \Carbon\Carbon::now('UTC');
+            $v->minutos_en_sede = max(0, (int) $entrada->diffInMinutes($fin));
+            unset($v->imagenes);
+            return $v;
+        });
+
+        return response()->json($visitantes);
+    }
+
+    public function visitantesForzarSalida(int $id): JsonResponse
+    {
+        $visitante = Visitante::findOrFail($id);
+        if ($visitante->hora_salida) {
+            return response()->json(['message' => 'Ya tiene salida registrada.'], 422);
+        }
+        $visitante->update(['hora_salida' => \Carbon\Carbon::now('UTC')]);
+        return response()->json(['success' => true]);
+    }
+
+    public function visitantesFoto(int $id): JsonResponse
+    {
+        $imgs = \App\Models\VisitanteImagen::where('visitante_id', $id)->get()->keyBy('tipo');
+        return response()->json([
+            'entrada' => $imgs->get('entrada')?->foto_base64,
+            'salida'  => $imgs->get('salida')?->foto_base64,
+        ]);
+    }
+
+    public function visitantesStore(Request $request): JsonResponse
+    {
+        $request->validate([
+            'sede_id'        => 'required|integer',
+            'cedula'         => 'required|string|max:20',
+            'nombre'         => 'required|string|max:255',
+            'telefono'       => 'required|string|max:20',
+            'eps'            => 'required|string|max:100',
+            'arl'            => 'required|string|max:100',
+            'empresa'        => 'required|string|max:255',
+            'placa'          => 'nullable|string|max:20',
+            'persona_visita' => 'required|string|max:255',
+            'hora_entrada'   => 'nullable|date',
+        ]);
+
+        $visitante = Visitante::create([
+            'sede_id'        => $request->sede_id,
+            'user_id'        => auth()->id(),
+            'cedula'         => $request->cedula,
+            'nombre'         => $request->nombre,
+            'telefono'       => $request->telefono,
+            'eps'            => $request->eps,
+            'arl'            => $request->arl,
+            'empresa'        => $request->empresa,
+            'placa'          => $request->placa ? strtoupper($request->placa) : null,
+            'persona_visita' => $request->persona_visita,
+            'hora_entrada'   => $request->hora_entrada ?? now(),
+            'hora_salida'    => null,
+        ]);
+
+        return response()->json(['success' => true, 'data' => $visitante]);
     }
 
     public function dispositivosIndex(): View

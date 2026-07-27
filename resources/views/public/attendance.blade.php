@@ -201,6 +201,11 @@
                         <div class="invalid-feedback" id="empresaError"></div>
                     </div>
 
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Placa del vehículo</label>
+                        <input type="text" id="placa" class="form-control" placeholder="Ej: ABC-123" autocomplete="off" style="text-transform:uppercase;">
+                    </div>
+
                     {{-- Aviso cuando se pre-llenaron datos previos --}}
                     <div id="visitanteInfoBox" class="d-none alert alert-info d-flex align-items-start gap-2 py-2 px-3 mb-3" style="font-size:.9rem;border-radius:10px;">
                         <i class="fa-solid fa-circle-info mt-1"></i>
@@ -260,10 +265,10 @@ function selectTipoUsuario(tipo) {
     tipoSeleccionado = null;
     fotoBase64       = null;
 
-    // Limpiar campos y errores
-    ['nombre','cedula','telefono','eps','arl','empresa','personaVisita'].forEach(id => {
+    // Limpiar campos, errores y re-habilitar cédula
+    ['nombre','cedula','telefono','eps','arl','empresa','placa','personaVisita'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) { el.value = ''; el.classList.remove('is-invalid'); }
+        if (el) { el.value = ''; el.classList.remove('is-invalid'); el.disabled = false; }
     });
     document.getElementById('visitanteInfoBox').classList.add('d-none');
     ['nombreError','cedulaError','personaVisitaError','photoError'].forEach(id => {
@@ -300,9 +305,9 @@ function volverPaso1() {
 function nuevoRegistro() {
     document.getElementById('resultBox').style.display = 'none';
     document.getElementById('step1').style.display = 'block';
-    ['nombre','cedula','telefono','eps','arl','empresa','personaVisita'].forEach(id => {
+    ['nombre','cedula','telefono','eps','arl','empresa','placa','personaVisita'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.value = '';
+        if (el) { el.value = ''; el.disabled = false; }
     });
     document.getElementById('visitanteInfoBox').classList.add('d-none');
     tipoUsuario       = null;
@@ -342,12 +347,14 @@ async function continuarVisitante() {
 
         if (data.found) {
             datosPreviosEncontrados = true;
-            // Pre-llenar (editable — el usuario puede modificarlos)
+            // Pre-llenar campos editables; cédula queda deshabilitada
+            document.getElementById('cedula').disabled = true;
             document.getElementById('nombre').value   = data.nombre   || '';
             document.getElementById('telefono').value = data.telefono || '';
             document.getElementById('eps').value      = data.eps      || '';
             document.getElementById('arl').value      = data.arl      || '';
             document.getElementById('empresa').value  = data.empresa  || '';
+            document.getElementById('placa').value    = data.placa    || '';
             document.getElementById('personaVisita').value = '';
             document.getElementById('visitanteInfoBox').classList.remove('d-none');
         } else {
@@ -603,6 +610,7 @@ async function submitForm() {
         payload.eps            = document.getElementById('eps').value.trim() || null;
         payload.arl            = document.getElementById('arl').value.trim() || null;
         payload.empresa        = document.getElementById('empresa').value.trim() || null;
+        payload.placa          = document.getElementById('placa').value.trim().toUpperCase() || null;
         payload.persona_visita = personaVisita;
     }
 

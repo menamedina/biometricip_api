@@ -58,6 +58,7 @@ class PublicAttendanceController extends Controller
             'eps'            => 'nullable|string|max:100',
             'arl'            => 'nullable|string|max:100',
             'empresa'        => 'nullable|string|max:255',
+            'placa'          => 'nullable|string|max:20',
             'persona_visita' => 'nullable|string|max:255',
             // Validación estricta se hace manualmente más abajo para visitante+entrada
             'lat'            => 'required|numeric|between:-90,90',
@@ -140,6 +141,7 @@ class PublicAttendanceController extends Controller
             'eps'      => $visitante->eps ?? '',
             'arl'      => $visitante->arl ?? '',
             'empresa'  => $visitante->empresa ?? '',
+            'placa'    => $visitante->placa ?? '',
         ]);
     }
 
@@ -202,6 +204,7 @@ class PublicAttendanceController extends Controller
                 'eps'            => $request->eps,
                 'arl'            => $request->arl,
                 'empresa'        => $request->empresa,
+                'placa'          => $request->placa,
                 'persona_visita' => $request->persona_visita,
                 'hora_entrada'   => now(),
                 'hora_salida'    => null,
