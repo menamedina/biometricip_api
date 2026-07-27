@@ -190,6 +190,17 @@
                     <div class="invalid-feedback" id="cedulaError"></div>
                 </div>
 
+                {{-- Continuar (solo visitante + entrada) --}}
+                <div id="cedulaContinuarBar" class="d-none mb-4">
+                    <button type="button" class="btn btn-primary btn-lg w-100" id="btnContinuar" onclick="continuarVisitante()"
+                            style="font-size:1.15rem;font-weight:700;padding:18px;border-radius:14px;min-height:60px;touch-action:manipulation;">
+                        <span id="btnContinuarText">Continuar <i class="fa-solid fa-arrow-right ms-1"></i></span>
+                        <span id="btnContinuarSpinner" class="d-none">
+                            <span class="spinner-border me-1"></span> Buscando...
+                        </span>
+                    </button>
+                </div>
+
                 {{-- Foto --}}
                 <div class="mb-4" id="photoSection">
                     <label class="form-label fw-semibold" id="photoLabel">Foto <span class="text-danger">*</span></label>
@@ -215,16 +226,18 @@
 </div>
 
 <script>
-const URL_POST    = '{{ route("public.attendance.store", [$webToken, $sedeCode, $token]) }}';
+const URL_POST             = '{{ route("public.attendance.store", [$webToken, $sedeCode, $token]) }}';
+const URL_BUSCAR_VISITANTE = '{{ route("public.attendance.buscar-visitante", [$webToken, $sedeCode, $token]) }}';
 const SEDE_LAT    = {{ $sede->lat }};
 const SEDE_LNG    = {{ $sede->lng }};
 const SEDE_RADIO  = {{ $sede->radio_mts }};
 
-let tipoUsuario      = null;
-let tipoSeleccionado = null;
-let fotoBase64       = null;
-let userLat          = null;
-let userLng          = null;
+let tipoUsuario        = null;
+let tipoSeleccionado   = null;
+let fotoBase64         = null;
+let userLat            = null;
+let userLng            = null;
+let visitanteLookupOk  = false; // true cuando ya pasó el paso de cédula lookup
 
 // ── Paso 1 ────────────────────────────────────────────────────────────────────
 function selectTipoUsuario(tipo) {
@@ -271,11 +284,65 @@ function volverPaso1() {
 function nuevoRegistro() {
     document.getElementById('resultBox').style.display = 'none';
     document.getElementById('step1').style.display = 'block';
-    tipoUsuario      = null;
-    tipoSeleccionado = null;
-    fotoBase64       = null;
-    userLat          = null;
-    userLng          = null;
+    tipoUsuario       = null;
+    tipoSeleccionado  = null;
+    fotoBase64        = null;
+    userLat           = null;
+    userLng           = null;
+    visitanteLookupOk = false;
+}
+
+// ── Lookup visitante por cédula ───────────────────────────────────────────────
+async function continuarVisitante() {
+    const cedula = document.getElementById('cedula').value.trim();
+    if (cedula.length < 5) {
+        document.getElementById('cedula').classList.add('is-invalid');
+        document.getElementById('cedulaError').textContent = 'Ingresa un número de cédula válido.';
+        return;
+    }
+    document.getElementById('cedula').classList.remove('is-invalid');
+    document.getElementById('cedulaError').textContent = '';
+
+    // Mostrar spinner
+    document.getElementById('btnContinuarText').classList.add('d-none');
+    document.getElementById('btnContinuarSpinner').classList.remove('d-none');
+    document.getElementById('btnContinuar').disabled = true;
+
+    try {
+        const res  = await fetch(URL_BUSCAR_VISITANTE, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cedula }),
+        });
+        const data = await res.json();
+
+        if (data.found) {
+            // Pre-llenar campos (persona_visita queda vacío)
+            if (data.nombre)   document.getElementById('nombre').value   = data.nombre;
+            if (data.telefono) document.getElementById('telefono').value = data.telefono;
+            if (data.eps)      document.getElementById('eps').value      = data.eps;
+            if (data.arl)      document.getElementById('arl').value      = data.arl;
+            document.getElementById('personaVisita').value = '';
+        }
+    } catch (_) {
+        // Si falla la búsqueda, se continúa con el form vacío
+    }
+
+    // Ocultar paso lookup, mostrar resto del formulario
+    document.getElementById('cedulaContinuarBar').classList.add('d-none');
+    document.getElementById('visitanteFields').classList.remove('d-none');
+    document.getElementById('photoSection').classList.remove('d-none');
+    document.getElementById('btnSubmit').classList.remove('d-none');
+    visitanteLookupOk = true;
+
+    // Restaurar botón (por si se vuelve a usar)
+    document.getElementById('btnContinuarText').classList.remove('d-none');
+    document.getElementById('btnContinuarSpinner').classList.add('d-none');
+    document.getElementById('btnContinuar').disabled = false;
+
+    // Enfocar el campo "A quién visita"
+    document.getElementById('personaVisita').focus();
+    checkReady();
 }
 
 // ── Paso 2 ────────────────────────────────────────────────────────────────────
@@ -298,19 +365,27 @@ function setTipo(tipo) {
 
     // Resetear foto al cambiar tipo
     fotoBase64 = null;
+    visitanteLookupOk = false;
     document.getElementById('photoInput').value = '';
     document.getElementById('photoPreview').style.display = 'none';
     document.getElementById('photoLabelText').textContent = 'Toca para abrir la cámara';
 
-    // Foto: visible siempre, obligatoria solo en entrada
-    document.getElementById('photoSection').classList.remove('d-none');
     document.getElementById('photoLabel').innerHTML = esEntrada
         ? 'Foto <span class="text-danger">*</span>'
         : 'Foto <span class="text-muted small">(opcional)</span>';
 
-    if (tipoUsuario === 'visitante') {
-        const vf = document.getElementById('visitanteFields');
-        esEntrada ? vf.classList.remove('d-none') : vf.classList.add('d-none');
+    if (tipoUsuario === 'visitante' && esEntrada) {
+        // Paso 1 del visitante: solo cédula + Continuar
+        document.getElementById('cedulaContinuarBar').classList.remove('d-none');
+        document.getElementById('visitanteFields').classList.add('d-none');
+        document.getElementById('photoSection').classList.add('d-none');
+        document.getElementById('btnSubmit').classList.add('d-none');
+    } else {
+        // Empleado o visitante salida: formulario completo directo
+        document.getElementById('cedulaContinuarBar').classList.add('d-none');
+        document.getElementById('visitanteFields').classList.add('d-none');
+        document.getElementById('photoSection').classList.remove('d-none');
+        document.getElementById('btnSubmit').classList.remove('d-none');
     }
 
     checkReady();

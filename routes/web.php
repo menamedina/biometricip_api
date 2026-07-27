@@ -83,8 +83,9 @@ Route::post('/eliminacion-datos', function (\Illuminate\Http\Request $request) {
 })->name('data-deletion.submit');
 
 // QR v3 — Formulario público de asistencia (sin autenticación)
-Route::get ('/asistencia/{webToken}/{sedeCode}/{token}', [PublicAttendanceController::class, 'show'])->name('public.attendance.show');
-Route::post('/asistencia/{webToken}/{sedeCode}/{token}', [PublicAttendanceController::class, 'store'])->name('public.attendance.store');
+Route::get ('/asistencia/{webToken}/{sedeCode}/{token}',                    [PublicAttendanceController::class, 'show'])->name('public.attendance.show');
+Route::post('/asistencia/{webToken}/{sedeCode}/{token}',                    [PublicAttendanceController::class, 'store'])->name('public.attendance.store');
+Route::post('/asistencia/{webToken}/{sedeCode}/{token}/buscar-visitante',   [PublicAttendanceController::class, 'buscarVisitante'])->name('public.attendance.buscar-visitante');
 
 Route::get('/admin/login',  [LoginController::class, 'showLogin'])->name('admin.login.show');
 Route::post('/admin/login', [LoginController::class, 'login'])->name('admin.login');

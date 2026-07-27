@@ -105,6 +105,34 @@ class PublicAttendanceController extends Controller
         return $this->registrarVisitante($request, $sede, $fotoFull, $fotoThumb);
     }
 
+    public function buscarVisitante(Request $request, string $webToken, string $sedeCode, string $token): JsonResponse
+    {
+        $empresaId = $this->resolveEmpresaId($webToken);
+        if (!$empresaId) return response()->json(['found' => false]);
+
+        TenantHelper::switchTenant($empresaId);
+
+        $sede = Sede::where('codigo', $sedeCode)->where('is_active', true)->first();
+        if (!$sede || !$sede->validateV3Token($token)) return response()->json(['found' => false]);
+
+        $request->validate(['cedula' => 'required|string|max:20']);
+
+        $visitante = Visitante::where('cedula', $request->cedula)
+            ->where('sede_id', $sede->id)
+            ->latest('hora_entrada')
+            ->first();
+
+        if (!$visitante) return response()->json(['found' => false]);
+
+        return response()->json([
+            'found'    => true,
+            'nombre'   => $visitante->nombre,
+            'telefono' => $visitante->telefono ?? '',
+            'eps'      => $visitante->eps ?? '',
+            'arl'      => $visitante->arl ?? '',
+        ]);
+    }
+
     // ── Empleado ────────────────────────────────────────────────────────────────
 
     private function registrarEmpleado(Request $request, Sede $sede, int $empresaId, ?string $fotoFull, ?string $fotoThumb, float $distancia = 0): JsonResponse
