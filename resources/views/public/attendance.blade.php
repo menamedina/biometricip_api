@@ -469,10 +469,34 @@ function checkReady() {
     document.getElementById('btnSubmit').disabled = !ok;
 }
 
-// ── GPS — recolecta lecturas durante MAX_WAIT ms y usa la de menor error ───────
-const GPS_MAX_WAIT   = 12000; // ms esperando lecturas
-const GPS_MIN_ACC    = 30;    // m — si logramos esta precisión, paramos antes
-const GPS_ACC_CAP    = 250;   // m — máximo margen de error que enviamos al server
+// ── GPS — inicia en background al cargar la página ───────────────────────────
+const GPS_MIN_ACC  = 30;   // m — precisión suficiente para parar
+const GPS_ACC_CAP  = 250;  // m — máximo margen que enviamos al server
+const GPS_FALLBACK = 3000; // ms — espera máxima al hacer submit si aún no hay lectura
+
+let gpsReady   = null;  // mejor lectura disponible (se actualiza en background)
+let gpsWatchId = null;
+let gpsError   = null;
+
+function iniciarGPS() {
+    if (!navigator.geolocation) return;
+    gpsWatchId = navigator.geolocation.watchPosition(
+        pos => {
+            if (!gpsReady || pos.coords.accuracy < gpsReady.coords.accuracy) {
+                gpsReady = pos;
+            }
+        },
+        err => {
+            const msgs = {
+                1: 'Debes permitir el acceso a tu ubicación para registrar asistencia.',
+                2: 'No se pudo obtener tu ubicación. Verifica el GPS activo.',
+                3: 'Tiempo de espera agotado. Asegúrate de tener GPS activo.',
+            };
+            gpsError = msgs[err.code] || 'Error al obtener ubicación.';
+        },
+        { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
+    );
+}
 
 function obtenerGPS() {
     return new Promise((resolve, reject) => {
@@ -480,50 +504,48 @@ function obtenerGPS() {
             reject(new Error('Tu navegador no soporta geolocalización.'));
             return;
         }
-
-        let best     = null; // mejor lectura hasta ahora
-        let watchId  = null;
-        let timer    = null;
-
-        const done = () => {
-            navigator.geolocation.clearWatch(watchId);
-            clearTimeout(timer);
-            if (best) {
+        // Si ya tenemos una lectura buena, la usamos de inmediato
+        if (gpsReady && gpsReady.coords.accuracy <= GPS_MIN_ACC) {
+            resolve({
+                lat:      gpsReady.coords.latitude,
+                lng:      gpsReady.coords.longitude,
+                accuracy: Math.min(Math.round(gpsReady.coords.accuracy), GPS_ACC_CAP),
+            });
+            return;
+        }
+        // Si hay cualquier lectura disponible, la usamos ya
+        if (gpsReady) {
+            resolve({
+                lat:      gpsReady.coords.latitude,
+                lng:      gpsReady.coords.longitude,
+                accuracy: Math.min(Math.round(gpsReady.coords.accuracy), GPS_ACC_CAP),
+            });
+            return;
+        }
+        // Sin lectura aún — esperamos hasta GPS_FALLBACK ms
+        if (gpsError) { reject(new Error(gpsError)); return; }
+        const start = Date.now();
+        const poll = setInterval(() => {
+            if (gpsReady) {
+                clearInterval(poll);
                 resolve({
-                    lat:      best.coords.latitude,
-                    lng:      best.coords.longitude,
-                    accuracy: Math.min(Math.round(best.coords.accuracy), GPS_ACC_CAP),
+                    lat:      gpsReady.coords.latitude,
+                    lng:      gpsReady.coords.longitude,
+                    accuracy: Math.min(Math.round(gpsReady.coords.accuracy), GPS_ACC_CAP),
                 });
-            } else {
-                reject(new Error('No se pudo obtener una lectura GPS válida.'));
+            } else if (gpsError) {
+                clearInterval(poll);
+                reject(new Error(gpsError));
+            } else if (Date.now() - start > GPS_FALLBACK) {
+                clearInterval(poll);
+                reject(new Error('No se pudo obtener tu ubicación. Verifica el GPS activo.'));
             }
-        };
-
-        watchId = navigator.geolocation.watchPosition(
-            pos => {
-                if (!best || pos.coords.accuracy < best.coords.accuracy) {
-                    best = pos;
-                }
-                // Si la precisión ya es suficientemente buena, no esperamos más
-                if (best.coords.accuracy <= GPS_MIN_ACC) done();
-            },
-            err => {
-                const msgs = {
-                    1: 'Debes permitir el acceso a tu ubicación para registrar asistencia.',
-                    2: 'No se pudo obtener tu ubicación. Verifica el GPS activo.',
-                    3: 'Tiempo de espera agotado. Asegúrate de tener GPS activo.',
-                };
-                navigator.geolocation.clearWatch(watchId);
-                clearTimeout(timer);
-                reject(new Error(msgs[err.code] || 'Error al obtener ubicación.'));
-            },
-            { enableHighAccuracy: true, timeout: GPS_MAX_WAIT, maximumAge: 0 }
-        );
-
-        // Tiempo máximo de espera — usamos la mejor lectura que hayamos conseguido
-        timer = setTimeout(done, GPS_MAX_WAIT);
+        }, 200);
     });
 }
+
+// Inicia GPS al cargar la página para tener lectura lista antes del submit
+iniciarGPS();
 
 // ── Submit ────────────────────────────────────────────────────────────────────
 async function submitForm() {

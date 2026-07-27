@@ -289,10 +289,12 @@ function badgeInduccion(v) {
         const fecha = formatDT(v.induccion_fecha);
         return `<span class="badge bg-success" title="${fecha}"><i class="ti ti-circle-check me-1"></i>Realizada</span>`;
     }
-    return `<span class="badge bg-danger me-1"><i class="ti ti-alert-circle me-1"></i>Pendiente</span>
-            <button class="btn btn-xs btn-outline-success py-0 px-1" onclick="marcarInduccion(${v.id})" title="Marcar inducción realizada">
-                <i class="ti ti-check"></i>
-            </button>`;
+    return `<div class="d-flex align-items-center gap-1">
+                <span class="badge bg-danger"><i class="ti ti-alert-circle me-1"></i>Pendiente</span>
+                <button class="btn btn-sm btn-success py-0 px-1" onclick="marcarInduccion(${v.id})" title="Marcar inducción realizada">
+                    <i class="ti ti-check"></i> Inducción realizada
+                </button>
+            </div>`;
 }
 
 async function marcarInduccion(id) {
