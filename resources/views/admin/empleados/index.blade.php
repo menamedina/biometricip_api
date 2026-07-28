@@ -291,6 +291,8 @@ function resetForm() {
     if (isAdminTenant) {
         document.getElementById('empEmpresaId').value = '';
         renderSedeOptions([], []);
+    } else {
+        cargarLideres();
     }
 }
 
@@ -305,7 +307,6 @@ function initCatalogos() {
         return;
     }
 
-    cargarLideres();
     poblarCatalogos({
         departamentos: @json($deptos),
         cargos:        @json($cargos),
