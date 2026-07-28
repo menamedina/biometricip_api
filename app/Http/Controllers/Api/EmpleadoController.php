@@ -69,9 +69,10 @@ class EmpleadoController extends Controller
                 $nombresPorEmpresa[$empId] = [
                     'cargos' => Cargo::pluck('nombre', 'id'),
                     'deptos' => Departamento::pluck('nombre', 'id'),
+                    'sedes'  => \App\Models\Sede::pluck('nombre', 'id'),
                 ];
             } catch (\Throwable $e) {
-                $nombresPorEmpresa[$empId] = ['cargos' => collect(), 'deptos' => collect()];
+                $nombresPorEmpresa[$empId] = ['cargos' => collect(), 'deptos' => collect(), 'sedes' => collect()];
             }
         }
         // Restaurar tenant de la sesión si aplica
@@ -83,9 +84,10 @@ class EmpleadoController extends Controller
             $data  = $user->toArray();
             $data['sede_ids']            = $user->userSedes->pluck('sede_id')->values()->all();
             $data['encrypted_id']        = Crypt::encryptString((string) $user->id);
-            $maps = $nombresPorEmpresa[$user->empresa_id] ?? ['cargos' => collect(), 'deptos' => collect()];
+            $maps = $nombresPorEmpresa[$user->empresa_id] ?? ['cargos' => collect(), 'deptos' => collect(), 'sedes' => collect()];
             $data['cargo_nombre']        = $maps['cargos']->get($user->cargo_id);
             $data['departamento_nombre'] = $maps['deptos']->get($user->departamento_id);
+            $data['sede_nombres']        = collect($data['sede_ids'])->map(fn($id) => $maps['sedes']->get($id))->filter()->values()->all();
             return $data;
         });
 
