@@ -117,6 +117,14 @@
                         </div>
                         @endif
                         <div class="col-md-6 mb-3">
+                            <label class="form-label">Cédula <span class="text-danger">*</span></label>
+                            <input type="text" id="empCedula" class="form-control" required placeholder="Ej: 1234567890" inputmode="numeric">
+                        </div>
+                        <div class="col-md-6 mb-3" id="empCodigoRow" style="display:none">
+                            <label class="form-label">Código Empleado</label>
+                            <input type="text" id="empCodigo" class="form-control" readonly style="background-color:#f8f9fa;font-weight:600;">
+                        </div>
+                        <div class="col-md-6 mb-3">
                             <label class="form-label">Nombre completo</label>
                             <input type="text" id="empName" class="form-control" required>
                         </div>
@@ -124,19 +132,11 @@
                             <label class="form-label">Email</label>
                             <input type="email" id="empEmail" class="form-control" required>
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-6 mb-3">
                             <label class="form-label">Contraseña <small class="text-muted">(dejar vacío para mantener)</small></label>
                             <input type="password" id="empPassword" class="form-control" minlength="6">
                         </div>
-                        <div class="col-md-3 mb-3" id="empCodigoRow" style="display:none">
-                            <label class="form-label">Código Empleado</label>
-                            <input type="text" id="empCodigo" class="form-control" readonly style="background-color:#f8f9fa;font-weight:600;">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Cédula <span class="text-danger">*</span></label>
-                            <input type="text" id="empCedula" class="form-control" required placeholder="Ej: 1234567890" inputmode="numeric">
-                        </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-6 mb-3">
                             <label class="form-label">Teléfono</label>
                             <input type="text" id="empTelefono" class="form-control">
                         </div>
