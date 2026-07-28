@@ -164,12 +164,14 @@
                                 <span class="menu-text">Visitantes</span>
                             </a>
                         </li>
+                        @if($role !== 'supervisor')
                         <li class="side-nav-item">
                             <a href="{{ route('admin.dispositivos.index') }}" class="side-nav-link {{ request()->routeIs('admin.dispositivos.*') ? 'active' : '' }}">
                                 <span class="menu-icon"><i class="ti ti-fingerprint"></i></span>
                                 <span class="menu-text">Dispositivos</span>
                             </a>
                         </li>
+                        @endif
                         @endif
 
                         <li class="side-nav-title mt-2">Asistencia</li>
