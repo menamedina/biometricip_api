@@ -509,9 +509,10 @@ class AttendanceController extends Controller
     public function storeManual(Request $request): JsonResponse
     {
         $request->validate([
-            'user_id'    => 'required|integer|exists:users,id',
-            'tipo'       => 'required|in:entrada,salida',
-            'fecha_hora' => 'required|date',
+            'user_id'     => 'required|integer|exists:users,id',
+            'tipo'        => 'required|in:entrada,salida',
+            'fecha_hora'  => 'required|date',
+            'observacion' => 'nullable|string|max:1000',
         ]);
 
         $empleado = User::findOrFail($request->user_id);
@@ -525,6 +526,7 @@ class AttendanceController extends Controller
             'lat'                   => 0,
             'lng'                   => 0,
             'metodo'                => 'manual',
+            'observacion'           => $request->observacion ?: null,
             'qr_validado'           => false,
             'geocerca_validada'     => false,
             'distancia_oficina_mts' => 0,

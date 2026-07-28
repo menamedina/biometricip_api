@@ -136,9 +136,16 @@
             <div class="modal-body">
                 <div class="mb-3">
                     <label class="form-label">Empleado</label>
-                    <select id="manualEmpleado" class="form-select form-select-sm" required>
-                        <option value="">Seleccionar...</option>
-                    </select>
+                    <div class="position-relative">
+                        <input type="text" id="manualEmpleadoInput" class="form-control form-control-sm"
+                            placeholder="Buscar por nombre o código..." autocomplete="off"
+                            oninput="filtrarEmpleados(this.value)">
+                        <input type="hidden" id="manualEmpleado">
+                        <div id="manualEmpleadoDropdown"
+                            class="d-none position-absolute w-100 bg-white border rounded shadow-sm"
+                            style="z-index:1060;max-height:200px;overflow-y:auto;top:100%"></div>
+                    </div>
+                    <div id="manualEmpleadoSeleccionado" class="form-text text-success d-none"></div>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Tipo</label>
@@ -156,6 +163,11 @@
                         <label class="form-label">Hora</label>
                         <input type="time" id="manualHora" class="form-control form-control-sm" required>
                     </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Observaciones</label>
+                    <textarea id="manualObservacion" class="form-control form-control-sm"
+                        rows="2" placeholder="Motivo del registro manual u observación..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">
@@ -210,13 +222,11 @@ async function cargarFiltros() {
     deptoMap = Object.fromEntries(deptos.map(d => [d.id, d.nombre]));
 
     const empleados = dataE.data || [];
+    window._empleadosList = empleados;
 
     const selE = document.getElementById('filterEmpleado');
-    const selManual = document.getElementById('manualEmpleado');
     empleados.forEach(e => {
-        const opt = `<option value="${e.id}">${e.name} (${e.codigo_empleado || ''})</option>`;
-        selE.innerHTML += opt;
-        selManual.innerHTML += opt;
+        selE.innerHTML += `<option value="${e.id}">${e.name} (${e.codigo_empleado || ''})</option>`;
     });
 
     const selD = document.getElementById('filterDepto');
@@ -402,31 +412,93 @@ async function guardarEdicion() {
     }
 }
 
+// ── Autocomplete empleados ────────────────────────────────────────────────────
+function filtrarEmpleados(query) {
+    const dropdown = document.getElementById('manualEmpleadoDropdown');
+    const hidden   = document.getElementById('manualEmpleado');
+    const info     = document.getElementById('manualEmpleadoSeleccionado');
+
+    // Al escribir, limpiar selección previa
+    hidden.value = '';
+    info.classList.add('d-none');
+
+    const lista = window._empleadosList || [];
+    const q = query.trim().toLowerCase();
+
+    if (!q) { dropdown.classList.add('d-none'); return; }
+
+    const coinciden = lista.filter(e =>
+        e.name.toLowerCase().includes(q) ||
+        (e.codigo_empleado || '').toLowerCase().includes(q)
+    ).slice(0, 10);
+
+    if (!coinciden.length) { dropdown.classList.add('d-none'); return; }
+
+    dropdown.innerHTML = coinciden.map(e => `
+        <div class="px-3 py-2 small" style="cursor:pointer"
+            onmousedown="seleccionarEmpleado(${e.id}, '${e.name.replace(/'/g,"\\'")} (${e.codigo_empleado || ''})')"
+            onmouseover="this.style.background='#f0f4ff'"
+            onmouseout="this.style.background=''">
+            <strong>${e.name}</strong>
+            <span class="text-muted ms-1">${e.codigo_empleado || ''}</span>
+        </div>`).join('');
+    dropdown.classList.remove('d-none');
+}
+
+function seleccionarEmpleado(id, label) {
+    document.getElementById('manualEmpleado').value        = id;
+    document.getElementById('manualEmpleadoInput').value   = label;
+    document.getElementById('manualEmpleadoDropdown').classList.add('d-none');
+    const info = document.getElementById('manualEmpleadoSeleccionado');
+    info.textContent = '✓ ' + label;
+    info.classList.remove('d-none');
+}
+
+function resetAutocomplete() {
+    document.getElementById('manualEmpleado').value      = '';
+    document.getElementById('manualEmpleadoInput').value = '';
+    document.getElementById('manualEmpleadoDropdown').classList.add('d-none');
+    document.getElementById('manualEmpleadoSeleccionado').classList.add('d-none');
+}
+
+// Cerrar dropdown al hacer click fuera
+document.addEventListener('click', e => {
+    if (!e.target.closest('#manualEmpleadoInput') && !e.target.closest('#manualEmpleadoDropdown')) {
+        document.getElementById('manualEmpleadoDropdown')?.classList.add('d-none');
+    }
+});
+
 // ── Registro Manual ──────────────────────────────────────────────────────────
 function abrirModalManual() {
-    document.getElementById('manualEmpleado').value = '';
+    resetAutocomplete();
     document.getElementById('manualTipo').value = 'entrada';
     document.getElementById('manualFecha').value = new Date().toISOString().slice(0, 10);
     document.getElementById('manualHora').value = '';
+    document.getElementById('manualObservacion').value = '';
     new bootstrap.Modal(document.getElementById('modalManual')).show();
 }
 
 function abrirModalManualPre(userId, fecha) {
-    document.getElementById('manualEmpleado').value = userId;
+    resetAutocomplete();
+    // Precargar empleado si está en la lista
+    const emp = (window._empleadosList || []).find(e => e.id == userId);
+    if (emp) seleccionarEmpleado(emp.id, `${emp.name} (${emp.codigo_empleado || ''})`);
     document.getElementById('manualTipo').value = 'entrada';
     document.getElementById('manualFecha').value = fecha;
     document.getElementById('manualHora').value = '';
+    document.getElementById('manualObservacion').value = '';
     new bootstrap.Modal(document.getElementById('modalManual')).show();
 }
 
 async function guardarManual() {
-    const userId = document.getElementById('manualEmpleado').value;
-    const tipo   = document.getElementById('manualTipo').value;
-    const fecha  = document.getElementById('manualFecha').value;
-    const hora   = document.getElementById('manualHora').value;
+    const userId      = document.getElementById('manualEmpleado').value;
+    const tipo        = document.getElementById('manualTipo').value;
+    const fecha       = document.getElementById('manualFecha').value;
+    const hora        = document.getElementById('manualHora').value;
+    const observacion = document.getElementById('manualObservacion').value.trim();
 
     if (!userId || !fecha || !hora) {
-        alert('Completa todos los campos.');
+        alert('Selecciona un empleado, fecha y hora.');
         return;
     }
 
@@ -440,7 +512,7 @@ async function guardarManual() {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
             },
-            body: JSON.stringify({ user_id: parseInt(userId), tipo, fecha_hora: fechaHora }),
+            body: JSON.stringify({ user_id: parseInt(userId), tipo, fecha_hora: fechaHora, observacion: observacion || null }),
         });
 
         if (!res.ok) {
