@@ -127,7 +127,13 @@
                     </div>
                     <div class="col-md-6">
                         <label class="form-label form-label-sm fw-semibold">Cédula <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control form-control-sm" id="rm_cedula" placeholder="Ej: 1234567890" inputmode="numeric">
+                        <div class="input-group input-group-sm">
+                            <input type="text" class="form-control form-control-sm" id="rm_cedula" placeholder="Ej: 1234567890" inputmode="numeric">
+                            <button class="btn btn-outline-secondary" type="button" id="btnBuscarCedula" onclick="buscarPorCedula()" title="Buscar último registro">
+                                <i class="ti ti-search"></i>
+                            </button>
+                        </div>
+                        <div id="rm_cedula_msg" class="form-text d-none"></div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label form-label-sm fw-semibold">Nombre completo <span class="text-danger">*</span></label>
@@ -559,6 +565,49 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── Registro manual ──────────────────────────────────────────────────────────
+async function buscarPorCedula() {
+    const cedula = document.getElementById('rm_cedula').value.trim();
+    const msg    = document.getElementById('rm_cedula_msg');
+    const btn    = document.getElementById('btnBuscarCedula');
+
+    if (!cedula) {
+        msg.className = 'form-text text-warning';
+        msg.textContent = 'Ingresa una cédula primero.';
+        msg.classList.remove('d-none');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    msg.classList.add('d-none');
+
+    try {
+        const res  = await fetch(`/admin/visitantes/buscar-cedula?cedula=${encodeURIComponent(cedula)}`);
+        const data = await res.json();
+
+        if (data.found) {
+            const d = data.data;
+            document.getElementById('rm_nombre').value   = d.nombre   ?? '';
+            document.getElementById('rm_telefono').value = d.telefono ?? '';
+            document.getElementById('rm_empresa').value  = d.empresa  ?? '';
+            document.getElementById('rm_eps').value      = d.eps      ?? '';
+            document.getElementById('rm_arl').value      = d.arl      ?? '';
+            msg.className = 'form-text text-success';
+            msg.textContent = '✓ Datos del último registro cargados. Puedes editarlos.';
+        } else {
+            msg.className = 'form-text text-muted';
+            msg.textContent = 'No se encontraron registros anteriores para esta cédula.';
+        }
+    } catch {
+        msg.className = 'form-text text-danger';
+        msg.textContent = 'Error al buscar. Intenta de nuevo.';
+    } finally {
+        msg.classList.remove('d-none');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ti ti-search"></i>';
+    }
+}
+
 function abrirRegistroManual() {
     // Resetear campos
     ['rm_sede_id','rm_cedula','rm_nombre','rm_telefono','rm_empresa',
@@ -572,6 +621,7 @@ function abrirRegistroManual() {
     const localISO = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
     document.getElementById('rm_hora_entrada').value = localISO;
     document.getElementById('registroManualAlert').className = 'd-none mb-3';
+    document.getElementById('rm_cedula_msg').className = 'form-text d-none';
     new bootstrap.Modal(document.getElementById('modalRegistroManual')).show();
 }
 

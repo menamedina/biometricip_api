@@ -442,6 +442,20 @@ class AdminController extends Controller
         return response()->json(['success' => true]);
     }
 
+    public function visitantesBuscarCedula(Request $request): JsonResponse
+    {
+        $cedula = $request->input('cedula');
+        $visitante = Visitante::where('cedula', $cedula)
+            ->orderBy('hora_entrada', 'desc')
+            ->first(['nombre', 'telefono', 'eps', 'arl', 'empresa', 'placa', 'persona_visita']);
+
+        if (!$visitante) {
+            return response()->json(['found' => false]);
+        }
+
+        return response()->json(['found' => true, 'data' => $visitante]);
+    }
+
     public function visitantesObservacion(int $id): JsonResponse
     {
         $visitante = Visitante::findOrFail($id);
