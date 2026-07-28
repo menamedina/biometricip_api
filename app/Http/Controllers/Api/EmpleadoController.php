@@ -60,18 +60,32 @@ class EmpleadoController extends Controller
 
         $empleados = $query->with('userSedes')->orderBy($sortCol, $sortDir)->paginate($request->per_page ?? 20);
 
-        // Pre-cargar nombres de cargo y departamento una sola vez
-        $cargoIds  = $empleados->pluck('cargo_id')->filter()->unique()->values();
-        $deptoIds  = $empleados->pluck('departamento_id')->filter()->unique()->values();
-        $cargos    = $cargoIds->isNotEmpty()  ? Cargo::whereIn('id', $cargoIds)->pluck('nombre', 'id')  : collect();
-        $deptos    = $deptoIds->isNotEmpty()  ? Departamento::whereIn('id', $deptoIds)->pluck('nombre', 'id') : collect();
+        // Resolver nombres de cargo/departamento por empresa (cada una tiene su propio tenant DB)
+        $nombresPorEmpresa = [];
+        $empresaIds = $empleados->pluck('empresa_id')->filter()->unique()->values();
+        foreach ($empresaIds as $empId) {
+            try {
+                \App\Helpers\TenantHelper::switchTenant((int) $empId);
+                $nombresPorEmpresa[$empId] = [
+                    'cargos' => Cargo::pluck('nombre', 'id'),
+                    'deptos' => Departamento::pluck('nombre', 'id'),
+                ];
+            } catch (\Throwable $e) {
+                $nombresPorEmpresa[$empId] = ['cargos' => collect(), 'deptos' => collect()];
+            }
+        }
+        // Restaurar tenant de la sesión si aplica
+        if (session('empresa_id')) {
+            try { \App\Helpers\TenantHelper::switchTenant((int) session('empresa_id')); } catch (\Throwable) {}
+        }
 
-        $empleados->getCollection()->transform(function ($user) use ($cargos, $deptos) {
-            $data                       = $user->toArray();
-            $data['sede_ids']           = $user->userSedes->pluck('sede_id')->values()->all();
-            $data['encrypted_id']       = Crypt::encryptString((string) $user->id);
-            $data['cargo_nombre']       = $cargos->get($user->cargo_id);
-            $data['departamento_nombre'] = $deptos->get($user->departamento_id);
+        $empleados->getCollection()->transform(function ($user) use ($nombresPorEmpresa) {
+            $data  = $user->toArray();
+            $data['sede_ids']            = $user->userSedes->pluck('sede_id')->values()->all();
+            $data['encrypted_id']        = Crypt::encryptString((string) $user->id);
+            $maps = $nombresPorEmpresa[$user->empresa_id] ?? ['cargos' => collect(), 'deptos' => collect()];
+            $data['cargo_nombre']        = $maps['cargos']->get($user->cargo_id);
+            $data['departamento_nombre'] = $maps['deptos']->get($user->departamento_id);
             return $data;
         });
 
