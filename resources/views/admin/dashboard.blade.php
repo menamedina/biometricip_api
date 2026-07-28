@@ -92,7 +92,7 @@
 
 {{-- Contenido principal --}}
 <div class="row g-3">
-    <div class="{{ auth()->user()->role === 'empleado' ? 'col-12' : 'col-lg-7' }}">
+    <div class="{{ in_array(auth()->user()->role, ['empleado', 'supervisor']) ? 'col-12' : 'col-lg-7' }}">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3">
                 <h5 class="mb-0 fw-semibold"><i class="fa-solid fa-list-check me-1 text-primary"></i> Registros de hoy</h5>
@@ -117,7 +117,7 @@
         </div>
     </div>
 
-    @if(auth()->user()->role !== 'empleado')
+    @if(!in_array(auth()->user()->role, ['empleado', 'supervisor']))
     <div class="col-lg-5">
         <div class="card border-0 shadow-sm mb-3">
             <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3">
@@ -193,12 +193,14 @@ function tipoBadge(tipo) {
 }
 
 const esEmpleado = {{ auth()->user()->role === 'empleado' ? 'true' : 'false' }};
+const esSupervisor = {{ auth()->user()->role === 'supervisor' ? 'true' : 'false' }};
+const ocultarQrMapa = esEmpleado || esSupervisor;
 
 function googleMapsReadyDashboard() {
     gmapsReady = true;
     initMap();
     loadDashboard();
-    if (!esEmpleado) { loadQR(); setInterval(loadQR, 30000); }
+    if (!ocultarQrMapa) { loadQR(); setInterval(loadQR, 30000); }
     setInterval(loadDashboard, 30000);
 }
 
@@ -357,7 +359,7 @@ function refreshQR() { loadQR(); }
 document.addEventListener('DOMContentLoaded', () => {
     if (!gmapsReady) {
         loadDashboard();
-        if (!esEmpleado) loadQR();
+        if (!ocultarQrMapa) loadQR();
     }
 });
 </script>
