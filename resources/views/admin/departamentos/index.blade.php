@@ -100,7 +100,7 @@
                                         @csrf @method('DELETE')
                                         <input type="hidden" name="search_depto" value="{{ $searchDepto }}">
                                         <input type="hidden" name="search_cargo" value="{{ $searchCargo }}">
-                                        <button class="btn btn-sm btn-outline-danger">
+                                        <button class="btn btn-sm btn-outline-danger" {{ auth()->user()->role === 'supervisor' ? 'disabled' : '' }}>
                                             <i class="fa-solid fa-trash"></i>
                                         </button>
                                     </form>
@@ -195,7 +195,7 @@
                                         @csrf @method('DELETE')
                                         <input type="hidden" name="search_depto" value="{{ $searchDepto }}">
                                         <input type="hidden" name="search_cargo" value="{{ $searchCargo }}">
-                                        <button class="btn btn-sm btn-outline-danger">
+                                        <button class="btn btn-sm btn-outline-danger" {{ auth()->user()->role === 'supervisor' ? 'disabled' : '' }}>
                                             <i class="fa-solid fa-trash"></i>
                                         </button>
                                     </form>

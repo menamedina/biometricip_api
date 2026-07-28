@@ -204,6 +204,7 @@
                             </a>
                         </li>
 
+                        @if($role !== 'supervisor')
                         <li class="side-nav-title mt-2">Empresa</li>
                         <li class="side-nav-item">
                             <a href="{{ route('admin.empresas.index') }}" class="side-nav-link {{ request()->routeIs('admin.empresas.*') ? 'active' : '' }}">
@@ -211,6 +212,7 @@
                                 <span class="menu-text">Mi Empresa</span>
                             </a>
                         </li>
+                        @endif
 
                         <li class="side-nav-title mt-2">Configuración</li>
                         <li class="side-nav-item">
