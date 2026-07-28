@@ -385,9 +385,9 @@ async function loadSedes() {
                 <td>${s.radio_mts}m</td>
                 <td><span class="badge ${s.is_active ? 'bg-success' : 'bg-danger'}">${s.is_active ? 'Activo' : 'Inactivo'}</span></td>
                 <td>
-                    <button class="btn btn-sm btn-outline-success me-1" onclick="showQR(${s.id}, '${s.nombre}')" title="QR dinámico (kiosco)"><i class="fa-solid fa-qrcode"></i></button>
-                    <button class="btn btn-sm ${s.qr_static_token ? 'btn-outline-primary' : 'btn-outline-secondary'} me-1" onclick="showStaticQR(${s.id}, '${s.nombre}', ${s.qr_static_token ? 'true' : 'false'})" title="${s.qr_static_token ? 'QR estático (imprimible)' : 'Habilitar QR estático'}"><i class="fa-solid fa-print"></i></button>
-                    <button class="btn btn-sm ${s.qr_v3_token ? 'btn-outline-info' : 'btn-outline-secondary'} me-1" onclick="showWebQR(${s.id}, '${s.nombre}', ${s.qr_v3_token ? 'true' : 'false'})" title="${s.qr_v3_token ? 'QR Web (sin app)' : 'Habilitar QR Web'}"><i class="fa-solid fa-globe"></i></button>
+                    <button class="btn btn-sm btn-outline-success me-1" onclick="showQR(${s.id}, '${s.nombre}')" title="QR dinámico (kiosco)" ${isSupervisor ? 'disabled' : ''}><i class="fa-solid fa-qrcode"></i></button>
+                    <button class="btn btn-sm ${s.qr_static_token ? 'btn-outline-primary' : 'btn-outline-secondary'} me-1" onclick="showStaticQR(${s.id}, '${s.nombre}', ${s.qr_static_token ? 'true' : 'false'})" title="${s.qr_static_token ? 'QR estático (imprimible)' : 'Habilitar QR estático'}" ${isSupervisor ? 'disabled' : ''}><i class="fa-solid fa-print"></i></button>
+                    <button class="btn btn-sm ${s.qr_v3_token ? 'btn-outline-info' : 'btn-outline-secondary'} me-1" onclick="showWebQR(${s.id}, '${s.nombre}', ${s.qr_v3_token ? 'true' : 'false'})" title="${s.qr_v3_token ? 'QR Web (sin app)' : 'Habilitar QR Web'}" ${isSupervisor ? 'disabled' : ''}><i class="fa-solid fa-globe"></i></button>
                     <button class="btn btn-sm btn-outline-primary me-1" onclick='editSede(${JSON.stringify(s).replace(/'/g, "&#39;")})' ${isSupervisor ? 'disabled' : ''}><i class="fa-solid fa-pen"></i></button>
                     <button class="btn btn-sm btn-outline-danger" onclick="deleteSede(${s.id})" ${isSupervisor ? 'disabled' : ''}><i class="fa-solid fa-trash"></i></button>
                 </td>
