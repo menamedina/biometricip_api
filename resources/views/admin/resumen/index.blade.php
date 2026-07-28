@@ -183,6 +183,7 @@
 <script>
 const csrfToken  = '{{ csrf_token() }}';
 const isEmpleado = {{ auth()->user()->role === 'empleado' ? 'true' : 'false' }};
+const isAdmin    = {{ auth()->user()->role === 'admin'    ? 'true' : 'false' }};
 const myUserId   = {{ auth()->id() }};
 let deptoMap = {};
 let allRegistros = [];
@@ -332,12 +333,16 @@ async function cargarResumen() {
             for (let i = 0; i < 4; i++) {
                 const s = sessions[i];
                 if (s?.e) {
-                    celdas.push(`<span class="text-success fw-semibold cursor-pointer" onclick="editarRegistro(${s.e.id})" title="Click para editar">${fmtHora(s.e.fecha_hora)} <i class="fa-solid fa-pen fa-xs text-muted"></i></span>`);
+                    const penE = isAdmin ? ` onclick="editarRegistro(${s.e.id})" title="Click para editar" style="cursor:pointer"` : '';
+                    const iconE = isAdmin ? ' <i class="fa-solid fa-pen fa-xs text-muted"></i>' : '';
+                    celdas.push(`<span class="text-success fw-semibold"${penE}>${fmtHora(s.e.fecha_hora)}${iconE}</span>`);
                 } else {
                     celdas.push('<span class="text-muted">—</span>');
                 }
                 if (s?.s) {
-                    celdas.push(`<span class="text-danger fw-semibold cursor-pointer" onclick="editarRegistro(${s.s.id})" title="Click para editar">${fmtHora(s.s.fecha_hora)} <i class="fa-solid fa-pen fa-xs text-muted"></i></span>`);
+                    const penS = isAdmin ? ` onclick="editarRegistro(${s.s.id})" title="Click para editar" style="cursor:pointer"` : '';
+                    const iconS = isAdmin ? ' <i class="fa-solid fa-pen fa-xs text-muted"></i>' : '';
+                    celdas.push(`<span class="text-danger fw-semibold"${penS}>${fmtHora(s.s.fecha_hora)}${iconS}</span>`);
                 } else {
                     celdas.push('<span class="text-muted">—</span>');
                 }
