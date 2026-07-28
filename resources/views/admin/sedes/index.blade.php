@@ -10,11 +10,9 @@
                     <h4 class="mb-1"><i class="fa-solid fa-building me-2 text-primary"></i>Sedes</h4>
                     <p class="text-muted mb-0">Gestión de oficinas y geocercas</p>
                 </div>
-                @if(auth()->user()->role !== 'supervisor')
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#sedeModal" onclick="resetForm()">
+                <button class="btn btn-primary" {{ auth()->user()->role === 'supervisor' ? 'disabled' : '' }} data-bs-toggle="modal" data-bs-target="#sedeModal" onclick="resetForm()">
                     <i class="fa-solid fa-plus me-1"></i> Nueva Sede
                 </button>
-                @endif
             </div>
             @if(auth()->user()->admin_tenant ?? false)
             <div class="mt-3">
