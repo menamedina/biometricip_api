@@ -128,7 +128,7 @@
                     <div class="col-md-6">
                         <label class="form-label form-label-sm fw-semibold">Cédula <span class="text-danger">*</span></label>
                         <div class="input-group input-group-sm">
-                            <input type="text" class="form-control form-control-sm" id="rm_cedula" placeholder="Ej: 1234567890" inputmode="numeric">
+                            <input type="text" class="form-control form-control-sm rm-upper" id="rm_cedula" placeholder="Ej: 1234567890" inputmode="numeric">
                             <button class="btn btn-outline-secondary" type="button" id="btnBuscarCedula" onclick="buscarPorCedula()" title="Buscar último registro">
                                 <i class="ti ti-search"></i>
                             </button>
@@ -137,31 +137,31 @@
                     </div>
                     <div class="col-md-6">
                         <label class="form-label form-label-sm fw-semibold">Nombre completo <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control form-control-sm" id="rm_nombre" placeholder="Ej: Juan Pérez">
+                        <input type="text" class="form-control form-control-sm rm-upper" id="rm_nombre" placeholder="Ej: Juan Pérez">
                     </div>
                     <div class="col-md-6">
                         <label class="form-label form-label-sm fw-semibold">Teléfono <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control form-control-sm" id="rm_telefono" placeholder="Ej: 3001234567" inputmode="numeric">
+                        <input type="text" class="form-control form-control-sm rm-upper" id="rm_telefono" placeholder="Ej: 3001234567" inputmode="numeric">
                     </div>
                     <div class="col-md-6">
                         <label class="form-label form-label-sm fw-semibold">Empresa <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control form-control-sm" id="rm_empresa" placeholder="Ej: Servicios ABC S.A.S">
+                        <input type="text" class="form-control form-control-sm rm-upper" id="rm_empresa" placeholder="Ej: Servicios ABC S.A.S">
                     </div>
                     <div class="col-md-6">
                         <label class="form-label form-label-sm fw-semibold">EPS <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control form-control-sm" id="rm_eps" placeholder="Ej: Sura">
+                        <input type="text" class="form-control form-control-sm rm-upper" id="rm_eps" placeholder="Ej: Sura">
                     </div>
                     <div class="col-md-6">
                         <label class="form-label form-label-sm fw-semibold">ARL <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control form-control-sm" id="rm_arl" placeholder="Ej: Positiva">
+                        <input type="text" class="form-control form-control-sm rm-upper" id="rm_arl" placeholder="Ej: Positiva">
                     </div>
                     <div class="col-md-6">
                         <label class="form-label form-label-sm fw-semibold">Placa del vehículo</label>
-                        <input type="text" class="form-control form-control-sm" id="rm_placa" placeholder="Ej: ABC-123" style="text-transform:uppercase;">
+                        <input type="text" class="form-control form-control-sm rm-upper" id="rm_placa" placeholder="Ej: ABC-123">
                     </div>
                     <div class="col-md-6">
                         <label class="form-label form-label-sm fw-semibold">¿A quién visita? <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control form-control-sm" id="rm_persona_visita" placeholder="Nombre del empleado o área">
+                        <input type="text" class="form-control form-control-sm rm-upper" id="rm_persona_visita" placeholder="Nombre del empleado o área">
                     </div>
                 </div>
             </div>
@@ -206,6 +206,13 @@
     </div>
 </div>
 @endsection
+
+@push('styles')
+<style>
+.rm-upper { text-transform: uppercase; }
+.rm-upper::placeholder { text-transform: none; }
+</style>
+@endpush
 
 @push('scripts')
 <script>
@@ -545,6 +552,15 @@ setInterval(() => {
 document.addEventListener('DOMContentLoaded', () => {
     loadSedes();
     loadVisitantes();
+
+    // Forzar mayúsculas en valor real (no solo visual)
+    document.querySelectorAll('.rm-upper').forEach(el => {
+        el.addEventListener('input', () => {
+            const pos = el.selectionStart;
+            el.value = el.value.toUpperCase();
+            el.setSelectionRange(pos, pos);
+        });
+    });
 
     // Sorting por click en cabeceras
     document.querySelectorAll('thead th.sortable').forEach(th => {
