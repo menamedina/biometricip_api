@@ -93,7 +93,7 @@
 
 {{-- Modal Editar Tipo --}}
 <div class="modal fade" id="modalEditar" tabindex="-1">
-    <div class="modal-dialog modal-sm">
+    <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h6 class="modal-title">Editar Registro</h6>
@@ -106,15 +106,29 @@
                     <input type="text" id="editEmpleado" class="form-control form-control-sm" readonly>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">Fecha/Hora</label>
-                    <input type="text" id="editFechaHora" class="form-control form-control-sm" readonly>
+                    <label class="form-label">Sede</label>
+                    <select id="editSede" class="form-select form-select-sm">
+                        <option value="">Seleccionar sede...</option>
+                        @foreach($sedes as $s)
+                            <option value="{{ $s->id }}">{{ $s->nombre }}</option>
+                        @endforeach
+                    </select>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">Tipo</label>
+                    <label class="form-label">Fecha y hora <span class="text-danger">*</span></label>
+                    <input type="datetime-local" id="editFechaHora" class="form-control form-control-sm">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Tipo <span class="text-danger">*</span></label>
                     <select id="editTipo" class="form-select form-select-sm">
                         <option value="entrada">Entrada</option>
                         <option value="salida">Salida</option>
                     </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Observaciones <span class="text-danger">*</span></label>
+                    <textarea id="editObservacion" class="form-control form-control-sm" rows="2"
+                        placeholder="Observación sobre este registro..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">
@@ -135,7 +149,7 @@
             </div>
             <div class="modal-body">
                 <div class="mb-3">
-                    <label class="form-label">Empleado</label>
+                    <label class="form-label">Empleado <span class="text-danger">*</span></label>
                     <div class="position-relative">
                         <input type="text" id="manualEmpleadoInput" class="form-control form-control-sm"
                             placeholder="Buscar por nombre o código..." autocomplete="off"
@@ -165,16 +179,16 @@
                 </div>
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">Fecha</label>
+                        <label class="form-label">Fecha <span class="text-danger">*</span></label>
                         <input type="date" id="manualFecha" class="form-control form-control-sm" required>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">Hora</label>
+                        <label class="form-label">Hora <span class="text-danger">*</span></label>
                         <input type="time" id="manualHora" class="form-control form-control-sm" required>
                     </div>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">Observaciones</label>
+                    <label class="form-label">Observaciones <span class="text-danger">*</span></label>
                     <textarea id="manualObservacion" class="form-control form-control-sm"
                         rows="2" placeholder="Motivo del registro manual u observación..."></textarea>
                 </div>
@@ -399,17 +413,29 @@ function editarRegistro(id) {
     const reg = allRegistros.find(r => r.id === id);
     if (!reg) return;
 
-    document.getElementById('editId').value = id;
-    document.getElementById('editEmpleado').value = reg.user?.name || 'N/A';
-    document.getElementById('editFechaHora').value = reg.fecha_hora;
-    document.getElementById('editTipo').value = reg.tipo;
+    // Convertir ISO a formato datetime-local (YYYY-MM-DDTHH:mm) en hora Colombia
+    const dt = new Date(reg.fecha_hora);
+    const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000)
+        .toISOString().slice(0, 16);
+
+    document.getElementById('editId').value          = id;
+    document.getElementById('editEmpleado').value    = reg.user?.name || 'N/A';
+    document.getElementById('editSede').value        = reg.sede_id  ?? '';
+    document.getElementById('editFechaHora').value   = local;
+    document.getElementById('editTipo').value        = reg.tipo;
+    document.getElementById('editObservacion').value = reg.observacion ?? '';
 
     new bootstrap.Modal(document.getElementById('modalEditar')).show();
 }
 
 async function guardarEdicion() {
-    const id   = document.getElementById('editId').value;
-    const tipo = document.getElementById('editTipo').value;
+    const id          = document.getElementById('editId').value;
+    const tipo        = document.getElementById('editTipo').value;
+    const fechaHora   = document.getElementById('editFechaHora').value;
+    const sedeId      = document.getElementById('editSede').value;
+    const observacion = document.getElementById('editObservacion').value.trim();
+
+    if (!fechaHora || !observacion) { alert('Completa todos los campos obligatorios.'); return; }
 
     try {
         const res = await fetch(`/admin/attendance/${id}`, {
@@ -419,7 +445,12 @@ async function guardarEdicion() {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
             },
-            body: JSON.stringify({ tipo }),
+            body: JSON.stringify({
+                tipo,
+                fecha_hora:   fechaHora.replace('T', ' ') + ':00',
+                sede_id:      sedeId    || null,
+                observacion:  observacion || null,
+            }),
         });
 
         if (!res.ok) {
@@ -523,8 +554,8 @@ async function guardarManual() {
     const hora        = document.getElementById('manualHora').value;
     const observacion = document.getElementById('manualObservacion').value.trim();
 
-    if (!userId || !sedeId || !fecha || !hora) {
-        alert('Selecciona un empleado, sede, fecha y hora.');
+    if (!userId || !sedeId || !fecha || !hora || !observacion) {
+        alert('Completa todos los campos obligatorios.');
         return;
     }
 

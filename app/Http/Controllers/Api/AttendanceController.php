@@ -492,13 +492,18 @@ class AttendanceController extends Controller
     public function update(Request $request, int $id): JsonResponse
     {
         $request->validate([
-            'tipo' => 'required|in:entrada,salida',
+            'tipo'        => 'required|in:entrada,salida',
+            'fecha_hora'  => 'nullable|date',
+            'sede_id'     => 'nullable|integer',
+            'observacion' => 'required|string|max:1000',
         ]);
 
         $record = AttendanceRecord::findOrFail($id);
-        $record->update([
-            'tipo' => $request->tipo,
-        ]);
+        $data = ['tipo' => $request->tipo];
+        if ($request->filled('fecha_hora'))  $data['fecha_hora']  = $request->fecha_hora;
+        if ($request->has('sede_id'))        $data['sede_id']     = $request->sede_id;
+        if ($request->has('observacion'))    $data['observacion'] = $request->observacion;
+        $record->update($data);
 
         return response()->json([
             'message' => 'Registro actualizado correctamente.',
@@ -513,7 +518,7 @@ class AttendanceController extends Controller
             'sede_id'     => 'required|integer',
             'tipo'        => 'required|in:entrada,salida',
             'fecha_hora'  => 'required|date',
-            'observacion' => 'nullable|string|max:1000',
+            'observacion' => 'required|string|max:1000',
         ]);
 
         $empleado = User::findOrFail($request->user_id);
