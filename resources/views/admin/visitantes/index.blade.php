@@ -85,6 +85,7 @@
                                     <th class="sortable" data-field="minutos_en_sede">Tiempo en sede</th>
                                     <th>Inducción</th>
                                     <th>Última inducción</th>
+                                    <th>Observación</th>
                                     <th>Foto</th>
                                     <th></th>
                                 </tr>
@@ -241,7 +242,7 @@ async function loadVisitantes() {
 
     if (!data.data || data.data.length === 0) {
         visitantesData = [];
-        tbody.innerHTML = '<tr><td colspan="15" class="text-center text-muted py-3">Sin registros</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="16" class="text-center text-muted py-3">Sin registros</td></tr>';
         return;
     }
 
@@ -284,6 +285,14 @@ function renderTabla() {
             <td><small>${tiempoEnSede(v)}</small></td>
             <td>${badgeInduccion(v)}</td>
             <td>${badgeUltimaInduccion(v)}</td>
+            <td>
+                <div style="max-width:160px">
+                    ${v.observacion ? `<small class="text-muted d-block mb-1" style="word-break:break-word">${escHtml(v.observacion)}</small>` : ''}
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-1" onclick="editarObservacion(${v.id})" title="${v.observacion ? 'Editar observación' : 'Agregar observación'}">
+                        <i class="ti ti-${v.observacion ? 'edit' : 'plus'}"></i>
+                    </button>
+                </div>
+            </td>
             <td>${v.imagen_entrada ? `<button class="btn btn-sm btn-outline-primary" onclick="verFoto(${v.id})"><i class="ti ti-photo"></i></button>` : '—'}</td>
             <td>${botonForzarSalida(v)}</td>
         </tr>
@@ -340,9 +349,6 @@ function badgeInduccion(v) {
     if (!v.induccion_requerida) {
         return '<span class="badge bg-secondary">No requerida</span>';
     }
-    const obs = v.induccion_observacion
-        ? `<small class="text-muted d-block mt-1" style="max-width:160px;word-break:break-word" title="Observación">${escHtml(v.induccion_observacion)}</small>`
-        : '';
     if (v.induccion_fecha) {
         const fecha = formatDT(v.induccion_fecha);
         return `<div>
@@ -350,35 +356,65 @@ function badgeInduccion(v) {
             <button class="btn btn-sm btn-outline-secondary py-0 px-1 ms-1" onclick="marcarInduccion(${v.id})" title="Actualizar inducción">
                 <i class="ti ti-refresh" style="font-size:11px"></i>
             </button>
-            ${obs}
         </div>`;
     }
-    return `<div>
-        <div class="d-flex align-items-center gap-1">
-            <span class="badge bg-danger"><i class="ti ti-alert-circle me-1"></i>Pendiente</span>
-            <button class="btn btn-sm btn-success py-0 px-1" onclick="marcarInduccion(${v.id})" title="Marcar inducción realizada">
-                <i class="ti ti-check"></i> Inducción realizada
-            </button>
-        </div>
-        ${obs}
-    </div>`;
+    return `<div class="d-flex align-items-center gap-1">
+                <span class="badge bg-danger"><i class="ti ti-alert-circle me-1"></i>Pendiente</span>
+                <button class="btn btn-sm btn-success py-0 px-1" onclick="marcarInduccion(${v.id})" title="Marcar inducción realizada">
+                    <i class="ti ti-check"></i> Inducción realizada
+                </button>
+            </div>`;
 }
 
 async function marcarInduccion(id) {
     const result = await Swal.fire({
         title: '¿Inducción realizada?',
-        html: `<p class="mb-2 text-muted">Se registrará que la inducción fue completada ahora.</p>
-               <textarea id="swal-observacion" class="swal2-textarea" placeholder="Observación (opcional)" style="height:80px;font-size:13px"></textarea>`,
+        text: 'Se registrará que la inducción fue completada ahora.',
         icon: 'question',
         showCancelButton: true,
         confirmButtonText: 'Sí, marcar',
         cancelButtonText: 'Cancelar',
         confirmButtonColor: '#198754',
         cancelButtonColor: '#6c757d',
-        preConfirm: () => document.getElementById('swal-observacion').value.trim(),
     });
     if (!result.isConfirmed) return;
     await fetch(`/admin/visitantes/${id}/induccion`, {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': csrfToken },
+    });
+    loadVisitantes();
+}
+
+async function editarObservacion(id) {
+    const v = visitantesData.find(x => x.id === id);
+    const obsActual = v?.observacion ?? '';
+    const result = await Swal.fire({
+        title: '<i class="ti ti-notes me-2 text-primary"></i>Observación',
+        html: `
+            <p class="text-muted small mb-3">Escribe una nota o comentario sobre este registro de visita.</p>
+            <textarea id="swal-obs"
+                placeholder="Escribe una observación..."
+                style="width:100%;height:110px;font-size:13px;border:1px solid #dee2e6;border-radius:8px;padding:10px 12px;resize:vertical;outline:none;font-family:inherit;color:#344054;line-height:1.5;"
+                onfocus="this.style.borderColor='#4F46E5';this.style.boxShadow='0 0 0 3px rgba(79,70,229,.15)'"
+                onblur="this.style.borderColor='#dee2e6';this.style.boxShadow='none'"
+            >${escHtml(obsActual)}</textarea>`,
+        showCancelButton: true,
+        confirmButtonText: '<i class="ti ti-check me-1"></i>Guardar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#4F46E5',
+        cancelButtonColor: '#6c757d',
+        width: 480,
+        padding: '1.5rem',
+        customClass: { htmlContainer: 'text-start' },
+        preConfirm: () => document.getElementById('swal-obs').value.trim(),
+        didOpen: () => {
+            const ta = document.getElementById('swal-obs');
+            ta.focus();
+            ta.setSelectionRange(ta.value.length, ta.value.length);
+        },
+    });
+    if (!result.isConfirmed) return;
+    await fetch(`/admin/visitantes/${id}/observacion`, {
         method: 'POST',
         headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json' },
         body: JSON.stringify({ observacion: result.value || null }),
