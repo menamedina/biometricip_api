@@ -17,7 +17,14 @@ class AttendanceController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = AttendanceRecord::with(['user', 'sede']);
+        $query = AttendanceRecord::select(
+                'id','user_id','sede_id','tipo','fecha_hora','metodo',
+                'qr_validado','geocerca_validada','distancia_oficina_mts','observacion'
+            )
+            ->with([
+                'user:id,name,cedula,codigo_empleado,role,departamento_id,cargo_id,empresa_id',
+                'sede:id,nombre',
+            ]);
 
         if ($request->filled('date_from') && $request->filled('date_to')) {
             $query->whereBetween('fecha_hora', [
