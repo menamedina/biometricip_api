@@ -210,28 +210,36 @@ function inicioSemana() {
     return d.toISOString().slice(0, 10);
 }
 
+let _filtrosCargados = false;
+
 async function cargarFiltros() {
-    const [resE, resCat] = await Promise.all([
-        fetch('/admin/empleados/list?per_page=500', { headers: { 'X-CSRF-TOKEN': csrfToken } }),
-        fetch('/admin/catalogos',                   { headers: { 'X-CSRF-TOKEN': csrfToken } }),
-    ]);
-    const dataE   = await resE.json();
+    // Solo catalogos (departamentos) al inicio — los empleados se cargan al abrir el modal
+    const resCat = await fetch('/admin/catalogos', { headers: { 'X-CSRF-TOKEN': csrfToken } });
     const dataCat = await resCat.json();
 
     const deptos = dataCat.departamentos || [];
     deptoMap = Object.fromEntries(deptos.map(d => [d.id, d.nombre]));
 
+    const selD = document.getElementById('filterDepto');
+    deptos.forEach(d => {
+        selD.innerHTML += `<option value="${d.id}">${d.nombre}</option>`;
+    });
+}
+
+async function cargarEmpleadosParaModal() {
+    if (_filtrosCargados) return;
+    _filtrosCargados = true;
+
+    const resE = await fetch('/admin/empleados/list?per_page=500&fields=id,name,codigo_empleado,departamento_id', {
+        headers: { 'X-CSRF-TOKEN': csrfToken }
+    });
+    const dataE = await resE.json();
     const empleados = dataE.data || [];
     window._empleadosList = empleados;
 
     const selE = document.getElementById('filterEmpleado');
     empleados.forEach(e => {
         selE.innerHTML += `<option value="${e.id}">${e.name} (${e.codigo_empleado || ''})</option>`;
-    });
-
-    const selD = document.getElementById('filterDepto');
-    deptos.forEach(d => {
-        selD.innerHTML += `<option value="${d.id}">${d.nombre}</option>`;
     });
 }
 
@@ -244,7 +252,7 @@ async function cargarResumen() {
 
     if (!from || !to) { alert('Selecciona el rango de fechas.'); return; }
 
-    let url = `/admin/attendance/records?per_page=2000&date_from=${from}&date_to=${to}`;
+    let url = `/admin/resumen/records?date_from=${from}&date_to=${to}`;
     if (userId)  url += `&user_id=${userId}`;
 
     const tbody = document.getElementById('resumenTbody');
@@ -469,7 +477,8 @@ document.addEventListener('click', e => {
 });
 
 // ── Registro Manual ──────────────────────────────────────────────────────────
-function abrirModalManual() {
+async function abrirModalManual() {
+    await cargarEmpleadosParaModal();
     resetAutocomplete();
     document.getElementById('manualTipo').value = 'entrada';
     document.getElementById('manualFecha').value = new Date().toISOString().slice(0, 10);
@@ -478,7 +487,8 @@ function abrirModalManual() {
     new bootstrap.Modal(document.getElementById('modalManual')).show();
 }
 
-function abrirModalManualPre(userId, fecha) {
+async function abrirModalManualPre(userId, fecha) {
+    await cargarEmpleadosParaModal();
     resetAutocomplete();
     // Precargar empleado si está en la lista
     const emp = (window._empleadosList || []).find(e => e.id == userId);

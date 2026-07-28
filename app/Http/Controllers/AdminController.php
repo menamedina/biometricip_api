@@ -149,6 +149,34 @@ class AdminController extends Controller
         return view('admin.resumen.index');
     }
 
+    public function resumenRecords(Request $request): JsonResponse
+    {
+        $request->validate([
+            'date_from' => 'required|date',
+            'date_to'   => 'required|date',
+        ]);
+
+        $query = \App\Models\AttendanceRecord::query()
+            ->select('id', 'user_id', 'sede_id', 'tipo', 'fecha_hora', 'metodo', 'observacion')
+            ->with([
+                'user:id,name,codigo_empleado,departamento_id',
+                'sede:id,nombre',
+            ])
+            ->whereBetween('fecha_hora', [
+                $request->date_from . ' 00:00:00',
+                $request->date_to   . ' 23:59:59',
+            ])
+            ->orderBy('fecha_hora', 'asc');
+
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+
+        $records = $query->get();
+
+        return response()->json(['data' => $records]);
+    }
+
     public function departamentosIndex(Request $request): View
     {
         $searchDepto = $request->input('search_depto', '');
