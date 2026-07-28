@@ -60,10 +60,18 @@ class EmpleadoController extends Controller
 
         $empleados = $query->with('userSedes')->orderBy($sortCol, $sortDir)->paginate($request->per_page ?? 20);
 
-        $empleados->getCollection()->transform(function ($user) {
-            $data               = $user->toArray();
-            $data['sede_ids']   = $user->userSedes->pluck('sede_id')->values()->all();
-            $data['encrypted_id'] = Crypt::encryptString((string) $user->id);
+        // Pre-cargar nombres de cargo y departamento una sola vez
+        $cargoIds  = $empleados->pluck('cargo_id')->filter()->unique()->values();
+        $deptoIds  = $empleados->pluck('departamento_id')->filter()->unique()->values();
+        $cargos    = $cargoIds->isNotEmpty()  ? Cargo::whereIn('id', $cargoIds)->pluck('nombre', 'id')  : collect();
+        $deptos    = $deptoIds->isNotEmpty()  ? Departamento::whereIn('id', $deptoIds)->pluck('nombre', 'id') : collect();
+
+        $empleados->getCollection()->transform(function ($user) use ($cargos, $deptos) {
+            $data                       = $user->toArray();
+            $data['sede_ids']           = $user->userSedes->pluck('sede_id')->values()->all();
+            $data['encrypted_id']       = Crypt::encryptString((string) $user->id);
+            $data['cargo_nombre']       = $cargos->get($user->cargo_id);
+            $data['departamento_nombre'] = $deptos->get($user->departamento_id);
             return $data;
         });
 

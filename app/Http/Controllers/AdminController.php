@@ -45,10 +45,10 @@ class AdminController extends Controller
     {
         $isAdminTenant = auth()->user()->admin_tenant;
 
-        $deptos      = $isAdminTenant ? collect() : Departamento::where('is_active', true)->orderBy('nombre')->get();
-        $cargos      = $isAdminTenant ? collect() : Cargo::where('is_active', true)->orderBy('nombre')->get();
-        $horarios    = $isAdminTenant ? collect() : Horario::where('is_active', true)->orderBy('nombre')->get();
-        $sedes       = $isAdminTenant ? collect() : Sede::where('is_active', true)->orderBy('nombre')->get();
+        $deptos      = $isAdminTenant ? collect() : Departamento::orderBy('nombre')->get();
+        $cargos      = $isAdminTenant ? collect() : Cargo::orderBy('nombre')->get();
+        $horarios    = $isAdminTenant ? collect() : Horario::orderBy('nombre')->get();
+        $sedes       = $isAdminTenant ? collect() : Sede::orderBy('nombre')->get();
         $empleadores = $isAdminTenant ? collect() : Empleador::where('is_active', true)->orderBy('nombre')->get();
         $empresas    = $isAdminTenant ? Empresa::orderBy('nombre')->get() : collect();
 

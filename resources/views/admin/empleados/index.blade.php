@@ -462,8 +462,8 @@ async function loadEmpleados(page = 1) {
                     ${isAdminTenant ? `<td><span class="badge bg-light text-dark border">${empresaMap[e.empresa_id] || '—'}</span></td>` : ''}
                     <td>${rolBadge}</td>
                     <td>
-                        <div>${e.cargo_id ? (cargoMap[e.cargo_id] || e.cargo_id) : '—'}</div>
-                        <small class="text-muted">${e.departamento_id ? (deptoMap[e.departamento_id] || e.departamento_id) : ''}</small>
+                        <div>${e.cargo_nombre || (e.cargo_id ? cargoMap[e.cargo_id] : null) || '—'}</div>
+                        <small class="text-muted">${e.departamento_nombre || (e.departamento_id ? deptoMap[e.departamento_id] : null) || ''}</small>
                     </td>
                     <td>${(e.sede_ids && e.sede_ids.length) ? e.sede_ids.map(id => `<span class="badge bg-info text-dark me-1">${sedeMap[id] || id}</span>`).join('') : '—'}</td>
                     <td><span class="badge ${e.is_active ? 'bg-success' : 'bg-danger'}">${e.is_active ? 'Activo' : 'Inactivo'}</span></td>
