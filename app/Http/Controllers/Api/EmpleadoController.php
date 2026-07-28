@@ -487,6 +487,7 @@ class EmpleadoController extends Controller
     private function withNames(User $user): array
     {
         $data = $user->toArray();
+        unset($data['face_descriptor'], $data['password'], $data['remember_token']);
         $data['encrypted_id'] = Crypt::encryptString((string) $user->id);
         $data['departamento'] = $user->departamento_id
             ? Departamento::find($user->departamento_id)?->nombre

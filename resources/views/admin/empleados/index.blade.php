@@ -525,11 +525,14 @@ async function editEmpleado(id, encryptedId) {
             await loadCatalogosParaEmpresa(e.empresa_id);
             await loadSedesParaEmpresa(e.empresa_id, e.sede_ids || []);
             await cargarLideres(e.empresa_id, e.lider_id);
-        } else if (e.empresa) {
-            document.getElementById('empEmpresa').value = e.empresa;
-            document.getElementById('empEmpresaRow').style.display = '';
         } else {
-            document.getElementById('empEmpresaRow').style.display = 'none';
+            if (e.empresa) {
+                document.getElementById('empEmpresa').value = e.empresa;
+                document.getElementById('empEmpresaRow').style.display = '';
+            } else {
+                document.getElementById('empEmpresaRow').style.display = 'none';
+            }
+            await cargarLideres(null, e.lider_id);
         }
 
         document.getElementById('empName').value         = e.name || '';
