@@ -10,9 +10,11 @@
                     <h4 class="mb-1"><i class="fa-solid fa-building me-2 text-primary"></i>Sedes</h4>
                     <p class="text-muted mb-0">Gestión de oficinas y geocercas</p>
                 </div>
+                @if(auth()->user()->role !== 'supervisor')
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#sedeModal" onclick="resetForm()">
                     <i class="fa-solid fa-plus me-1"></i> Nueva Sede
                 </button>
+                @endif
             </div>
             @if(auth()->user()->admin_tenant ?? false)
             <div class="mt-3">
@@ -223,6 +225,7 @@
 <script>
 const csrfToken    = '{{ csrf_token() }}';
 const isAdminTenant = {{ (auth()->user()->admin_tenant ?? false) ? 'true' : 'false' }};
+const isSupervisor  = {{ auth()->user()->role === 'supervisor' ? 'true' : 'false' }};
 const empresasData  = @json($empresas);
 let currentEmpresaId = null;
 
@@ -387,8 +390,8 @@ async function loadSedes() {
                     <button class="btn btn-sm btn-outline-success me-1" onclick="showQR(${s.id}, '${s.nombre}')" title="QR dinámico (kiosco)"><i class="fa-solid fa-qrcode"></i></button>
                     <button class="btn btn-sm ${s.qr_static_token ? 'btn-outline-primary' : 'btn-outline-secondary'} me-1" onclick="showStaticQR(${s.id}, '${s.nombre}', ${s.qr_static_token ? 'true' : 'false'})" title="${s.qr_static_token ? 'QR estático (imprimible)' : 'Habilitar QR estático'}"><i class="fa-solid fa-print"></i></button>
                     <button class="btn btn-sm ${s.qr_v3_token ? 'btn-outline-info' : 'btn-outline-secondary'} me-1" onclick="showWebQR(${s.id}, '${s.nombre}', ${s.qr_v3_token ? 'true' : 'false'})" title="${s.qr_v3_token ? 'QR Web (sin app)' : 'Habilitar QR Web'}"><i class="fa-solid fa-globe"></i></button>
-                    <button class="btn btn-sm btn-outline-primary me-1" onclick='editSede(${JSON.stringify(s).replace(/'/g, "&#39;")})'><i class="fa-solid fa-pen"></i></button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteSede(${s.id})"><i class="fa-solid fa-trash"></i></button>
+                    <button class="btn btn-sm btn-outline-primary me-1" onclick='editSede(${JSON.stringify(s).replace(/'/g, "&#39;")})' ${isSupervisor ? 'disabled' : ''}><i class="fa-solid fa-pen"></i></button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteSede(${s.id})" ${isSupervisor ? 'disabled' : ''}><i class="fa-solid fa-trash"></i></button>
                 </td>
             </tr>
         `).join('');
