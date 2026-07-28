@@ -71,8 +71,7 @@
                                 <th>Empresa</th>
                                 @endif
                                 <th class="sortable" data-col="role">Rol</th>
-                                <th class="sortable" data-col="departamento_id">Departamento</th>
-                                <th class="sortable" data-col="cargo_id">Cargo</th>
+                                <th>Cargo / Departamento</th>
                                 <th>Sede</th>
                                 <th class="sortable" data-col="is_active">Estado</th>
                                 <th>Rostros</th>
@@ -462,8 +461,10 @@ async function loadEmpleados(page = 1) {
                     <td>${e.email || 'N/A'}</td>
                     ${isAdminTenant ? `<td><span class="badge bg-light text-dark border">${empresaMap[e.empresa_id] || '—'}</span></td>` : ''}
                     <td>${rolBadge}</td>
-                    <td>${e.departamento_id ? (deptoMap[e.departamento_id] || e.departamento_id) : '—'}</td>
-                    <td>${e.cargo_id ? (cargoMap[e.cargo_id] || e.cargo_id) : '—'}</td>
+                    <td>
+                        <div>${e.cargo_id ? (cargoMap[e.cargo_id] || e.cargo_id) : '—'}</div>
+                        <small class="text-muted">${e.departamento_id ? (deptoMap[e.departamento_id] || e.departamento_id) : ''}</small>
+                    </td>
                     <td>${(e.sede_ids && e.sede_ids.length) ? e.sede_ids.map(id => `<span class="badge bg-info text-dark me-1">${sedeMap[id] || id}</span>`).join('') : '—'}</td>
                     <td><span class="badge ${e.is_active ? 'bg-success' : 'bg-danger'}">${e.is_active ? 'Activo' : 'Inactivo'}</span></td>
                     <td>
