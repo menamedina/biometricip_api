@@ -148,6 +148,15 @@
                     <div id="manualEmpleadoSeleccionado" class="form-text text-success d-none"></div>
                 </div>
                 <div class="mb-3">
+                    <label class="form-label">Sede <span class="text-danger">*</span></label>
+                    <select id="manualSede" class="form-select form-select-sm" required>
+                        <option value="">Seleccionar sede...</option>
+                        @foreach($sedes as $s)
+                            <option value="{{ $s->id }}">{{ $s->nombre }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="mb-3">
                     <label class="form-label">Tipo</label>
                     <select id="manualTipo" class="form-select form-select-sm">
                         <option value="entrada">Entrada</option>
@@ -485,6 +494,7 @@ document.addEventListener('click', e => {
 async function abrirModalManual() {
     await cargarEmpleadosParaModal();
     resetAutocomplete();
+    document.getElementById('manualSede').value = '';
     document.getElementById('manualTipo').value = 'entrada';
     document.getElementById('manualFecha').value = new Date().toISOString().slice(0, 10);
     document.getElementById('manualHora').value = '';
@@ -495,9 +505,9 @@ async function abrirModalManual() {
 async function abrirModalManualPre(userId, fecha) {
     await cargarEmpleadosParaModal();
     resetAutocomplete();
-    // Precargar empleado si está en la lista
     const emp = (window._empleadosList || []).find(e => e.id == userId);
     if (emp) seleccionarEmpleado(emp.id, `${emp.name} (${emp.codigo_empleado || ''})`);
+    document.getElementById('manualSede').value = '';
     document.getElementById('manualTipo').value = 'entrada';
     document.getElementById('manualFecha').value = fecha;
     document.getElementById('manualHora').value = '';
@@ -507,13 +517,14 @@ async function abrirModalManualPre(userId, fecha) {
 
 async function guardarManual() {
     const userId      = document.getElementById('manualEmpleado').value;
+    const sedeId      = document.getElementById('manualSede').value;
     const tipo        = document.getElementById('manualTipo').value;
     const fecha       = document.getElementById('manualFecha').value;
     const hora        = document.getElementById('manualHora').value;
     const observacion = document.getElementById('manualObservacion').value.trim();
 
-    if (!userId || !fecha || !hora) {
-        alert('Selecciona un empleado, fecha y hora.');
+    if (!userId || !sedeId || !fecha || !hora) {
+        alert('Selecciona un empleado, sede, fecha y hora.');
         return;
     }
 
@@ -527,7 +538,7 @@ async function guardarManual() {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
             },
-            body: JSON.stringify({ user_id: parseInt(userId), tipo, fecha_hora: fechaHora, observacion: observacion || null }),
+            body: JSON.stringify({ user_id: parseInt(userId), sede_id: parseInt(sedeId), tipo, fecha_hora: fechaHora, observacion: observacion || null }),
         });
 
         if (!res.ok) {

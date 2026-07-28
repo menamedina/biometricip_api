@@ -510,6 +510,7 @@ class AttendanceController extends Controller
     {
         $request->validate([
             'user_id'     => 'required|integer|exists:users,id',
+            'sede_id'     => 'required|integer',
             'tipo'        => 'required|in:entrada,salida',
             'fecha_hora'  => 'required|date',
             'observacion' => 'nullable|string|max:1000',
@@ -520,7 +521,7 @@ class AttendanceController extends Controller
 
         $record = AttendanceRecord::create([
             'user_id'               => $empleado->id,
-            'sede_id'               => $empleado->sede_id,
+            'sede_id'               => $request->sede_id,
             'horario_id'            => $horario?->id,
             'tipo'                  => $request->tipo,
             'lat'                   => 0,

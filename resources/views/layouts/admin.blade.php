@@ -93,6 +93,12 @@
                             </span>
                         </a>
                         <div class="dropdown-menu dropdown-menu-end">
+                            <div class="px-3 pt-2 pb-1">
+                                <span class="badge bg-primary-subtle text-primary fw-semibold">
+                                    {{ ['admin' => 'Administrador', 'supervisor' => 'Supervisor', 'empleado' => 'Empleado'][auth()->user()->role] ?? auth()->user()->role }}
+                                </span>
+                            </div>
+                            <div class="dropdown-divider mt-1"></div>
                             <a href="{{ url('/') }}" class="dropdown-item fw-semibold">
                                 <i class="ti ti-home me-1 fs-lg align-middle"></i> Ir al Inicio
                             </a>

@@ -146,7 +146,8 @@ class AdminController extends Controller
 
     public function resumenIndex(): View
     {
-        return view('admin.resumen.index');
+        $sedes = \App\Models\Sede::orderBy('nombre')->get(['id', 'nombre']);
+        return view('admin.resumen.index', compact('sedes'));
     }
 
     public function resumenRecords(Request $request): JsonResponse
