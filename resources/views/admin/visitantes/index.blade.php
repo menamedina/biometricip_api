@@ -330,37 +330,58 @@ function badgeUltimaInduccion(v) {
     </div>`;
 }
 
+function escHtml(str) {
+    const d = document.createElement('div');
+    d.appendChild(document.createTextNode(str));
+    return d.innerHTML;
+}
+
 function badgeInduccion(v) {
     if (!v.induccion_requerida) {
         return '<span class="badge bg-secondary">No requerida</span>';
     }
+    const obs = v.induccion_observacion
+        ? `<small class="text-muted d-block mt-1" style="max-width:160px;word-break:break-word" title="Observación">${escHtml(v.induccion_observacion)}</small>`
+        : '';
     if (v.induccion_fecha) {
         const fecha = formatDT(v.induccion_fecha);
-        return `<span class="badge bg-success" title="${fecha}"><i class="ti ti-circle-check me-1"></i>Realizada</span>`;
+        return `<div>
+            <span class="badge bg-success" title="${fecha}"><i class="ti ti-circle-check me-1"></i>Realizada</span>
+            <button class="btn btn-sm btn-outline-secondary py-0 px-1 ms-1" onclick="marcarInduccion(${v.id})" title="Actualizar inducción">
+                <i class="ti ti-refresh" style="font-size:11px"></i>
+            </button>
+            ${obs}
+        </div>`;
     }
-    return `<div class="d-flex align-items-center gap-1">
-                <span class="badge bg-danger"><i class="ti ti-alert-circle me-1"></i>Pendiente</span>
-                <button class="btn btn-sm btn-success py-0 px-1" onclick="marcarInduccion(${v.id})" title="Marcar inducción realizada">
-                    <i class="ti ti-check"></i> Inducción realizada
-                </button>
-            </div>`;
+    return `<div>
+        <div class="d-flex align-items-center gap-1">
+            <span class="badge bg-danger"><i class="ti ti-alert-circle me-1"></i>Pendiente</span>
+            <button class="btn btn-sm btn-success py-0 px-1" onclick="marcarInduccion(${v.id})" title="Marcar inducción realizada">
+                <i class="ti ti-check"></i> Inducción realizada
+            </button>
+        </div>
+        ${obs}
+    </div>`;
 }
 
 async function marcarInduccion(id) {
     const result = await Swal.fire({
         title: '¿Inducción realizada?',
-        text: 'Se registrará que la inducción fue completada ahora.',
+        html: `<p class="mb-2 text-muted">Se registrará que la inducción fue completada ahora.</p>
+               <textarea id="swal-observacion" class="swal2-textarea" placeholder="Observación (opcional)" style="height:80px;font-size:13px"></textarea>`,
         icon: 'question',
         showCancelButton: true,
         confirmButtonText: 'Sí, marcar',
         cancelButtonText: 'Cancelar',
         confirmButtonColor: '#198754',
         cancelButtonColor: '#6c757d',
+        preConfirm: () => document.getElementById('swal-observacion').value.trim(),
     });
     if (!result.isConfirmed) return;
     await fetch(`/admin/visitantes/${id}/induccion`, {
         method: 'POST',
-        headers: { 'X-CSRF-TOKEN': csrfToken },
+        headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ observacion: result.value || null }),
     });
     loadVisitantes();
 }
