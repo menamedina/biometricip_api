@@ -267,6 +267,7 @@
 <script>
 const csrfToken     = '{{ csrf_token() }}';
 const isAdminTenant = {{ auth()->user()->admin_tenant ? 'true' : 'false' }};
+const isSupervisor  = {{ auth()->user()->role === 'supervisor' ? 'true' : 'false' }};
 let currentPage = 1;
 let sortBy  = 'name';
 let sortDir = 'asc';
@@ -473,7 +474,7 @@ async function loadEmpleados(page = 1) {
                     </td>
                     <td>
                         <button class="btn btn-sm btn-outline-primary me-1" onclick="editEmpleado(${e.id}, '${e.encrypted_id}')"><i class="fa-solid fa-pen"></i></button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteEmpleado('${e.encrypted_id}')"><i class="fa-solid fa-trash"></i></button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteEmpleado('${e.encrypted_id}')" ${isSupervisor ? 'disabled' : ''}><i class="fa-solid fa-trash"></i></button>
                     </td>
                 </tr>`;
             }).join('');
