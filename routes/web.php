@@ -128,7 +128,10 @@ Route::middleware(['auth', 'admin', 'role:admin,supervisor', 'tenancy.session'])
     Route::post  ('/admin/sedes/{sede}/qr-v3/enable',        [ApiSedeController::class, 'enableQRV3']);
     Route::post  ('/admin/sedes/{sede}/qr-v3/regenerar',     [ApiSedeController::class, 'regenerateQRV3']);
     Route::get   ('/admin/empleados',                  [AdminController::class,       'empleadosIndex'])->name('admin.empleados.index');
-    Route::get   ('/admin/empleados/list',             [ApiEmpleadoController::class, 'index']);
+    Route::get   ('/admin/empleados/list',                             [ApiEmpleadoController::class, 'index']);
+    Route::get   ('/admin/empleados/{id}/imagenes-rostro',            [ApiEmpleadoController::class, 'getImagenesRostro']);
+    Route::post  ('/admin/empleados/{id}/imagenes-rostro',            [ApiEmpleadoController::class, 'storeImagenRostro']);
+    Route::delete('/admin/empleados/{id}/imagenes-rostro/{imageId}',  [ApiEmpleadoController::class, 'destroyImagenRostro']);
     Route::get   ('/admin/empleados/tenant-catalogs',  [AdminController::class,       'empleadosCatalogos']);
     Route::get   ('/admin/empleados/tenant-sedes',     [AdminController::class,       'empleadosSedes']);
     Route::get   ('/admin/empleados/lideres',          [AdminController::class,       'empleadosLideres']);

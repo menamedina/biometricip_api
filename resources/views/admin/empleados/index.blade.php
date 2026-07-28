@@ -469,9 +469,9 @@ async function loadEmpleados(page = 1) {
                     <td>${(e.sede_nombres && e.sede_nombres.length) ? e.sede_nombres.map(n => `<span class="badge bg-info text-dark me-1">${n}</span>`).join('') : (e.sede_ids && e.sede_ids.length) ? e.sede_ids.map(id => `<span class="badge bg-info text-dark me-1">${sedeMap[id] || id}</span>`).join('') : '—'}</td>
                     <td><span class="badge ${e.is_active ? 'bg-success' : 'bg-danger'}">${e.is_active ? 'Activo' : 'Inactivo'}</span></td>
                     <td>
-                        <button class="btn btn-sm ${e.face_descriptor ? 'btn-success' : 'btn-outline-secondary'}" onclick="verRostros(${e.id}, '${(e.name||'').replace(/'/g,'')}')">
+                        <button class="btn btn-sm ${e.has_face_descriptor ? 'btn-success' : 'btn-outline-secondary'}" onclick="verRostros(${e.id}, '${(e.name||'').replace(/'/g,'')}')">
                             <i class="fa-solid fa-face-smile"></i>
-                            <span class="ms-1">${e.face_descriptor ? '✓' : '—'}</span>
+                            <span class="ms-1">${e.has_face_descriptor ? '✓' : '—'}</span>
                         </button>
                     </td>
                     <td>
@@ -648,7 +648,7 @@ async function verRostros(empleadoId, nombre) {
 
 async function cargarRostros() {
     try {
-        const res = await fetch(`/api/empleados/${rostrosEmpleadoId}/imagenes-rostro?con_imagen=true`);
+        const res = await fetch(`/admin/empleados/${rostrosEmpleadoId}/imagenes-rostro?con_imagen=true`);
         const data = await res.json();
         const imgs = data.data || [];
         const container = document.getElementById('rostrosContent');
@@ -699,7 +699,7 @@ async function cargarRostros() {
 async function eliminarRostro(imageId) {
     if (!confirm('¿Eliminar esta imagen de rostro?')) return;
     try {
-        const res = await fetch(`/api/empleados/${rostrosEmpleadoId}/imagenes-rostro/${imageId}`, {
+        const res = await fetch(`/admin/empleados/${rostrosEmpleadoId}/imagenes-rostro/${imageId}`, {
             method: 'DELETE',
             headers: { 'X-CSRF-TOKEN': csrfToken },
         });

@@ -15,6 +15,7 @@ use App\Models\UserSede;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
@@ -58,7 +59,12 @@ class EmpleadoController extends Controller
         $sortCol = in_array($request->sort, $allowed) ? $request->sort : 'name';
         $sortDir = $request->dir === 'desc' ? 'desc' : 'asc';
 
-        $empleados = $query->with('userSedes')->orderBy($sortCol, $sortDir)->paginate($request->per_page ?? 20);
+        $empleados = $query
+            ->select(['id','name','cedula','email','role','tipo','admin_tenant','is_active','empresa_id','empleador_id','lider_id','codigo_empleado','departamento_id','cargo_id','horario_id','telefono','foto_url','last_login_at','created_at',
+                DB::raw('(face_descriptor IS NOT NULL) AS has_face_descriptor')])
+            ->with('userSedes')
+            ->orderBy($sortCol, $sortDir)
+            ->paginate($request->per_page ?? 20);
 
         // Resolver nombres de cargo/departamento por empresa (cada una tiene su propio tenant DB)
         $nombresPorEmpresa = [];
