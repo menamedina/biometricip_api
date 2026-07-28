@@ -352,35 +352,56 @@ function badgeInduccion(v) {
     if (v.induccion_fecha) {
         const fecha = formatDT(v.induccion_fecha);
         return `<div>
-            <span class="badge bg-success" title="${fecha}"><i class="ti ti-circle-check me-1"></i>Realizada</span>
-            <button class="btn btn-sm btn-outline-secondary py-0 px-1 ms-1" onclick="marcarInduccion(${v.id})" title="Actualizar inducción">
-                <i class="ti ti-refresh" style="font-size:11px"></i>
+            <span class="badge bg-success"><i class="ti ti-circle-check me-1"></i>Realizada</span>
+            <small class="d-block text-muted mt-1">${fecha}</small>
+            <button class="btn btn-link btn-sm p-0 mt-1 text-secondary" style="font-size:11px" onclick="marcarInduccion(${v.id})" title="Cambiar fecha de inducción">
+                <i class="ti ti-calendar-edit me-1"></i>Cambiar fecha
             </button>
         </div>`;
     }
-    return `<div class="d-flex align-items-center gap-1">
-                <span class="badge bg-danger"><i class="ti ti-alert-circle me-1"></i>Pendiente</span>
-                <button class="btn btn-sm btn-success py-0 px-1" onclick="marcarInduccion(${v.id})" title="Marcar inducción realizada">
-                    <i class="ti ti-check"></i> Inducción realizada
-                </button>
-            </div>`;
+    return `<div class="d-flex flex-column align-items-start gap-1">
+        <span class="badge bg-danger"><i class="ti ti-alert-circle me-1"></i>Pendiente</span>
+        <button class="btn btn-sm btn-success py-0 px-2 mt-1" onclick="marcarInduccion(${v.id})" title="Registrar fecha de inducción">
+            <i class="ti ti-calendar-plus me-1"></i>Registrar fecha
+        </button>
+    </div>`;
 }
 
 async function marcarInduccion(id) {
+    const v = visitantesData.find(x => x.id === id);
+    // Precarga: si ya tiene fecha, usarla; si no, hoy
+    const fechaActual = v?.induccion_fecha
+        ? new Date(v.induccion_fecha).toISOString().slice(0, 16)
+        : new Date(new Date() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+
     const result = await Swal.fire({
-        title: '¿Inducción realizada?',
-        text: 'Se registrará que la inducción fue completada ahora.',
-        icon: 'question',
+        title: '<i class="ti ti-shield-check me-2 text-success"></i>Fecha de inducción',
+        html: `
+            <p class="text-muted small mb-3">Ingresa la fecha y hora en que se realizó la inducción.</p>
+            <input id="swal-fecha-ind" type="datetime-local" value="${fechaActual}"
+                style="width:100%;font-size:14px;border:1px solid #dee2e6;border-radius:8px;padding:9px 12px;outline:none;color:#344054;font-family:inherit;"
+                onfocus="this.style.borderColor='#198754';this.style.boxShadow='0 0 0 3px rgba(25,135,84,.15)'"
+                onblur="this.style.borderColor='#dee2e6';this.style.boxShadow='none'">`,
         showCancelButton: true,
-        confirmButtonText: 'Sí, marcar',
+        confirmButtonText: '<i class="ti ti-check me-1"></i>Guardar',
         cancelButtonText: 'Cancelar',
         confirmButtonColor: '#198754',
         cancelButtonColor: '#6c757d',
+        width: 420,
+        padding: '1.5rem',
+        customClass: { htmlContainer: 'text-start' },
+        preConfirm: () => {
+            const val = document.getElementById('swal-fecha-ind').value;
+            if (!val) { Swal.showValidationMessage('Selecciona una fecha'); return false; }
+            return val;
+        },
+        didOpen: () => document.getElementById('swal-fecha-ind').focus(),
     });
     if (!result.isConfirmed) return;
     await fetch(`/admin/visitantes/${id}/induccion`, {
         method: 'POST',
-        headers: { 'X-CSRF-TOKEN': csrfToken },
+        headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fecha: result.value }),
     });
     loadVisitantes();
 }

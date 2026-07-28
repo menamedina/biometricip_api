@@ -435,7 +435,10 @@ class AdminController extends Controller
     public function visitantesInduccion(int $id): JsonResponse
     {
         $visitante = Visitante::findOrFail($id);
-        $visitante->update(['induccion_fecha' => now()]);
+        $fecha = request()->input('fecha');
+        $visitante->update([
+            'induccion_fecha' => $fecha ? \Carbon\Carbon::parse($fecha) : now(),
+        ]);
         return response()->json(['success' => true]);
     }
 
