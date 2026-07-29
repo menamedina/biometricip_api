@@ -67,6 +67,9 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
+                <div class="card-header p-3 d-flex justify-content-between align-items-center border-bottom-0 pb-2">
+                    <span class="text-muted small" id="totalLabel">Cargando...</span>
+                </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover mb-0">
@@ -91,9 +94,17 @@
                                 </tr>
                             </thead>
                             <tbody id="visitantesTbody">
-                                <tr><td colspan="9" class="text-center text-muted py-3">Cargando...</td></tr>
+                                <tr><td colspan="16" class="text-center text-muted py-3">Cargando...</td></tr>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+                <div class="card-footer py-2 px-3" id="paginacionContainer" style="display:none!important">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted" id="paginacionInfo"></small>
+                        <nav>
+                            <ul class="pagination pagination-sm mb-0" id="paginacionLinks"></ul>
+                        </nav>
                     </div>
                 </div>
             </div>
@@ -222,6 +233,8 @@ let dataLoadedAt    = null;
 let visitantesData  = [];
 let sortField       = 'hora_entrada';
 let sortDir         = 'desc';
+let currentPage     = 1;
+let paginaMeta      = {};
 
 // Fecha por defecto: hoy en hora local
 function localDateStr() {
@@ -240,14 +253,18 @@ function loadSedes() {
     });
 }
 
-async function loadVisitantes() {
+async function loadVisitantes(page = 1) {
+    currentPage = page;
     const params = new URLSearchParams({
         sede_id:  document.getElementById('filterSede').value,
         desde:    document.getElementById('filterDesde').value,
         hasta:    document.getElementById('filterHasta').value,
         search:   document.getElementById('filterSearch').value,
         estado:   document.getElementById('filterEstado').value,
+        page:     currentPage,
     });
+
+    document.getElementById('totalLabel').textContent = 'Cargando...';
 
     const res  = await fetch(`/admin/visitantes/list?${params}`);
     const data = await res.json();
@@ -255,14 +272,19 @@ async function loadVisitantes() {
 
     if (!data.data || data.data.length === 0) {
         visitantesData = [];
+        paginaMeta = {};
         tbody.innerHTML = '<tr><td colspan="16" class="text-center text-muted py-3">Sin registros</td></tr>';
+        document.getElementById('totalLabel').textContent = '0 visitantes encontrados';
+        document.getElementById('paginacionContainer').style.setProperty('display', 'none', 'important');
         return;
     }
 
+    paginaMeta     = { total: data.total, per_page: data.per_page, current_page: data.current_page, last_page: data.last_page, from: data.from, to: data.to };
     visitantesData = data.data;
     dataLoadedAt   = new Date();
     renderTabla();
     actualizarIconosSort();
+    renderTotalYPaginacion();
 }
 
 function sortValue(v, field) {
@@ -318,6 +340,52 @@ function actualizarIconosSort() {
         th.innerHTML = th.textContent.replace(/ [▲▼]$/, '') +
             (field === sortField ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ' ⇅');
     });
+}
+
+function renderTotalYPaginacion() {
+    const { total, per_page, current_page, last_page, from, to } = paginaMeta;
+
+    // Total label
+    document.getElementById('totalLabel').innerHTML =
+        `<i class="ti ti-users me-1 text-primary"></i> <strong>${total}</strong> visitante${total !== 1 ? 's' : ''} encontrado${total !== 1 ? 's' : ''}`;
+
+    // Paginación
+    const container = document.getElementById('paginacionContainer');
+    if (last_page <= 1) {
+        container.style.setProperty('display', 'none', 'important');
+        return;
+    }
+    container.style.removeProperty('display');
+
+    document.getElementById('paginacionInfo').textContent = `Mostrando ${from}–${to} de ${total}`;
+
+    const ul = document.getElementById('paginacionLinks');
+    ul.innerHTML = '';
+
+    const addLi = (label, page, disabled = false, active = false) => {
+        const li = document.createElement('li');
+        li.className = `page-item${disabled ? ' disabled' : ''}${active ? ' active' : ''}`;
+        const a = document.createElement('a');
+        a.className = 'page-link';
+        a.href = '#';
+        a.innerHTML = label;
+        if (!disabled && !active) a.addEventListener('click', e => { e.preventDefault(); loadVisitantes(page); });
+        li.appendChild(a);
+        ul.appendChild(li);
+    };
+
+    addLi('&laquo;', current_page - 1, current_page === 1);
+
+    // Ventana de páginas: máximo 5 alrededor de la actual
+    const delta = 2;
+    const start = Math.max(1, current_page - delta);
+    const end   = Math.min(last_page, current_page + delta);
+
+    if (start > 1) { addLi('1', 1); if (start > 2) addLi('…', null, true); }
+    for (let p = start; p <= end; p++) addLi(p, p, false, p === current_page);
+    if (end < last_page) { if (end < last_page - 1) addLi('…', null, true); addLi(last_page, last_page); }
+
+    addLi('&raquo;', current_page + 1, current_page === last_page);
 }
 
 function parseDate(dt) {
