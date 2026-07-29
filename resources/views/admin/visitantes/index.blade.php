@@ -337,7 +337,7 @@ function renderTabla() {
 function actualizarIconosSort() {
     document.querySelectorAll('thead th.sortable').forEach(th => {
         const field = th.dataset.field;
-        th.innerHTML = th.textContent.replace(/ [▲▼]$/, '') +
+        th.innerHTML = th.textContent.replace(/ [▲▼⇅]$/, '') +
             (field === sortField ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ' ⇅');
     });
 }
