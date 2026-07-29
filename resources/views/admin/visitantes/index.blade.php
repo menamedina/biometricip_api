@@ -222,6 +222,7 @@
 <style>
 .rm-upper { text-transform: uppercase; }
 .rm-upper::placeholder { text-transform: none; }
+thead th.sortable { white-space: nowrap; }
 </style>
 @endpush
 
@@ -336,9 +337,14 @@ function renderTabla() {
 
 function actualizarIconosSort() {
     document.querySelectorAll('thead th.sortable').forEach(th => {
-        const field = th.dataset.field;
-        th.innerHTML = th.textContent.replace(/ [▲▼⇅]$/, '') +
-            (field === sortField ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ' ⇅');
+        th.querySelectorAll('i.sort-icon').forEach(i => i.remove());
+        const icon = document.createElement('i');
+        if (th.dataset.field === sortField) {
+            icon.className = `sort-icon fa-solid fa-sort-${sortDir === 'asc' ? 'up' : 'down'} ms-1 text-primary`;
+        } else {
+            icon.className = 'sort-icon fa-solid fa-sort ms-1 text-muted opacity-50';
+        }
+        th.appendChild(icon);
     });
 }
 
