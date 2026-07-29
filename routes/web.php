@@ -85,6 +85,9 @@ Route::post('/eliminacion-datos', function (\Illuminate\Http\Request $request) {
     ]);
 })->name('data-deletion.submit');
 
+// Políticas de tratamiento de datos — página pública
+Route::get('/politicas-tratamiento-datos', fn () => view('public.politicas'))->name('public.politicas');
+
 // QR v3 — Formulario público de asistencia (sin autenticación)
 Route::get ('/asistencia/{webToken}/{sedeCode}/{token}',                    [PublicAttendanceController::class, 'show'])->name('public.attendance.show');
 Route::post('/asistencia/{webToken}/{sedeCode}/{token}',                    [PublicAttendanceController::class, 'store'])->name('public.attendance.store');

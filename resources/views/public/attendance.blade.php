@@ -156,6 +156,27 @@
                     <div class="invalid-feedback" id="cedulaError"></div>
                 </div>
 
+                {{-- Aviso políticas de datos — solo visitante entrada --}}
+                <div id="politicasBox" class="d-none mb-4" style="background:#f0f4ff;border-radius:12px;padding:16px 18px;border:1px solid #c7d2fe;">
+                    <p style="font-size:.82rem;color:#374151;margin-bottom:10px;line-height:1.55;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        <strong>Tratamiento de datos personales</strong><br>
+                        Sus datos serán tratados conforme a la <strong>Ley 1581 de 2012</strong>. La fotografía facial, datos de identidad y de contacto se recolectan exclusivamente para el control de acceso y seguridad de las instalaciones.
+                    </p>
+                    <div class="form-check" style="align-items:flex-start;display:flex;gap:10px;">
+                        <input class="form-check-input mt-1" type="checkbox" id="chkPoliticas" onchange="checkReady()"
+                               style="width:20px;height:20px;min-width:20px;border-radius:5px;border:2px solid #6366f1;cursor:pointer;flex-shrink:0;">
+                        <label class="form-check-label" for="chkPoliticas" style="font-size:.85rem;color:#374151;cursor:pointer;line-height:1.5;">
+                            He leído y acepto las
+                            <a href="{{ route('public.politicas') }}" target="_blank" style="color:#4F46E5;font-weight:600;text-decoration:underline;">
+                                Políticas de Tratamiento de Datos Personales
+                            </a>
+                            y autorizo el uso de mis datos para los fines descritos.
+                        </label>
+                    </div>
+                    <div class="text-danger small mt-1" id="politicasError" style="display:none;">Debes aceptar las políticas para continuar.</div>
+                </div>
+
                 {{-- Continuar (solo visitante + entrada) --}}
                 <div id="cedulaContinuarBar" class="d-none mb-4">
                     <button type="button" class="btn btn-primary btn-lg w-100" id="btnContinuar" onclick="continuarVisitante()"
@@ -278,6 +299,9 @@ function selectTipoUsuario(tipo) {
     document.getElementById('photoInput').value = '';
     document.getElementById('photoLabelText').textContent = 'Toca para abrir la cámara';
     document.getElementById('photoPreview').style.display = 'none';
+    document.getElementById('politicasBox').classList.add('d-none');
+    document.getElementById('chkPoliticas').checked = false;
+    document.getElementById('politicasError').style.display = 'none';
 
     // Resetear botones Entrada/Salida
     document.getElementById('tipoBtns').classList.remove('d-none');
@@ -328,6 +352,13 @@ async function continuarVisitante() {
     }
     document.getElementById('cedula').classList.remove('is-invalid');
     document.getElementById('cedulaError').textContent = '';
+
+    if (!document.getElementById('chkPoliticas').checked) {
+        document.getElementById('politicasError').style.display = 'block';
+        document.getElementById('politicasBox').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+    }
+    document.getElementById('politicasError').style.display = 'none';
 
     // Mostrar spinner
     document.getElementById('btnContinuarText').classList.add('d-none');
@@ -412,13 +443,17 @@ function setTipo(tipo) {
         : 'Foto <span class="text-muted small">(opcional)</span>';
 
     if (tipoUsuario === 'visitante' && esEntrada) {
-        // Paso 1 del visitante: solo cédula + Continuar
+        // Paso 1 del visitante: solo cédula + políticas + Continuar
+        document.getElementById('politicasBox').classList.remove('d-none');
+        document.getElementById('chkPoliticas').checked = false;
+        document.getElementById('politicasError').style.display = 'none';
         document.getElementById('cedulaContinuarBar').classList.remove('d-none');
         document.getElementById('visitanteFields').classList.add('d-none');
         document.getElementById('photoSection').classList.add('d-none');
         document.getElementById('btnSubmit').classList.add('d-none');
     } else {
         // Empleado o visitante salida: formulario completo directo
+        document.getElementById('politicasBox').classList.add('d-none');
         document.getElementById('cedulaContinuarBar').classList.add('d-none');
         document.getElementById('visitanteFields').classList.add('d-none');
         document.getElementById('photoSection').classList.remove('d-none');
@@ -448,6 +483,7 @@ document.getElementById('photoInput').addEventListener('change', function () {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', checkReady);
 });
+document.getElementById('chkPoliticas').addEventListener('change', checkReady);
 
 function checkReady() {
     const cedula = document.getElementById('cedula').value.trim();
@@ -455,6 +491,13 @@ function checkReady() {
     let ok = tipoSeleccionado && cedula.length >= 5 && (fotoOpcional || fotoBase64);
 
     if (tipoUsuario === 'visitante' && tipoSeleccionado === 'entrada') {
+        const aceptoPoliticas = document.getElementById('chkPoliticas').checked;
+        if (!visitanteLookupOk) {
+            // Aún en la pantalla de cédula: el Continuar se habilita con cédula + checkbox
+            document.getElementById('btnContinuar').disabled = !(cedula.length >= 5 && aceptoPoliticas);
+            document.getElementById('btnSubmit').disabled = true;
+            return;
+        }
         const nombre        = document.getElementById('nombre').value.trim();
         const telefono      = document.getElementById('telefono').value.trim();
         const eps           = document.getElementById('eps').value.trim();
