@@ -380,10 +380,10 @@ class AdminController extends Controller
         // Exportar Excel
         if ($request->input('export') === 'xlsx') {
             $rows = $query->get()->map(function ($v) {
-                $tz    = 'America/Bogota';
-                $entrada = \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $v->getRawOriginal('hora_entrada'), 'UTC')->setTimezone($tz);
+                $tz        = 'America/Bogota';
+                $entrada   = \Carbon\Carbon::parse($v->getRawOriginal('hora_entrada'), $tz);
                 $salidaRaw = $v->getRawOriginal('hora_salida');
-                $salida    = $salidaRaw ? \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $salidaRaw, 'UTC')->setTimezone($tz) : null;
+                $salida    = $salidaRaw ? \Carbon\Carbon::parse($salidaRaw, $tz) : null;
                 $fin       = $salida ?? \Carbon\Carbon::now($tz);
                 $mins      = max(0, (int) $entrada->diffInMinutes($fin));
                 $h = intdiv($mins, 60); $m = $mins % 60;
