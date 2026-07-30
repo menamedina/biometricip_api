@@ -398,6 +398,7 @@ async function continuarVisitante() {
     }
 
     // Ocultar paso lookup, mostrar resto del formulario
+    document.getElementById('politicasBox').classList.add('d-none');
     document.getElementById('cedulaContinuarBar').classList.add('d-none');
     document.getElementById('visitanteFields').classList.remove('d-none');
     document.getElementById('photoSection').classList.remove('d-none');
