@@ -10,13 +10,18 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { min-height: 100%; }
-        body { background: #f0f4ff; }
+        body {
+            background: url('{{ asset('img/Fondo_QR.png') }}') center center / cover no-repeat fixed;
+            background-color: #f0f4ff;
+        }
         .card-form {
             width: 100%;
             min-height: 100vh;
             border-radius: 0;
             box-shadow: none;
             border: none;
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(4px);
         }
         .sede-header {
             background: linear-gradient(135deg, #4F46E5, #7C3AED);

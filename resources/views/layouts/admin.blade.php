@@ -209,6 +209,14 @@
                                 <span class="menu-text">Deptos. y Cargos</span>
                             </a>
                         </li>
+                        @if($role !== 'supervisor')
+                        <li class="side-nav-item">
+                            <a href="{{ route('admin.empleadores.index') }}" class="side-nav-link {{ request()->routeIs('admin.empleadores.*') ? 'active' : '' }}">
+                                <span class="menu-icon"><i class="ti ti-briefcase"></i></span>
+                                <span class="menu-text">Empleadores</span>
+                            </a>
+                        </li>
+                        @endif
 
                         @if($role !== 'supervisor')
                         <li class="side-nav-title mt-2">Empresa</li>

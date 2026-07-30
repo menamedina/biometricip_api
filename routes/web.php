@@ -155,6 +155,10 @@ Route::middleware(['auth', 'admin', 'role:admin,supervisor', 'tenancy.session'])
     Route::get ('/admin/visitantes/{id}/foto',                [AdminController::class,      'visitantesFoto'])->name('admin.visitantes.foto');
     Route::get('/admin/dispositivos',   [AdminController::class, 'dispositivosIndex'])->name('admin.dispositivos.index');
     Route::get('/admin/permisos',       [AdminController::class, 'permisosIndex'])->name('admin.permisos.index');
+    Route::get   ('/admin/empleadores',        [AdminController::class, 'empleadoresIndex'])->name('admin.empleadores.index');
+    Route::post  ('/admin/empleadores',        [AdminController::class, 'empleadoresStore'])->name('admin.empleadores.store');
+    Route::put   ('/admin/empleadores/{id}',   [AdminController::class, 'empleadoresUpdate'])->name('admin.empleadores.update');
+    Route::delete('/admin/empleadores/{id}',   [AdminController::class, 'empleadoresDestroy'])->name('admin.empleadores.destroy');
     Route::get   ('/admin/departamentos',          [AdminController::class, 'departamentosIndex'])->name('admin.departamentos.index');
     Route::post  ('/admin/departamentos',          [AdminController::class, 'departamentosStore'])->name('admin.departamentos.store');
     Route::put   ('/admin/departamentos/{id}',     [AdminController::class, 'departamentosUpdate'])->name('admin.departamentos.update');

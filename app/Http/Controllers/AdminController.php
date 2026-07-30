@@ -248,6 +248,45 @@ class AdminController extends Controller
             ->with('success', 'Departamento eliminado.');
     }
 
+    // ── Empleadores ──────────────────────────────────────────────────────────
+
+    public function empleadoresIndex(): View
+    {
+        $empleadores = Empleador::orderBy('nombre')->get();
+        return view('admin.empleadores.index', compact('empleadores'));
+    }
+
+    public function empleadoresStore(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'nombre'      => 'required|string|max:150|unique:tenant.tbl_empleador,nombre',
+            'descripcion' => 'nullable|string|max:255',
+            'is_active'   => 'nullable|boolean',
+        ]);
+        $data['is_active'] = $request->boolean('is_active', true);
+        $empleador = Empleador::create($data);
+        return response()->json(['success' => true, 'empleador' => $empleador]);
+    }
+
+    public function empleadoresUpdate(Request $request, int $id): JsonResponse
+    {
+        $empleador = Empleador::findOrFail($id);
+        $data = $request->validate([
+            'nombre'      => 'required|string|max:150|unique:tenant.tbl_empleador,nombre,' . $id,
+            'descripcion' => 'nullable|string|max:255',
+            'is_active'   => 'nullable|boolean',
+        ]);
+        $data['is_active'] = $request->boolean('is_active', true);
+        $empleador->update($data);
+        return response()->json(['success' => true, 'empleador' => $empleador]);
+    }
+
+    public function empleadoresDestroy(int $id): JsonResponse
+    {
+        Empleador::findOrFail($id)->update(['is_active' => false]);
+        return response()->json(['success' => true, 'message' => 'Empleador desactivado.']);
+    }
+
     public function departamentosTemplate()
     {
         return Excel::download(new DepartamentosTemplateExport(), 'plantilla_departamentos.xlsx');
