@@ -11,7 +11,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { min-height: 100%; }
         body {
-            background: #f0f4ff url('{{ asset('img/Fondo_QR.png') }}') center top / 100% auto no-repeat;
+            background: #f0f4ff url('{{ asset('img/Fondo_QR.png') }}') center center / cover no-repeat fixed;
         }
         .card-form {
             width: 100%;
