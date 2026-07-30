@@ -81,6 +81,17 @@
             border-radius: 10px !important;
             min-height: 52px;
         }
+        /* Mayúsculas en todos los campos de texto */
+        input.form-control[type="text"],
+        input.form-control[type="tel"],
+        input.form-control[type="number"],
+        input.form-control-lg {
+            text-transform: uppercase;
+        }
+        input.form-control::placeholder,
+        input.form-control-lg::placeholder {
+            text-transform: none;
+        }
 
         /* Botón principal grande */
         #btnSubmit {
@@ -224,7 +235,7 @@
 
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Placa del vehículo</label>
-                        <input type="text" id="placa" class="form-control" placeholder="Ej: ABC-123" autocomplete="off" style="text-transform:uppercase;">
+                        <input type="text" id="placa" class="form-control" placeholder="Ej: ABC-123" autocomplete="off">
                     </div>
 
                     {{-- Aviso cuando se pre-llenaron datos previos --}}
@@ -480,9 +491,15 @@ document.getElementById('photoInput').addEventListener('change', function () {
     reader.readAsDataURL(file);
 });
 
-['cedula','nombre','telefono','eps','arl','empresa','personaVisita'].forEach(id => {
+['cedula','nombre','telefono','eps','arl','empresa','personaVisita','placa'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.addEventListener('input', checkReady);
+    if (!el) return;
+    el.addEventListener('input', () => {
+        const pos = el.selectionStart;
+        el.value = el.value.toUpperCase();
+        try { el.setSelectionRange(pos, pos); } catch (_) {}
+        checkReady();
+    });
 });
 document.getElementById('chkPoliticas').addEventListener('change', checkReady);
 
