@@ -11,7 +11,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { min-height: 100%; }
         body {
-            background: #f0f4ff url('{{ asset('img/Fondo_QR.png') }}') center center / cover no-repeat fixed;
+            background: #fff url('{{ asset('img/Fondo_QR.png') }}') center top / contain no-repeat;
         }
         .card-form {
             width: 100%;
@@ -19,8 +19,7 @@
             border-radius: 0;
             box-shadow: none;
             border: none;
-            background: rgba(255, 255, 255, 0.88);
-            backdrop-filter: blur(4px);
+            background: transparent;
         }
         .sede-header {
             background: linear-gradient(135deg, #4F46E5, #7C3AED);
