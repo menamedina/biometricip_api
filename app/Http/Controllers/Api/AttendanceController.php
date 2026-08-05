@@ -488,31 +488,32 @@ class AttendanceController extends Controller
             ->whereTime('fecha_hora', '>', '09:00:00')
             ->count();
 
+        $empleadoIds = User::where('empresa_id', $empresaId)
+            ->where('role', 'empleado')
+            ->pluck('id');
+
         // Empleados actualmente en planta: último registro del día es entrada o regreso_almuerzo
-        $enPlanta = AttendanceRecord::whereDate('fecha_hora', $date)
-            ->whereHas('user', fn($q) => $q->where('empresa_id', $empresaId))
-            ->select('user_id', \DB::raw('MAX(fecha_hora) as ultimo'))
+        $ultimosPorUsuario = AttendanceRecord::whereDate('fecha_hora', $date)
+            ->whereIn('user_id', $empleadoIds)
+            ->orderBy('fecha_hora')
+            ->get(['user_id', 'tipo'])
             ->groupBy('user_id')
-            ->get()
-            ->filter(function ($row) use ($date) {
-                $ultimo = AttendanceRecord::where('user_id', $row->user_id)
-                    ->whereDate('fecha_hora', $date)
-                    ->orderByDesc('fecha_hora')
-                    ->value('tipo');
-                return in_array($ultimo, ['entrada', 'regreso_almuerzo']);
-            })
-            ->count();
+            ->map(fn($rows) => $rows->last()->tipo);
+
+        $enPlanta = $ultimosPorUsuario->filter(
+            fn($tipo) => in_array($tipo, ['entrada', 'regreso_almuerzo'])
+        )->count();
 
         // Empleados con algún registro hoy
         $enDia = AttendanceRecord::whereDate('fecha_hora', $date)
-            ->whereHas('user', fn($q) => $q->where('empresa_id', $empresaId))
+            ->whereIn('user_id', $empleadoIds)
             ->distinct('user_id')
             ->count('user_id');
 
         // Empleados con algún registro en el mes
         $enMes = AttendanceRecord::whereYear('fecha_hora', now()->year)
             ->whereMonth('fecha_hora', now()->month)
-            ->whereHas('user', fn($q) => $q->where('empresa_id', $empresaId))
+            ->whereIn('user_id', $empleadoIds)
             ->distinct('user_id')
             ->count('user_id');
 
