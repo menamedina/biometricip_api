@@ -69,6 +69,45 @@
             </div>
         </div>
     </div>
+    <div class="col-6 col-xl-3">
+        <div class="card h-100 border-0 shadow-sm" style="border-left: 4px solid #23c6c8 !important;">
+            <div class="card-body d-flex align-items-center gap-3 py-3">
+                <span class="avatar-title bg-info bg-opacity-10 text-info rounded-2 fs-3" style="width:52px;height:52px;min-width:52px;">
+                    <i class="fa-solid fa-building-user"></i>
+                </span>
+                <div class="overflow-hidden">
+                    <h2 class="mb-0 fw-bold" id="statEnPlanta">--</h2>
+                    <p class="text-muted mb-0 small text-truncate">En planta</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="card h-100 border-0 shadow-sm" style="border-left: 4px solid #6f42c1 !important;">
+            <div class="card-body d-flex align-items-center gap-3 py-3">
+                <span class="avatar-title bg-purple bg-opacity-10 rounded-2 fs-3" style="width:52px;height:52px;min-width:52px;background:rgba(111,66,193,.1);color:#6f42c1;">
+                    <i class="fa-solid fa-calendar-day"></i>
+                </span>
+                <div class="overflow-hidden">
+                    <h2 class="mb-0 fw-bold" id="statEnDia">--</h2>
+                    <p class="text-muted mb-0 small text-truncate">En el día</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="card h-100 border-0 shadow-sm" style="border-left: 4px solid #e83e8c !important;">
+            <div class="card-body d-flex align-items-center gap-3 py-3">
+                <span class="avatar-title rounded-2 fs-3" style="width:52px;height:52px;min-width:52px;background:rgba(232,62,140,.1);color:#e83e8c;">
+                    <i class="fa-solid fa-calendar-check"></i>
+                </span>
+                <div class="overflow-hidden">
+                    <h2 class="mb-0 fw-bold" id="statEnMes">--</h2>
+                    <p class="text-muted mb-0 small text-truncate">En el mes</p>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 {{-- Barra de asistencia --}}
@@ -103,6 +142,7 @@
                     <thead class="table-light sticky-top">
                         <tr>
                             <th class="ps-3">Empleado</th>
+                            <th>Fecha</th>
                             <th>Hora</th>
                             <th>Tipo</th>
                             <th>Método</th>
@@ -110,7 +150,7 @@
                         </tr>
                     </thead>
                     <tbody id="attendanceTbody">
-                        <tr><td colspan="5" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-1"></i> Cargando...</td></tr>
+                        <tr><td colspan="6" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-1"></i> Cargando...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -177,6 +217,9 @@ async function loadDashboard() {
         document.getElementById('statPresentes').textContent = presentes;
         document.getElementById('statAusentes').textContent  = ausentes;
         document.getElementById('statTardanzas').textContent = tardanzas;
+        document.getElementById('statEnPlanta').textContent  = stats.en_planta ?? '--';
+        document.getElementById('statEnDia').textContent     = stats.en_dia    ?? '--';
+        document.getElementById('statEnMes').textContent     = stats.en_mes    ?? '--';
 
         // Barra de asistencia
         document.getElementById('statPct').textContent   = pct + '%';
@@ -194,14 +237,16 @@ async function loadDashboard() {
         const tbody = document.getElementById('attendanceTbody');
 
         if (!data.data || data.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4"><i class="fa-solid fa-inbox me-1"></i> Sin registros hoy</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4"><i class="fa-solid fa-inbox me-1"></i> Sin registros hoy</td></tr>';
             document.getElementById('recordCount').textContent = '0';
         } else {
             document.getElementById('recordCount').textContent = data.data.length;
             tbody.innerHTML = data.data.map(r => {
                 const name  = r.user?.name || 'N/A';
                 const depto = r.user?.departamento || '';
-                const hora  = new Date(r.fecha_hora).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+                const dt    = new Date(r.fecha_hora);
+                const fecha = dt.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                const hora  = dt.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
                 const color = avatarColor(name);
                 const initials = avatarInitials(name);
                 return `<tr>
@@ -214,6 +259,7 @@ async function loadDashboard() {
                             </div>
                         </div>
                     </td>
+                    <td class="text-nowrap">${fecha}</td>
                     <td class="text-nowrap">${hora}</td>
                     <td>${tipoBadge(r.tipo)}</td>
                     <td><span class="badge bg-info-subtle text-info border border-info-subtle">${r.metodo}</span></td>

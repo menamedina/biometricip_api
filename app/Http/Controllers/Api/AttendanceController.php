@@ -488,11 +488,42 @@ class AttendanceController extends Controller
             ->whereTime('fecha_hora', '>', '09:00:00')
             ->count();
 
+        // Empleados actualmente en planta: último registro del día es entrada o regreso_almuerzo
+        $enPlanta = AttendanceRecord::whereDate('fecha_hora', $date)
+            ->whereHas('user', fn($q) => $q->where('empresa_id', $empresaId))
+            ->select('user_id', \DB::raw('MAX(fecha_hora) as ultimo'))
+            ->groupBy('user_id')
+            ->get()
+            ->filter(function ($row) use ($date) {
+                $ultimo = AttendanceRecord::where('user_id', $row->user_id)
+                    ->whereDate('fecha_hora', $date)
+                    ->orderByDesc('fecha_hora')
+                    ->value('tipo');
+                return in_array($ultimo, ['entrada', 'regreso_almuerzo']);
+            })
+            ->count();
+
+        // Empleados con algún registro hoy
+        $enDia = AttendanceRecord::whereDate('fecha_hora', $date)
+            ->whereHas('user', fn($q) => $q->where('empresa_id', $empresaId))
+            ->distinct('user_id')
+            ->count('user_id');
+
+        // Empleados con algún registro en el mes
+        $enMes = AttendanceRecord::whereYear('fecha_hora', now()->year)
+            ->whereMonth('fecha_hora', now()->month)
+            ->whereHas('user', fn($q) => $q->where('empresa_id', $empresaId))
+            ->distinct('user_id')
+            ->count('user_id');
+
         return response()->json([
             'total_empleados' => $totalEmpleados,
-            'presentes' => $presentes,
-            'ausentes' => max(0, $ausentes),
-            'tardanzas' => $tardanzas,
+            'presentes'       => $presentes,
+            'ausentes'        => max(0, $ausentes),
+            'tardanzas'       => $tardanzas,
+            'en_planta'       => $enPlanta,
+            'en_dia'          => $enDia,
+            'en_mes'          => $enMes,
         ]);
     }
 
