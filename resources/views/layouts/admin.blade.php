@@ -9,7 +9,6 @@
     <link href="{{ asset('assets/css/vendors.min.css') }}" rel="stylesheet" />
     <link id="app-style" href="{{ asset('assets/css/app.min.css') }}" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     @stack('styles')
     <style>
         /* ── Logo en sidebar ─────────────────────────────── */
@@ -399,8 +398,7 @@
         localStorage.setItem('token', '{{ session('api_token') }}');
         @endif
     </script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
     @stack('scripts')
 </body>
 </html>

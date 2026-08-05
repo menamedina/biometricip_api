@@ -92,7 +92,7 @@
 
 {{-- Contenido principal --}}
 <div class="row g-3">
-    <div class="{{ in_array(auth()->user()->role, ['empleado', 'supervisor']) ? 'col-12' : 'col-lg-7' }}">
+    <div class="col-12">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3">
                 <h5 class="mb-0 fw-semibold"><i class="fa-solid fa-list-check me-1 text-primary"></i> Registros de hoy</h5>
@@ -117,34 +117,6 @@
         </div>
     </div>
 
-    @if(!in_array(auth()->user()->role, ['empleado', 'supervisor']))
-    <div class="col-lg-5">
-        <div class="card border-0 shadow-sm mb-3">
-            <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3">
-                <h5 class="mb-0 fw-semibold" id="qrCardTitle"><i class="fa-solid fa-qrcode me-1 text-primary"></i> QR de Sede Principal</h5>
-                <button class="btn btn-sm btn-outline-primary" onclick="refreshQR()" title="Actualizar QR">
-                    <i class="fa-solid fa-rotate" id="qrRefreshIcon"></i>
-                </button>
-            </div>
-            <div class="card-body text-center py-4">
-                <div id="qrCodeContainer" class="d-inline-block p-3 bg-white rounded-3 border shadow-sm"></div>
-                <div class="mt-3">
-                    <p class="fw-semibold mb-0" id="qrSedeName">Sede Principal</p>
-                    <p class="text-muted small mb-0" id="qrSedeInfo">Radio: 150m &bull; Se actualiza cada 30s</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-transparent border-bottom py-3">
-                <h5 class="mb-0 fw-semibold"><i class="fa-solid fa-map-location-dot me-1 text-primary"></i> Mapa de Registros</h5>
-            </div>
-            <div class="card-body p-0">
-                <div id="dashboardMap" style="height: 280px; border-radius: 0 0 8px 8px;"></div>
-            </div>
-        </div>
-    </div>
-    @endif {{-- fin bloque QR+mapa --}}
 </div>
 
 @push('styles')
@@ -168,9 +140,6 @@
 @push('scripts')
 <script>
 const csrfToken = '{{ csrf_token() }}';
-let gMap = null, officeMarker = null, geoCircle = null, attendanceMarkers = [];
-let qrSedeId = null, qrSedeName = null, qrSedeRadio = 150;
-let gmapsReady = false;
 
 const AVATAR_COLORS = ['#4F46E5','#0acf97','#f8ac59','#ed5565','#23c6c8','#7b70ef','#1c84c6'];
 function avatarColor(name) {
@@ -193,49 +162,6 @@ function tipoBadge(tipo) {
 }
 
 const esEmpleado = {{ auth()->user()->role === 'empleado' ? 'true' : 'false' }};
-const esSupervisor = {{ auth()->user()->role === 'supervisor' ? 'true' : 'false' }};
-const ocultarQrMapa = esEmpleado || esSupervisor;
-
-function googleMapsReadyDashboard() {
-    gmapsReady = true;
-    initMap();
-    loadDashboard();
-    if (!ocultarQrMapa) { loadQR(); setInterval(loadQR, 30000); }
-    setInterval(loadDashboard, 30000);
-}
-
-function initMap(lat, lng, radio, nombre, direccion) {
-    lat    = lat    || 4.7110;
-    lng    = lng    || -74.0721;
-    radio  = radio  || 150;
-    nombre = nombre || 'Sede';
-    const center = { lat, lng };
-
-    if (gMap) {
-        gMap.setCenter(center);
-        if (officeMarker) officeMarker.setMap(null);
-        if (geoCircle)    geoCircle.setMap(null);
-    } else {
-        gMap = new google.maps.Map(document.getElementById('dashboardMap'), {
-            center, zoom: 17,
-            mapTypeControl: false, streetViewControl: false, fullscreenControl: false,
-            styles: [{ featureType: 'poi', stylers: [{ visibility: 'off' }] }]
-        });
-    }
-
-    officeMarker = new google.maps.Marker({
-        position: center, map: gMap, title: nombre,
-        icon: { path: google.maps.SymbolPath.CIRCLE, scale: 10, fillColor: '#4F46E5', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 },
-    });
-    officeMarker.addListener('click', () => {
-        new google.maps.InfoWindow({ content: `<b>${nombre}</b><br>${direccion || ''}` }).open(gMap, officeMarker);
-    });
-    geoCircle = new google.maps.Circle({
-        map: gMap, center, radius: radio,
-        strokeColor: '#4F46E5', strokeOpacity: 0.7, strokeWeight: 2,
-        fillColor: '#4F46E5', fillOpacity: 0.07,
-    });
-}
 
 async function loadDashboard() {
     if (!esEmpleado) try {
@@ -299,69 +225,12 @@ async function loadDashboard() {
             }).join('');
         }
 
-        // Actualizar marcadores del mapa (Google Maps)
-        attendanceMarkers.forEach(m => m.setMap(null));
-        attendanceMarkers = [];
-        if (data.data && gMap) {
-            data.data.filter(r => r.lat && r.lng).forEach(r => {
-                const isEntrada = r.tipo.includes('entrada');
-                const m = new google.maps.Marker({
-                    position: { lat: parseFloat(r.lat), lng: parseFloat(r.lng) }, map: gMap,
-                    icon: { path: google.maps.SymbolPath.CIRCLE, scale: 7, fillColor: isEntrada ? '#0acf97' : '#ed5565', fillOpacity: 0.9, strokeColor: '#fff', strokeWeight: 2 },
-                });
-                m.addListener('click', () => {
-                    new google.maps.InfoWindow({ content: `<b>${r.user?.name || 'N/A'}</b><br>${tipoLabel(r.tipo)}` }).open(gMap, m);
-                });
-                attendanceMarkers.push(m);
-            });
-        }
     } catch(e) { console.error('Attendance:', e); }
 }
 
-async function loadQR() {
-    const icon = document.getElementById('qrRefreshIcon');
-    icon.classList.add('fa-spin');
-    try {
-        if (!qrSedeId) {
-            const res  = await fetch('/admin/sedes/list', { headers: { 'X-CSRF-TOKEN': csrfToken } });
-            const data = await res.json();
-            const sede = data.data?.find(s => s.is_active) || data.data?.[0];
-            if (!sede) {
-                document.getElementById('qrCodeContainer').innerHTML = '<p class="text-muted small p-3">Sin sedes registradas</p>';
-                return;
-            }
-            qrSedeId   = sede.id;
-            qrSedeName = sede.nombre;
-            qrSedeRadio = sede.radio_mts || 150;
-
-            document.getElementById('qrCardTitle').innerHTML = `<i class="fa-solid fa-qrcode me-1 text-primary"></i> QR — ${sede.nombre}`;
-            document.getElementById('qrSedeName').textContent = sede.nombre;
-            document.getElementById('qrSedeInfo').textContent = `Radio: ${qrSedeRadio}m \u2022 Se actualiza cada 30s`;
-
-            if (gmapsReady) initMap(parseFloat(sede.lat), parseFloat(sede.lng), qrSedeRadio, sede.nombre, sede.direccion);
-        }
-
-        const res  = await fetch(`/admin/sedes/${qrSedeId}/qr`, { headers: { 'X-CSRF-TOKEN': csrfToken } });
-        const data = await res.json();
-        if (!data.qr_value) return;
-
-        document.getElementById('qrCodeContainer').innerHTML = '';
-        new QRCode(document.getElementById('qrCodeContainer'), {
-            text: data.qr_value, width: 180, height: 180,
-            colorDark: '#1e293b', colorLight: '#ffffff',
-            correctLevel: QRCode.CorrectLevel.M
-        });
-    } catch(e) { console.error('QR:', e); }
-    finally { setTimeout(() => icon.classList.remove('fa-spin'), 600); }
-}
-function refreshQR() { loadQR(); }
-
 document.addEventListener('DOMContentLoaded', () => {
-    if (!gmapsReady) {
-        loadDashboard();
-        if (!ocultarQrMapa) loadQR();
-    }
+    loadDashboard();
+    setInterval(loadDashboard, 30000);
 });
 </script>
-<script src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_MAPS_API_KEY') }}&loading=async&callback=googleMapsReadyDashboard"></script>
 @endpush
