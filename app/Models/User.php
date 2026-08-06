@@ -37,6 +37,8 @@ class User extends Authenticatable
         'foto_url',
         'face_descriptor',
         'last_login_at',
+        'otp_code',
+        'otp_expires_at',
     ];
 
     protected $hidden = [

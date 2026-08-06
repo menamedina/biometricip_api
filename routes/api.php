@@ -32,13 +32,17 @@ Route::get ('/iclock/getrequest', [AdmsController::class, 'getrequest']);
 Route::post('/iclock/devicecmd',  [AdmsController::class, 'devicecmd']);
 
 // Pública
-Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/login',           [AuthController::class, 'login']);
+Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/auth/verify-otp',      [AuthController::class, 'verifyOtp']);
+Route::post('/auth/reset-password',  [AuthController::class, 'resetPassword']);
 
 // Autenticadas con tenancy (switch automático al tenant del usuario)
 Route::middleware(['auth:sanctum', 'tenancy'])->group(function () {
     Route::post('/auth/logout',          [AuthController::class, 'logout']);
     Route::get('/auth/me',               [AuthController::class, 'me']);
     Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
+    Route::post('/auth/upload-photo',    [AuthController::class, 'uploadProfilePhoto']);
 
     Route::post('/attendance/clock',        [AttendanceController::class, 'clock']);
     Route::post('/attendance/offline-sync', [AttendanceController::class, 'offlineSync']);

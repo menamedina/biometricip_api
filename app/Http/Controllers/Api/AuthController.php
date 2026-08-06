@@ -6,6 +6,7 @@ use App\Helpers\TenantHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Cargo;
 use App\Models\Departamento;
+use App\Models\Empleador;
 use App\Models\Empresa;
 use App\Models\Horario;
 use App\Models\Sede;
@@ -15,6 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -77,6 +79,113 @@ class AuthController extends Controller
         return response()->json(['message' => 'Sesión cerrada correctamente.']);
     }
 
+    public function uploadProfilePhoto(Request $request): JsonResponse
+    {
+        $request->validate([
+            'photo' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+        ], [
+            'photo.max'    => 'La imagen no debe superar los 2MB.',
+            'photo.image'  => 'El archivo debe ser una imagen.',
+            'photo.mimes'  => 'Solo se permiten imágenes JPG o PNG.',
+        ]);
+
+        $user = $request->user();
+        $file = $request->file('photo');
+
+        // Nombre: SHA1 del contenido + timestamp (20 chars) + extensión
+        $sha  = substr(sha1(file_get_contents($file->getRealPath()) . $user->id . time()), 0, 20);
+        $ext  = $file->getClientOriginalExtension() ?: 'jpg';
+        $name = $sha . '.' . $ext;
+
+        // Eliminar foto anterior si existe
+        if ($user->foto_url) {
+            $oldPath = public_path('perfil/' . basename($user->foto_url));
+            if (file_exists($oldPath)) {
+                unlink($oldPath);
+            }
+        }
+
+        $file->move(public_path('perfil'), $name);
+
+        $url = url('perfil/' . $name);
+        $user->update(['foto_url' => $url]);
+
+        return response()->json(['foto_url' => $url, 'message' => 'Foto actualizada correctamente.']);
+    }
+
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $request->validate(['email' => 'required|email']);
+
+        $user = User::where('email', $request->email)->first();
+
+        // Respuesta genérica para no revelar si el email existe
+        if (!$user || !$user->is_active) {
+            return response()->json(['message' => 'Si el correo está registrado, recibirás el código OTP.']);
+        }
+
+        $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        $user->update([
+            'otp_code'       => $otp,
+            'otp_expires_at' => now()->addMinutes(6),
+        ]);
+
+        try {
+            Mail::raw(
+                "Tu código de verificación BiometricIP es: {$otp}\n\nEste código expira en 6 minutos.",
+                function ($m) use ($user, $otp) {
+                    $m->to($user->email, $user->name)
+                      ->subject('Código OTP - Recuperar contraseña BiometricIP');
+                }
+            );
+        } catch (\Throwable $e) {
+            Log::error('OTP email error', ['error' => $e->getMessage(), 'email' => $user->email]);
+            return response()->json(['message' => 'Error al enviar el correo. Intenta más tarde.'], 500);
+        }
+
+        return response()->json(['message' => 'Si el correo está registrado, recibirás el código OTP.']);
+    }
+
+    public function verifyOtp(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'otp'   => 'required|string|size:6',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || $user->otp_code !== $request->otp || !$user->otp_expires_at || now()->isAfter($user->otp_expires_at)) {
+            return response()->json(['message' => 'Código inválido o expirado.'], 422);
+        }
+
+        return response()->json(['message' => 'Código válido.']);
+    }
+
+    public function resetPassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email'        => 'required|email',
+            'otp'          => 'required|string|size:6',
+            'new_password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || $user->otp_code !== $request->otp || !$user->otp_expires_at || now()->isAfter($user->otp_expires_at)) {
+            return response()->json(['message' => 'Código inválido o expirado.'], 422);
+        }
+
+        $user->update([
+            'password'       => Hash::make($request->new_password),
+            'otp_code'       => null,
+            'otp_expires_at' => null,
+        ]);
+
+        return response()->json(['message' => 'Contraseña actualizada correctamente.']);
+    }
+
     public function changePassword(Request $request): JsonResponse
     {
         $request->validate([
@@ -99,6 +208,8 @@ class AuthController extends Controller
         $departamentoNombre = null;
         $cargoNombre        = null;
         $empresaNombre      = null;
+        $empleadorNombre    = null;
+        $liderNombre        = null;
 
         $horarioData = null;
 
@@ -109,6 +220,12 @@ class AuthController extends Controller
             }
             if ($user->cargo_id) {
                 $cargoNombre = Cargo::find($user->cargo_id)?->nombre;
+            }
+            if ($user->empleador_id) {
+                $empleadorNombre = Empleador::find($user->empleador_id)?->nombre;
+            }
+            if ($user->lider_id) {
+                $liderNombre = User::find($user->lider_id)?->name;
             }
             if ($user->horario_id) {
                 $h = Horario::find($user->horario_id);
@@ -172,6 +289,8 @@ class AuthController extends Controller
             'telefono'        => $user->telefono,
             'foto_url'        => $user->foto_url,
             'is_active'       => $user->is_active,
+            'empleador'       => $empleadorNombre,
+            'lider'           => $liderNombre,
         ];
     }
 }
