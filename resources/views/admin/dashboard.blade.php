@@ -69,45 +69,7 @@
             </div>
         </div>
     </div>
-    <div class="col-6 col-xl-3">
-        <div class="card h-100 border-0 shadow-sm" style="border-left: 4px solid #23c6c8 !important;">
-            <div class="card-body d-flex align-items-center gap-3 py-3">
-                <span class="avatar-title bg-info bg-opacity-10 text-info rounded-2 fs-3" style="width:52px;height:52px;min-width:52px;">
-                    <i class="fa-solid fa-building-user"></i>
-                </span>
-                <div class="overflow-hidden">
-                    <h2 class="mb-0 fw-bold" id="statEnPlanta">--</h2>
-                    <p class="text-muted mb-0 small text-truncate">En planta</p>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-6 col-xl-3">
-        <div class="card h-100 border-0 shadow-sm" style="border-left: 4px solid #6f42c1 !important;">
-            <div class="card-body d-flex align-items-center gap-3 py-3">
-                <span class="avatar-title bg-purple bg-opacity-10 rounded-2 fs-3" style="width:52px;height:52px;min-width:52px;background:rgba(111,66,193,.1);color:#6f42c1;">
-                    <i class="fa-solid fa-calendar-day"></i>
-                </span>
-                <div class="overflow-hidden">
-                    <h2 class="mb-0 fw-bold" id="statEnDia">--</h2>
-                    <p class="text-muted mb-0 small text-truncate">En el día</p>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-6 col-xl-3">
-        <div class="card h-100 border-0 shadow-sm" style="border-left: 4px solid #e83e8c !important;">
-            <div class="card-body d-flex align-items-center gap-3 py-3">
-                <span class="avatar-title rounded-2 fs-3" style="width:52px;height:52px;min-width:52px;background:rgba(232,62,140,.1);color:#e83e8c;">
-                    <i class="fa-solid fa-calendar-check"></i>
-                </span>
-                <div class="overflow-hidden">
-                    <h2 class="mb-0 fw-bold" id="statEnMes">--</h2>
-                    <p class="text-muted mb-0 small text-truncate">En el mes</p>
-                </div>
-            </div>
-        </div>
-    </div>
+
 </div>
 
 {{-- Tarjetas de visitantes --}}
