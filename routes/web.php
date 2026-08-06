@@ -214,4 +214,17 @@ Route::middleware(['auth', 'admin', 'admin.tenant', 'tenancy.session'])->group(f
     Route::get('/admin/tenants/create',       [AdminController::class, 'tenantsCreate'])->name('admin.tenants.create');
     Route::get('/admin/tenants/tablas',       [AdminController::class, 'tenantsTablas'])->name('admin.tenants.tablas');
     Route::get('/admin/tenants/descargar-sql',[AdminController::class, 'tenantsDescargarSql'])->name('admin.tenants.descargar-sql');
+    // Admin multi-empresa también puede gestionar sedes
+    Route::get   ('/admin/sedes',                            [AdminController::class,  'sedesIndex']);
+    Route::get   ('/admin/sedes/list',                       [ApiSedeController::class, 'index']);
+    Route::post  ('/admin/sedes',                            [ApiSedeController::class, 'store']);
+    Route::put   ('/admin/sedes/{sede}',                     [ApiSedeController::class, 'update']);
+    Route::delete('/admin/sedes/{sede}',                     [ApiSedeController::class, 'destroy']);
+    Route::get   ('/admin/sedes/{sede}/qr',                  [ApiSedeController::class, 'qr']);
+    Route::get   ('/admin/sedes/{sede}/qr-static',           [ApiSedeController::class, 'qrStatic']);
+    Route::post  ('/admin/sedes/{sede}/qr-static/enable',    [ApiSedeController::class, 'enableStaticQR']);
+    Route::post  ('/admin/sedes/{sede}/qr-static/regenerar', [ApiSedeController::class, 'regenerateStaticQR']);
+    Route::get   ('/admin/sedes/{sede}/qr-v3',               [ApiSedeController::class, 'qrV3']);
+    Route::post  ('/admin/sedes/{sede}/qr-v3/enable',        [ApiSedeController::class, 'enableQRV3']);
+    Route::post  ('/admin/sedes/{sede}/qr-v3/regenerar',     [ApiSedeController::class, 'regenerateQRV3']);
 });
