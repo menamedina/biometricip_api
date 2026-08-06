@@ -197,7 +197,7 @@ class AttendanceController extends Controller
             'qr_validado' => $qrValidado,
             'geocerca_validada' => $geocercaValidada,
             'distancia_oficina_mts' => round($distancia, 2),
-            'fecha_hora' => now(),
+            'fecha_hora' => Carbon::now(config('app.timezone')),
         ]);
 
         if ($fotoBase64 && $thumbBase64) {

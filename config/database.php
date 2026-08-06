@@ -59,6 +59,7 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
+            'timezone' => env('DB_TIMEZONE'),
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
@@ -76,6 +77,7 @@ return [
             'prefix'    => '',
             'strict'    => true,
             'engine'    => null,
+            'timezone'  => env('DB_TIMEZONE', '-05:00'),
         ],
 
         'mariadb' => [
