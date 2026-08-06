@@ -487,6 +487,28 @@ class AdminController extends Controller
         return response()->json($visitantes);
     }
 
+    public function visitantesStats(Request $request): JsonResponse
+    {
+        $sedeId = $request->filled('sede_id') ? (int) $request->sede_id : null;
+
+        $base = fn () => Visitante::when($sedeId, fn ($q) => $q->where('sede_id', $sedeId));
+
+        $enPlanta = $base()->whereNull('hora_salida')->count();
+
+        $enDia = $base()->whereDate('hora_entrada', today())->count();
+
+        $enMes = $base()
+            ->whereYear('hora_entrada', now()->year)
+            ->whereMonth('hora_entrada', now()->month)
+            ->count();
+
+        return response()->json([
+            'en_planta' => $enPlanta,
+            'en_dia'    => $enDia,
+            'en_mes'    => $enMes,
+        ]);
+    }
+
     private function induccionRequerida(string $cedula, int $sedeId): bool
     {
         $ultimaInduccion = Visitante::where('cedula', $cedula)

@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function loadEmpleados() {
-    const res  = await fetch('/admin/empleados/list?per_page=500', { headers: { 'X-CSRF-TOKEN': csrfToken } });
+    const res  = await fetch('/admin/empleados/list?per_page=500', { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
     const data = await res.json();
     const empleados = data.data || [];
     const sel = document.getElementById('filterEmpleado');
@@ -162,7 +162,7 @@ async function loadPermisos(page = 1) {
     if (userId) url += `&user_id=${userId}`;
     if (estado) url += `&estado=${estado}`;
 
-    const res  = await fetch(url, { headers: { 'X-CSRF-TOKEN': csrfToken } });
+    const res  = await fetch(url, { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
     const data = await res.json();
     const tbody = document.getElementById('permisosTbody');
     const items = data.data || [];

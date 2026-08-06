@@ -290,7 +290,7 @@ let sedesCache = [];
 // ── Cargar sedes para el select ──────────────────────────────────────────────
 async function loadSedes() {
     try {
-        const res = await fetch('/admin/sedes/list', { headers: { 'X-CSRF-TOKEN': csrfToken } });
+        const res = await fetch('/admin/sedes/list', { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
         const data = await res.json();
         sedesCache = data.data || [];
         const select = document.getElementById('deviceSede');
@@ -302,7 +302,7 @@ async function loadSedes() {
 // ── Cargar dispositivos ──────────────────────────────────────────────────────
 async function loadDevices() {
     try {
-        const res = await fetch('/admin/dispositivos/list', { headers: { 'X-CSRF-TOKEN': csrfToken } });
+        const res = await fetch('/admin/dispositivos/list', { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
         const devices = await res.json();
         const tbody = document.getElementById('devicesTbody');
 
@@ -518,7 +518,7 @@ async function testDevice(id) {
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
 
     try {
-        const res = await fetch(`/admin/dispositivos/${id}/test`, { headers: { 'X-CSRF-TOKEN': csrfToken } });
+        const res = await fetch(`/admin/dispositivos/${id}/test`, { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
         const data = await res.json();
 
         if (res.ok && data.connected) {
@@ -629,7 +629,7 @@ async function showDeviceUsers(id, nombre) {
     new bootstrap.Modal(document.getElementById('usersModal')).show();
 
     try {
-        const res = await fetch(`/admin/dispositivos/${id}/users`, { headers: { 'X-CSRF-TOKEN': csrfToken } });
+        const res = await fetch(`/admin/dispositivos/${id}/users`, { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
         const data = await res.json();
 
         document.getElementById('usersTotal').textContent = data.total + ' total';
@@ -669,7 +669,7 @@ async function showSyncHistory(id, nombre) {
     new bootstrap.Modal(document.getElementById('syncHistoryModal')).show();
 
     try {
-        const res = await fetch(`/admin/dispositivos/${id}/sync-history`, { headers: { 'X-CSRF-TOKEN': csrfToken } });
+        const res = await fetch(`/admin/dispositivos/${id}/sync-history`, { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
         const logs = await res.json();
         const tbody = document.getElementById('syncHistoryTbody');
 

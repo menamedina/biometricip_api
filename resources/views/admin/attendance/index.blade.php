@@ -115,7 +115,7 @@ async function loadRecords(page = 1) {
     if (empId) url += `&user_id=${empId}`;
 
     try {
-        const res = await fetch(url, { headers: { 'X-CSRF-TOKEN': csrfToken } });
+        const res = await fetch(url, { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
         const data = await res.json();
         const tbody = document.getElementById('recordsTbody');
         if (!data.data || data.data.length === 0) {
@@ -161,7 +161,7 @@ function renderRecordsPagination(data) {
 
 async function loadEmpleadosFilter() {
     try {
-        const res = await fetch('/admin/empleados/list?per_page=200', { headers: { 'X-CSRF-TOKEN': csrfToken } });
+        const res = await fetch('/admin/empleados/list?per_page=200', { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
         const data = await res.json();
         const sel = document.getElementById('filterEmpleado');
         (data.data || []).forEach(e => {
@@ -182,7 +182,7 @@ async function verFoto(id) {
     const modal = new bootstrap.Modal(document.getElementById('modalFoto'));
     modal.show();
     try {
-        const res = await fetch(`/admin/attendance/${id}/photo`, { headers: { 'X-CSRF-TOKEN': csrfToken } });
+        const res = await fetch(`/admin/attendance/${id}/photo`, { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
         if (!res.ok) { body.innerHTML = '<p class="text-muted">Sin foto disponible</p>'; return; }
         const data = await res.json();
         body.innerHTML = `<img src="${data.foto_base64}" class="img-fluid rounded" style="max-height:500px;">`;

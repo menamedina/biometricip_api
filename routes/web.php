@@ -148,6 +148,7 @@ Route::middleware(['auth', 'admin', 'role:admin,supervisor', 'tenancy.session'])
     Route::get ('/admin/visitantes',                          [AdminController::class,      'visitantesIndex'])->name('admin.visitantes.index');
     Route::post('/admin/visitantes',                          [AdminController::class,      'visitantesStore'])->name('admin.visitantes.store');
     Route::get ('/admin/visitantes/list',                     [AdminController::class,      'visitantesList'])->name('admin.visitantes.list');
+    Route::get ('/admin/visitantes/stats',                    [AdminController::class,      'visitantesStats'])->name('admin.visitantes.stats');
     Route::post('/admin/visitantes/{id}/forzar-salida',       [AdminController::class,      'visitantesForzarSalida'])->name('admin.visitantes.forzar-salida');
     Route::post('/admin/visitantes/{id}/induccion',           [AdminController::class,      'visitantesInduccion'])->name('admin.visitantes.induccion');
     Route::get ('/admin/visitantes/buscar-cedula',             [AdminController::class,      'visitantesBuscarCedula'])->name('admin.visitantes.buscar-cedula');

@@ -238,7 +238,7 @@ let _filtrosCargados = false;
 
 async function cargarFiltros() {
     // Solo catalogos (departamentos) al inicio — los empleados se cargan al abrir el modal
-    const resCat = await fetch('/admin/catalogos', { headers: { 'X-CSRF-TOKEN': csrfToken } });
+    const resCat = await fetch('/admin/catalogos', { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
     const dataCat = await resCat.json();
 
     const deptos = dataCat.departamentos || [];

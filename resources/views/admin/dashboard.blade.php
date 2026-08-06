@@ -110,6 +110,52 @@
     </div>
 </div>
 
+{{-- Tarjetas de visitantes --}}
+<div class="row g-3 mb-3">
+    <div class="col-12">
+        <h6 class="text-muted fw-semibold mb-0"><i class="fa-solid fa-id-card-clip me-1"></i> Visitantes</h6>
+    </div>
+    <div class="col-6 col-xl-4">
+        <div class="card h-100 border-0 shadow-sm" style="border-left: 4px solid #23c6c8 !important;">
+            <div class="card-body d-flex align-items-center gap-3 py-3">
+                <span class="avatar-title bg-info bg-opacity-10 text-info rounded-2 fs-3" style="width:52px;height:52px;min-width:52px;">
+                    <i class="fa-solid fa-building-user"></i>
+                </span>
+                <div class="overflow-hidden">
+                    <h2 class="mb-0 fw-bold" id="vStatEnPlanta">--</h2>
+                    <p class="text-muted mb-0 small text-truncate">En planta</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-4">
+        <div class="card h-100 border-0 shadow-sm" style="border-left: 4px solid #6f42c1 !important;">
+            <div class="card-body d-flex align-items-center gap-3 py-3">
+                <span class="avatar-title rounded-2 fs-3" style="width:52px;height:52px;min-width:52px;background:rgba(111,66,193,.1);color:#6f42c1;">
+                    <i class="fa-solid fa-calendar-day"></i>
+                </span>
+                <div class="overflow-hidden">
+                    <h2 class="mb-0 fw-bold" id="vStatEnDia">--</h2>
+                    <p class="text-muted mb-0 small text-truncate">En el día</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-4">
+        <div class="card h-100 border-0 shadow-sm" style="border-left: 4px solid #e83e8c !important;">
+            <div class="card-body d-flex align-items-center gap-3 py-3">
+                <span class="avatar-title rounded-2 fs-3" style="width:52px;height:52px;min-width:52px;background:rgba(232,62,140,.1);color:#e83e8c;">
+                    <i class="fa-solid fa-calendar-check"></i>
+                </span>
+                <div class="overflow-hidden">
+                    <h2 class="mb-0 fw-bold" id="vStatEnMes">--</h2>
+                    <p class="text-muted mb-0 small text-truncate">En el mes</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- Barra de asistencia --}}
 <div class="card border-0 shadow-sm mb-3" id="barraAsistencia">
     <div class="card-body py-3">
@@ -203,9 +249,19 @@ function tipoBadge(tipo) {
 
 const esEmpleado = {{ auth()->user()->role === 'empleado' ? 'true' : 'false' }};
 
+async function loadVisitantesStats() {
+    try {
+        const res   = await fetch('/admin/visitantes/stats', { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
+        const stats = await res.json();
+        document.getElementById('vStatEnPlanta').textContent = stats.en_planta ?? '--';
+        document.getElementById('vStatEnDia').textContent    = stats.en_dia    ?? '--';
+        document.getElementById('vStatEnMes').textContent    = stats.en_mes    ?? '--';
+    } catch(e) { console.error('VisitantesStats:', e); }
+}
+
 async function loadDashboard() {
     if (!esEmpleado) try {
-        const res   = await fetch('/admin/attendance/stats', { headers: { 'X-CSRF-TOKEN': csrfToken } });
+        const res   = await fetch('/admin/attendance/stats', { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
         const stats = await res.json();
         const total    = stats.total_empleados || 0;
         const presentes = stats.presentes || 0;
@@ -276,7 +332,8 @@ async function loadDashboard() {
 
 document.addEventListener('DOMContentLoaded', () => {
     loadDashboard();
-    setInterval(loadDashboard, 30000);
+    if (!esEmpleado) loadVisitantesStats();
+    setInterval(() => { loadDashboard(); if (!esEmpleado) loadVisitantesStats(); }, 30000);
 });
 </script>
 @endpush
