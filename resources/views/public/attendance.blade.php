@@ -586,23 +586,38 @@ function obtenerGPS() {
             reject(new Error('Tu navegador no soporta geolocalización.'));
             return;
         }
-        // Si ya tenemos una lectura disponible, la usamos de inmediato
+        // Si ya tenemos una lectura disponible del watchPosition, la usamos de inmediato
         if (gpsReady) {
             resolve(posToObj(gpsReady));
             return;
         }
-        // Sin lectura aún — esperamos hasta GPS_FALLBACK ms, luego fallback
-        const start = Date.now();
-        const poll = setInterval(() => {
-            if (gpsReady) {
-                clearInterval(poll);
-                resolve(posToObj(gpsReady));
-            } else if (Date.now() - start > GPS_FALLBACK) {
-                clearInterval(poll);
-                // Intentar con menor precisión antes de rechazar
-                fallbackGetPosition().then(resolve).catch(reject);
-            }
-        }, 200);
+        // Sin lectura aún — lanzar ambas en paralelo: alta precisión y baja precisión
+        // La que responda primero gana; la otra se ignora
+        let settled = false;
+        function tryResolve(pos) {
+            if (settled) return;
+            settled = true;
+            resolve(pos);
+        }
+        function tryReject(err) {
+            if (settled) return;
+            settled = true;
+            reject(err);
+        }
+
+        // Intento 1: alta precisión (GPS real)
+        navigator.geolocation.getCurrentPosition(
+            pos => tryResolve(posToObj(pos)),
+            () => {}, // si falla, el intento 2 puede ganar
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
+        );
+
+        // Intento 2: baja precisión (red/WiFi, mucho más rápido)
+        navigator.geolocation.getCurrentPosition(
+            pos => tryResolve(posToObj(pos)),
+            err => tryReject(new Error('No se pudo obtener tu ubicación. Verifica que el GPS esté activo.')),
+            { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+        );
     });
 }
 
