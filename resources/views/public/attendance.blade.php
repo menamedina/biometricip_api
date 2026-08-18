@@ -536,7 +536,7 @@ function checkReady() {
 // ── GPS — inicia en background al cargar la página ───────────────────────────
 const GPS_MIN_ACC  = 30;   // m — precisión suficiente para parar
 const GPS_ACC_CAP  = 250;  // m — máximo margen que enviamos al server
-const GPS_FALLBACK = 3000; // ms — espera máxima al hacer submit si aún no hay lectura
+const GPS_FALLBACK = 15000; // ms — espera máxima al hacer submit si aún no hay lectura
 
 let gpsReady   = null;  // mejor lectura disponible (se actualiza en background)
 let gpsWatchId = null;
