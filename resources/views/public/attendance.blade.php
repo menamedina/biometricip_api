@@ -536,7 +536,7 @@ function checkReady() {
 // ── GPS — inicia en background al cargar la página ───────────────────────────
 const GPS_MIN_ACC  = 30;   // m — precisión suficiente para parar
 const GPS_ACC_CAP  = 250;  // m — máximo margen que enviamos al server
-const GPS_FALLBACK = 15000; // ms — espera máxima al hacer submit si aún no hay lectura
+const GPS_FALLBACK = 30000; // ms — espera máxima al hacer submit si aún no hay lectura
 
 let gpsReady   = null;  // mejor lectura disponible (se actualiza en background)
 let gpsWatchId = null;
@@ -558,7 +558,7 @@ function iniciarGPS() {
             };
             gpsError = msgs[err.code] || 'Error al obtener ubicación.';
         },
-        { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
+        { enableHighAccuracy: false, timeout: 60000, maximumAge: 30000 }
     );
 }
 
