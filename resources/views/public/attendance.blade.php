@@ -558,8 +558,26 @@ function iniciarGPS() {
             };
             gpsError = msgs[err.code] || 'Error al obtener ubicación.';
         },
-        { enableHighAccuracy: false, timeout: 60000, maximumAge: 30000 }
+        { enableHighAccuracy: true, timeout: 60000, maximumAge: 30000 }
     );
+}
+
+function posToObj(pos) {
+    return {
+        lat:      pos.coords.latitude,
+        lng:      pos.coords.longitude,
+        accuracy: Math.min(Math.round(pos.coords.accuracy), GPS_ACC_CAP),
+    };
+}
+
+function fallbackGetPosition() {
+    return new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+            pos => resolve(posToObj(pos)),
+            err => reject(new Error('No se pudo obtener tu ubicación. Verifica que el GPS esté activo.')),
+            { enableHighAccuracy: false, timeout: 20000, maximumAge: 60000 }
+        );
+    });
 }
 
 function obtenerGPS() {
@@ -568,41 +586,21 @@ function obtenerGPS() {
             reject(new Error('Tu navegador no soporta geolocalización.'));
             return;
         }
-        // Si ya tenemos una lectura buena, la usamos de inmediato
-        if (gpsReady && gpsReady.coords.accuracy <= GPS_MIN_ACC) {
-            resolve({
-                lat:      gpsReady.coords.latitude,
-                lng:      gpsReady.coords.longitude,
-                accuracy: Math.min(Math.round(gpsReady.coords.accuracy), GPS_ACC_CAP),
-            });
-            return;
-        }
-        // Si hay cualquier lectura disponible, la usamos ya
+        // Si ya tenemos una lectura disponible, la usamos de inmediato
         if (gpsReady) {
-            resolve({
-                lat:      gpsReady.coords.latitude,
-                lng:      gpsReady.coords.longitude,
-                accuracy: Math.min(Math.round(gpsReady.coords.accuracy), GPS_ACC_CAP),
-            });
+            resolve(posToObj(gpsReady));
             return;
         }
-        // Sin lectura aún — esperamos hasta GPS_FALLBACK ms
-        if (gpsError) { reject(new Error(gpsError)); return; }
+        // Sin lectura aún — esperamos hasta GPS_FALLBACK ms, luego fallback
         const start = Date.now();
         const poll = setInterval(() => {
             if (gpsReady) {
                 clearInterval(poll);
-                resolve({
-                    lat:      gpsReady.coords.latitude,
-                    lng:      gpsReady.coords.longitude,
-                    accuracy: Math.min(Math.round(gpsReady.coords.accuracy), GPS_ACC_CAP),
-                });
-            } else if (gpsError) {
-                clearInterval(poll);
-                reject(new Error(gpsError));
+                resolve(posToObj(gpsReady));
             } else if (Date.now() - start > GPS_FALLBACK) {
                 clearInterval(poll);
-                reject(new Error('No se pudo obtener tu ubicación. Verifica el GPS activo.'));
+                // Intentar con menor precisión antes de rechazar
+                fallbackGetPosition().then(resolve).catch(reject);
             }
         }, 200);
     });
