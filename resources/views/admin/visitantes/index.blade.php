@@ -25,25 +25,25 @@
                     <div class="row g-2 align-items-end">
                         <div class="col-md-3">
                             <label class="form-label form-label-sm mb-1">Sede</label>
-                            <select class="form-select form-select-sm" id="filterSede" onchange="loadVisitantes()">
+                            <select class="form-select form-select-sm" id="filterSede" onchange="cargarTabla()">
                                 <option value="">Todas las sedes</option>
                             </select>
                         </div>
                         <div class="col-md-2">
                             <label class="form-label form-label-sm mb-1">Desde</label>
-                            <input type="date" class="form-control form-control-sm" id="filterDesde" onchange="loadVisitantes()">
+                            <input type="date" class="form-control form-control-sm" id="filterDesde" onchange="cargarTabla()">
                         </div>
                         <div class="col-md-2">
                             <label class="form-label form-label-sm mb-1">Hasta</label>
-                            <input type="date" class="form-control form-control-sm" id="filterHasta" onchange="loadVisitantes()">
+                            <input type="date" class="form-control form-control-sm" id="filterHasta" onchange="cargarTabla()">
                         </div>
                         <div class="col-md-3">
                             <label class="form-label form-label-sm mb-1">Cédula / Nombre</label>
-                            <input type="text" class="form-control form-control-sm" id="filterSearch" placeholder="Buscar..." oninput="loadVisitantes()">
+                            <input type="text" class="form-control form-control-sm" id="filterSearch" placeholder="Buscar..." oninput="cargarTabla()">
                         </div>
                         <div class="col-md-2">
                             <label class="form-label form-label-sm mb-1">Estado</label>
-                            <select class="form-select form-select-sm" id="filterEstado" onchange="loadVisitantes()">
+                            <select class="form-select form-select-sm" id="filterEstado" onchange="cargarTabla()">
                                 <option value="">Todos</option>
                                 <option value="en_sede">En sede</option>
                                 <option value="salieron">Con salida</option>
@@ -67,45 +67,11 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header p-3 d-flex justify-content-between align-items-center border-bottom-0 pb-2">
-                    <span class="text-muted small" id="totalLabel">Cargando...</span>
-                </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="sortable" data-field="cedula">Cédula</th>
-                                    <th class="sortable" data-field="nombre">Nombre</th>
-                                    <th class="sortable" data-field="empresa">Empresa</th>
-                                    <th>Teléfono</th>
-                                    <th>EPS / ARL</th>
-                                    <th>Placa</th>
-                                    <th class="sortable" data-field="persona_visita">Visita a</th>
-                                    <th class="sortable" data-field="sede">Sede</th>
-                                    <th class="sortable" data-field="hora_entrada">Entrada</th>
-                                    <th class="sortable" data-field="hora_salida">Salida</th>
-                                    <th class="sortable" data-field="minutos_en_sede">Tiempo en sede</th>
-                                    <th>Inducción</th>
-                                    <th>Última inducción</th>
-                                    <th>Observación</th>
-                                    <th>Foto</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody id="visitantesTbody">
-                                <tr><td colspan="16" class="text-center text-muted py-3">Cargando...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="card-footer py-2 px-3" id="paginacionContainer" style="display:none!important">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <small class="text-muted" id="paginacionInfo"></small>
-                        <nav>
-                            <ul class="pagination pagination-sm mb-0" id="paginacionLinks"></ul>
-                        </nav>
-                    </div>
+                    <table class="table table-hover mb-0 w-100" id="visitantesTable">
+                        <thead class="table-light"></thead>
+                        <tbody></tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -140,7 +106,7 @@
                         <label class="form-label form-label-sm fw-semibold">Cédula <span class="text-danger">*</span></label>
                         <div class="input-group input-group-sm">
                             <input type="text" class="form-control form-control-sm rm-upper" id="rm_cedula" placeholder="Ej: 1234567890" inputmode="numeric">
-                            <button class="btn btn-outline-secondary" type="button" id="btnBuscarCedula" onclick="buscarPorCedula()" title="Buscar último registro">
+                            <button class="btn btn-outline-secondary" type="button" id="btnBuscarCedula" onclick="buscarPorCedula()">
                                 <i class="ti ti-search"></i>
                             </button>
                         </div>
@@ -186,6 +152,109 @@
     </div>
 </div>
 
+{{-- Modal Editar Visitante --}}
+<div class="modal fade" id="modalEditarVisitante" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="ti ti-edit me-2"></i>Editar registro de visitante</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="editarAlert" class="d-none mb-3"></div>
+                <input type="hidden" id="edit_id">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label form-label-sm fw-semibold">Cédula <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-sm" id="edit_cedula">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label form-label-sm fw-semibold">Nombre completo <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-sm rm-upper" id="edit_nombre">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label form-label-sm fw-semibold">Teléfono</label>
+                        <input type="text" class="form-control form-control-sm" id="edit_telefono">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label form-label-sm fw-semibold">Empresa</label>
+                        <input type="text" class="form-control form-control-sm rm-upper" id="edit_empresa">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label form-label-sm fw-semibold">EPS</label>
+                        <input type="text" class="form-control form-control-sm rm-upper" id="edit_eps">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label form-label-sm fw-semibold">ARL</label>
+                        <input type="text" class="form-control form-control-sm rm-upper" id="edit_arl">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label form-label-sm fw-semibold">Placa del vehículo</label>
+                        <input type="text" class="form-control form-control-sm rm-upper" id="edit_placa">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label form-label-sm fw-semibold">¿A quién visita? <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-sm rm-upper" id="edit_persona_visita">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label form-label-sm fw-semibold">Fecha y hora de entrada <span class="text-danger">*</span></label>
+                        <input type="datetime-local" class="form-control form-control-sm" id="edit_hora_entrada">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label form-label-sm fw-semibold">Fecha y hora de salida</label>
+                        <input type="datetime-local" class="form-control form-control-sm" id="edit_hora_salida">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary btn-sm" id="btnGuardarEdicion" onclick="guardarEdicion()">
+                    <i class="ti ti-check me-1"></i> Guardar cambios
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Modal Log --}}
+<div class="modal fade" id="modalLog" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="ti ti-history me-2"></i>Historial de cambios</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <div id="logSpinner" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                </div>
+                <div id="logContent" class="d-none">
+                    <div class="card border mb-0">
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover mb-0" id="logTable">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width:130px">Fecha</th>
+                                            <th style="width:80px">Evento</th>
+                                            <th style="width:140px">Usuario</th>
+                                            <th>Campo</th>
+                                            <th>Anterior</th>
+                                            <th>Nuevo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="logTbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="logVacio" class="text-center text-muted py-4 d-none">Sin registros de cambios.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- Modal foto --}}
 <div class="modal fade" id="fotoModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
@@ -219,326 +288,352 @@
 @endsection
 
 @push('styles')
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
 <style>
 .rm-upper { text-transform: uppercase; }
 .rm-upper::placeholder { text-transform: none; }
-thead th.sortable { white-space: nowrap; }
+
+/* Controles DataTable dentro del card */
+div.dataTables_wrapper div.dataTables_length,
+div.dataTables_wrapper div.dataTables_filter {
+    padding: 12px 16px 0;
+}
+div.dataTables_wrapper div.dataTables_info,
+div.dataTables_wrapper div.dataTables_paginate {
+    padding: 10px 16px 12px;
+    border-top: 1px solid #e9ecef;
+}
+div.dataTables_wrapper div.dataTables_length label,
+div.dataTables_wrapper div.dataTables_filter label {
+    font-size: 13px;
+    color: #6c757d;
+    margin-bottom: 8px;
+}
+div.dataTables_wrapper div.dataTables_filter input:focus {
+    outline: none;
+    border-color: #4F46E5;
+    box-shadow: 0 0 0 3px rgba(79,70,229,.1);
+}
+div.dataTables_wrapper div.dataTables_info {
+    font-size: 13px;
+    color: #6c757d;
+}
+#visitantesTable th, #visitantesTable td {
+    font-size: 13px;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+#visitantesTable td:nth-child(14) { white-space: normal; } /* Observación */
 </style>
 @endpush
 
 @push('scripts')
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script>
-const csrfToken = '{{ csrf_token() }}';
-const sedesData = @json($sedes);
-let dataLoadedAt    = null;
-let visitantesData  = [];
-let sortField       = 'hora_entrada';
-let sortDir         = 'desc';
-let currentPage     = 1;
-let paginaMeta      = {};
+var csrfToken = '{{ csrf_token() }}';
+var sedesData = @json($sedes);
+var tabla = null;
+var visitantesData = [];
+var dataLoadedAt = null;
 
-// Fecha por defecto: hoy en hora local
 function localDateStr() {
-    const d = new Date();
+    var d = new Date();
     return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 }
-document.getElementById('filterDesde').value = localDateStr();
-document.getElementById('filterHasta').value = localDateStr();
 
-function loadSedes() {
-    const sel = document.getElementById('filterSede');
-    sedesData.forEach(s => {
-        const o = document.createElement('option');
-        o.value = s.id; o.textContent = s.nombre;
-        sel.appendChild(o);
-    });
-}
-
-async function loadVisitantes(page = 1) {
-    currentPage = page;
-    const params = new URLSearchParams({
-        sede_id:  document.getElementById('filterSede').value,
-        desde:    document.getElementById('filterDesde').value,
-        hasta:    document.getElementById('filterHasta').value,
-        search:   document.getElementById('filterSearch').value,
-        estado:   document.getElementById('filterEstado').value,
-        page:     currentPage,
-    });
-
-    document.getElementById('totalLabel').textContent = 'Cargando...';
-
-    const res  = await fetch(`/admin/visitantes/list?${params}`);
-    const data = await res.json();
-    const tbody = document.getElementById('visitantesTbody');
-
-    if (!data.data || data.data.length === 0) {
-        visitantesData = [];
-        paginaMeta = {};
-        tbody.innerHTML = '<tr><td colspan="16" class="text-center text-muted py-3">Sin registros</td></tr>';
-        document.getElementById('totalLabel').textContent = '0 visitantes encontrados';
-        document.getElementById('paginacionContainer').style.setProperty('display', 'none', 'important');
-        return;
-    }
-
-    paginaMeta     = { total: data.total, per_page: data.per_page, current_page: data.current_page, last_page: data.last_page, from: data.from, to: data.to };
-    visitantesData = data.data;
-    dataLoadedAt   = new Date();
-    renderTabla();
-    actualizarIconosSort();
-    renderTotalYPaginacion();
-}
-
-function sortValue(v, field) {
-    if (field === 'sede')          return v.sede?.nombre ?? '';
-    if (field === 'hora_entrada')  return v.hora_entrada ?? '';
-    if (field === 'hora_salida')   return v.hora_salida  ?? '';
-    if (field === 'minutos_en_sede') return v.minutos_en_sede ?? 0;
-    return (v[field] ?? '').toString().toLowerCase();
-}
-
-function renderTabla() {
-    const tbody = document.getElementById('visitantesTbody');
-    const sorted = [...visitantesData].sort((a, b) => {
-        const va = sortValue(a, sortField);
-        const vb = sortValue(b, sortField);
-        if (va < vb) return sortDir === 'asc' ? -1 :  1;
-        if (va > vb) return sortDir === 'asc' ?  1 : -1;
-        return 0;
-    });
-
-    tbody.innerHTML = sorted.map(v => `
-        <tr>
-            <td>${v.cedula}</td>
-            <td><strong>${v.nombre ?? '—'}</strong></td>
-            <td>${v.empresa ?? '—'}</td>
-            <td>${v.telefono ?? '—'}</td>
-            <td><small>${v.eps ?? '—'} / ${v.arl ?? '—'}</small></td>
-            <td>${v.placa ? `<span class="badge bg-secondary">${v.placa}</span>` : '—'}</td>
-            <td>${v.persona_visita ?? '—'}</td>
-            <td><span class="badge bg-primary">${v.sede?.nombre ?? '—'}</span></td>
-            <td><small>${formatDT(v.hora_entrada)}</small></td>
-            <td><small>${v.hora_salida ? formatDT(v.hora_salida) : '<span class="badge bg-warning text-dark">En sede</span>'}</small></td>
-            <td><small>${tiempoEnSede(v)}</small></td>
-            <td>${badgeInduccion(v)}</td>
-            <td>${badgeUltimaInduccion(v)}</td>
-            <td>
-                <div style="max-width:160px">
-                    ${v.observacion ? `<small class="text-muted d-block mb-1" style="word-break:break-word">${escHtml(v.observacion)}</small>` : ''}
-                    <button class="btn btn-sm btn-outline-secondary py-0 px-1" onclick="editarObservacion(${v.id})" title="${v.observacion ? 'Editar observación' : 'Agregar observación'}">
-                        <i class="ti ti-${v.observacion ? 'edit' : 'plus'}"></i>
-                    </button>
-                </div>
-            </td>
-            <td>${v.imagen_entrada ? `<button class="btn btn-sm btn-outline-primary" onclick="verFoto(${v.id})"><i class="ti ti-photo"></i></button>` : '—'}</td>
-            <td>${botonForzarSalida(v)}</td>
-        </tr>
-    `).join('');
-}
-
-function actualizarIconosSort() {
-    document.querySelectorAll('thead th.sortable').forEach(th => {
-        th.querySelectorAll('i.sort-icon').forEach(i => i.remove());
-        const icon = document.createElement('i');
-        if (th.dataset.field === sortField) {
-            icon.className = `sort-icon fa-solid fa-sort-${sortDir === 'asc' ? 'up' : 'down'} ms-1 text-primary`;
-        } else {
-            icon.className = 'sort-icon fa-solid fa-sort ms-1 text-muted opacity-50';
-        }
-        th.appendChild(icon);
-    });
-}
-
-function renderTotalYPaginacion() {
-    const { total, per_page, current_page, last_page, from, to } = paginaMeta;
-
-    // Total label
-    document.getElementById('totalLabel').innerHTML =
-        `<i class="ti ti-users me-1 text-primary"></i> <strong>${total}</strong> visitante${total !== 1 ? 's' : ''} encontrado${total !== 1 ? 's' : ''}`;
-
-    // Paginación
-    const container = document.getElementById('paginacionContainer');
-    if (last_page <= 1) {
-        container.style.setProperty('display', 'none', 'important');
-        return;
-    }
-    container.style.removeProperty('display');
-
-    document.getElementById('paginacionInfo').textContent = `Mostrando ${from}–${to} de ${total}`;
-
-    const ul = document.getElementById('paginacionLinks');
-    ul.innerHTML = '';
-
-    const addLi = (label, page, disabled = false, active = false) => {
-        const li = document.createElement('li');
-        li.className = `page-item${disabled ? ' disabled' : ''}${active ? ' active' : ''}`;
-        const a = document.createElement('a');
-        a.className = 'page-link';
-        a.href = '#';
-        a.innerHTML = label;
-        if (!disabled && !active) a.addEventListener('click', e => { e.preventDefault(); loadVisitantes(page); });
-        li.appendChild(a);
-        ul.appendChild(li);
-    };
-
-    addLi('&laquo;', current_page - 1, current_page === 1);
-
-    // Ventana de páginas: máximo 5 alrededor de la actual
-    const delta = 2;
-    const start = Math.max(1, current_page - delta);
-    const end   = Math.min(last_page, current_page + delta);
-
-    if (start > 1) { addLi('1', 1); if (start > 2) addLi('…', null, true); }
-    for (let p = start; p <= end; p++) addLi(p, p, false, p === current_page);
-    if (end < last_page) { if (end < last_page - 1) addLi('…', null, true); addLi(last_page, last_page); }
-
-    addLi('&raquo;', current_page + 1, current_page === last_page);
-}
-
-function parseDate(dt) {
-    if (!dt) return null;
-    // Laravel serializa campos datetime con offset (-05:00); parsear directamente
-    return new Date(dt);
+function formatDT(dt) {
+    if (!dt) return '—';
+    var d = new Date(dt);
+    return String(d.getDate()).padStart(2,'0') + '/' +
+           String(d.getMonth()+1).padStart(2,'0') + '/' +
+           d.getFullYear() + ' ' +
+           String(d.getHours()).padStart(2,'0') + ':' +
+           String(d.getMinutes()).padStart(2,'0');
 }
 
 function formatMins(mins) {
     if (mins < 1) return '< 1m';
-    const h = Math.floor(mins / 60);
-    const m = mins % 60;
-    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+    var h = Math.floor(mins / 60), m = mins % 60;
+    return h > 0 ? h + 'h ' + m + 'm' : m + 'm';
 }
 
-function tiempoEnSede(v) {
-    if (v.minutos_en_sede == null) return '—';
-    if (v.hora_salida) return formatMins(v.minutos_en_sede);
-    // Activo: base del servidor + segundos transcurridos desde que cargó la página
-    return `<span class="text-warning fw-semibold" data-minutos="${v.minutos_en_sede}">⏳ ${formatMins(v.minutos_en_sede)}</span>`;
+function cargarTabla() {
+    var params = new URLSearchParams({
+        sede_id:  $('#filterSede').val(),
+        desde:    $('#filterDesde').val(),
+        hasta:    $('#filterHasta').val(),
+        search:   $('#filterSearch').val(),
+        estado:   $('#filterEstado').val(),
+        per_page: 5000
+    });
+
+    $.getJSON('/admin/visitantes/list?' + params, function(json) {
+        var datos = json.data || [];
+        visitantesData = datos;
+        dataLoadedAt = new Date();
+
+        if ($.fn.DataTable.isDataTable('#visitantesTable')) {
+            tabla.clear().rows.add(datos).draw();
+        } else {
+            tabla = $('#visitantesTable').DataTable({
+                data: datos,
+                order: [[8, 'desc']],
+                scrollX: true,
+                pageLength: 25,
+                lengthMenu: [10, 25, 50, 100],
+                language: {
+                    url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json'
+                },
+                initComplete: function() {
+                    $('#visitantesTable_length select').addClass('form-select form-select-sm d-inline-block w-auto');
+                    $('#visitantesTable_filter input').addClass('form-control form-control-sm d-inline-block w-auto');
+                },
+                columns: [
+                    {
+                        title: 'Cédula',
+                        data: 'cedula'
+                    },
+                    {
+                        title: 'Nombre',
+                        data: 'nombre',
+                        render: function(data) {
+                            return '<strong>' + (data || '—') + '</strong>';
+                        }
+                    },
+                    {
+                        title: 'Empresa',
+                        data: 'empresa',
+                        defaultContent: '—'
+                    },
+                    {
+                        title: 'Teléfono',
+                        data: 'telefono',
+                        defaultContent: '—'
+                    },
+                    {
+                        title: 'EPS / ARL',
+                        data: 'eps',
+                        render: function(data, type, row) {
+                            return '<small>' + (row.eps || '—') + ' / ' + (row.arl || '—') + '</small>';
+                        }
+                    },
+                    {
+                        title: 'Placa',
+                        data: 'placa',
+                        render: function(data) {
+                            return data ? '<span class="badge bg-secondary">' + data + '</span>' : '—';
+                        }
+                    },
+                    {
+                        title: 'Visita a',
+                        data: 'persona_visita',
+                        defaultContent: '—'
+                    },
+                    {
+                        title: 'Sede',
+                        data: 'sede',
+                        render: function(data) {
+                            return data ? '<span class="badge bg-primary">' + data.nombre + '</span>' : '—';
+                        }
+                    },
+                    {
+                        title: 'Entrada',
+                        data: 'hora_entrada',
+                        render: function(data) {
+                            return '<small>' + formatDT(data) + '</small>';
+                        }
+                    },
+                    {
+                        title: 'Salida',
+                        data: 'hora_salida',
+                        render: function(data) {
+                            return data
+                                ? '<small>' + formatDT(data) + '</small>'
+                                : '<span class="badge bg-warning text-dark">En sede</span>';
+                        }
+                    },
+                    {
+                        title: 'Tiempo en sede',
+                        data: 'minutos_en_sede',
+                        render: function(data, type, row) {
+                            if (data == null) return '—';
+                            var txt = formatMins(data);
+                            if (!row.hora_salida) {
+                                return '<span class="text-warning fw-semibold" data-minutos="' + data + '">\u23f3 ' + txt + '</span>';
+                            }
+                            return txt;
+                        }
+                    },
+                    {
+                        title: 'Inducción',
+                        data: 'induccion_requerida',
+                        orderable: false,
+                        render: function(data, type, row) {
+                            if (!data) return '<span class="badge bg-secondary">No requerida</span>';
+                            if (row.induccion_fecha) {
+                                return '<div>' +
+                                    '<span class="badge bg-success"><i class="ti ti-circle-check me-1"></i>Realizada</span>' +
+                                    '<small class="d-block text-muted mt-1">' + formatDT(row.induccion_fecha) + '</small>' +
+                                    '<button class="btn btn-link btn-sm p-0 mt-1 text-secondary" style="font-size:11px" onclick="marcarInduccion(' + row.id + ')">' +
+                                        '<i class="ti ti-calendar-edit me-1"></i>Cambiar fecha' +
+                                    '</button></div>';
+                            }
+                            return '<div class="d-flex flex-column align-items-start gap-1">' +
+                                '<span class="badge bg-danger"><i class="ti ti-alert-circle me-1"></i>Pendiente</span>' +
+                                '<button class="btn btn-sm btn-success py-0 px-2 mt-1" onclick="marcarInduccion(' + row.id + ')">' +
+                                    '<i class="ti ti-calendar-plus me-1"></i>Registrar fecha' +
+                                '</button></div>';
+                        }
+                    },
+                    {
+                        title: 'Última inducción',
+                        data: 'ultima_induccion_fecha',
+                        orderable: false,
+                        render: function(data, type, row) {
+                            if (!data) return '<span class="text-muted small">Sin registro</span>';
+                            var color = row.ultima_induccion_vencida ? 'text-danger' : 'text-success';
+                            var icono = row.ultima_induccion_vencida ? 'ti-alert-triangle' : 'ti-circle-check';
+                            return '<div>' +
+                                '<small class="d-block fw-semibold">' + data + '</small>' +
+                                '<small class="' + color + '"><i class="ti ' + icono + ' me-1"></i>' + row.ultima_induccion_hace + '</small>' +
+                                '</div>';
+                        }
+                    },
+                    {
+                        title: 'Observación',
+                        data: 'observacion',
+                        orderable: false,
+                        render: function(data, type, row) {
+                            return '<div style="max-width:160px">' +
+                                (data ? '<small class="text-muted d-block mb-1" style="word-break:break-word">' + data + '</small>' : '') +
+                                '<button class="btn btn-sm btn-outline-secondary py-0 px-1" onclick="editarObservacion(' + row.id + ')">' +
+                                    '<i class="ti ti-' + (data ? 'edit' : 'plus') + '"></i>' +
+                                '</button></div>';
+                        }
+                    },
+                    {
+                        title: 'Foto',
+                        data: 'imagen_entrada',
+                        orderable: false,
+                        render: function(data, type, row) {
+                            return data
+                                ? '<button class="btn btn-sm btn-outline-primary" onclick="verFoto(' + row.id + ')"><i class="ti ti-photo"></i></button>'
+                                : '—';
+                        }
+                    },
+                    {
+                        title: '',
+                        data: 'hora_salida',
+                        orderable: false,
+                        render: function(data, type, row) {
+                            var btnSalida = data ? '' :
+                                '<button class="btn btn-sm btn-outline-danger me-1" onclick="forzarSalida(' + row.id + ')">' +
+                                    '<i class="ti ti-door-exit"></i> Salida' +
+                                '</button>';
+                            var btnEditar =
+                                '<button class="btn btn-sm btn-outline-secondary me-1" onclick="abrirEdicion(' + row.id + ')" title="Editar">' +
+                                    '<i class="ti ti-edit"></i>' +
+                                '</button>';
+                            var btnLog =
+                                '<button class="btn btn-sm btn-outline-info" onclick="verLog(' + row.id + ')" title="Ver historial">' +
+                                    '<i class="ti ti-history"></i>' +
+                                '</button>';
+                            return btnSalida + btnEditar + btnLog;
+                        }
+                    }
+                ]
+            });
+        }
+    });
 }
 
-function badgeUltimaInduccion(v) {
-    if (!v.ultima_induccion_fecha) {
-        return '<span class="text-muted small">Sin registro</span>';
-    }
-    const color = v.ultima_induccion_vencida ? 'text-danger' : 'text-success';
-    const icono = v.ultima_induccion_vencida ? 'ti-alert-triangle' : 'ti-circle-check';
-    return `<div>
-        <small class="d-block fw-semibold">${v.ultima_induccion_fecha}</small>
-        <small class="${color}"><i class="ti ${icono} me-1"></i>${v.ultima_induccion_hace}</small>
-    </div>`;
+function clearFilters() {
+    $('#filterSede').val('');
+    $('#filterSearch').val('');
+    $('#filterEstado').val('');
+    $('#filterDesde').val(localDateStr());
+    $('#filterHasta').val(localDateStr());
+    cargarTabla();
 }
 
-function escHtml(str) {
-    const d = document.createElement('div');
-    d.appendChild(document.createTextNode(str));
-    return d.innerHTML;
-}
-
-function badgeInduccion(v) {
-    if (!v.induccion_requerida) {
-        return '<span class="badge bg-secondary">No requerida</span>';
-    }
-    if (v.induccion_fecha) {
-        const fecha = formatDT(v.induccion_fecha);
-        return `<div>
-            <span class="badge bg-success"><i class="ti ti-circle-check me-1"></i>Realizada</span>
-            <small class="d-block text-muted mt-1">${fecha}</small>
-            <button class="btn btn-link btn-sm p-0 mt-1 text-secondary" style="font-size:11px" onclick="marcarInduccion(${v.id})" title="Cambiar fecha de inducción">
-                <i class="ti ti-calendar-edit me-1"></i>Cambiar fecha
-            </button>
-        </div>`;
-    }
-    return `<div class="d-flex flex-column align-items-start gap-1">
-        <span class="badge bg-danger"><i class="ti ti-alert-circle me-1"></i>Pendiente</span>
-        <button class="btn btn-sm btn-success py-0 px-2 mt-1" onclick="marcarInduccion(${v.id})" title="Registrar fecha de inducción">
-            <i class="ti ti-calendar-plus me-1"></i>Registrar fecha
-        </button>
-    </div>`;
+function exportarExcel() {
+    var params = new URLSearchParams({
+        sede_id: $('#filterSede').val(),
+        desde:   $('#filterDesde').val(),
+        hasta:   $('#filterHasta').val(),
+        search:  $('#filterSearch').val(),
+        estado:  $('#filterEstado').val(),
+        export:  'xlsx'
+    });
+    window.location.href = '/admin/visitantes/list?' + params;
 }
 
 async function marcarInduccion(id) {
-    const v = visitantesData.find(x => x.id === id);
-    // Precarga: si ya tiene fecha, usarla; si no, hoy
-    const fechaActual = v?.induccion_fecha
+    var v = visitantesData.find(function(x) { return x.id === id; });
+    var fechaActual = v && v.induccion_fecha
         ? new Date(v.induccion_fecha).toISOString().slice(0, 16)
         : new Date(new Date() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-
-    const result = await Swal.fire({
+    var result = await Swal.fire({
         title: '<i class="ti ti-shield-check me-2 text-success"></i>Fecha de inducción',
-        html: `
-            <p class="text-muted small mb-3">Ingresa la fecha y hora en que se realizó la inducción.</p>
-            <input id="swal-fecha-ind" type="datetime-local" value="${fechaActual}"
-                style="width:100%;font-size:14px;border:1px solid #dee2e6;border-radius:8px;padding:9px 12px;outline:none;color:#344054;font-family:inherit;"
-                onfocus="this.style.borderColor='#198754';this.style.boxShadow='0 0 0 3px rgba(25,135,84,.15)'"
-                onblur="this.style.borderColor='#dee2e6';this.style.boxShadow='none'">`,
+        html: '<p class="text-muted small mb-3">Ingresa la fecha y hora en que se realizó la inducción.</p>' +
+              '<input id="swal-fecha-ind" type="datetime-local" value="' + fechaActual + '" class="form-control">',
         showCancelButton: true,
         confirmButtonText: '<i class="ti ti-check me-1"></i>Guardar',
         cancelButtonText: 'Cancelar',
         confirmButtonColor: '#198754',
         cancelButtonColor: '#6c757d',
         width: 420,
-        padding: '1.5rem',
         customClass: { htmlContainer: 'text-start' },
-        preConfirm: () => {
-            const val = document.getElementById('swal-fecha-ind').value;
+        preConfirm: function() {
+            var val = document.getElementById('swal-fecha-ind').value;
             if (!val) { Swal.showValidationMessage('Selecciona una fecha'); return false; }
             return val;
         },
-        didOpen: () => document.getElementById('swal-fecha-ind').focus(),
+        didOpen: function() { document.getElementById('swal-fecha-ind').focus(); }
     });
     if (!result.isConfirmed) return;
-    await fetch(`/admin/visitantes/${id}/induccion`, {
+    await fetch('/admin/visitantes/' + id + '/induccion', {
         method: 'POST',
         headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fecha: result.value }),
+        body: JSON.stringify({ fecha: result.value })
     });
-    loadVisitantes();
+    cargarTabla();
 }
 
 async function editarObservacion(id) {
-    const v = visitantesData.find(x => x.id === id);
-    const obsActual = v?.observacion ?? '';
-    const result = await Swal.fire({
+    var v = visitantesData.find(function(x) { return x.id === id; });
+    var obsActual = v ? (v.observacion || '') : '';
+    var result = await Swal.fire({
         title: '<i class="ti ti-notes me-2 text-primary"></i>Observación',
-        html: `
-            <p class="text-muted small mb-3">Escribe una nota o comentario sobre este registro de visita.</p>
-            <textarea id="swal-obs"
-                placeholder="Escribe una observación..."
-                style="width:100%;height:110px;font-size:13px;border:1px solid #dee2e6;border-radius:8px;padding:10px 12px;resize:vertical;outline:none;font-family:inherit;color:#344054;line-height:1.5;"
-                onfocus="this.style.borderColor='#4F46E5';this.style.boxShadow='0 0 0 3px rgba(79,70,229,.15)'"
-                onblur="this.style.borderColor='#dee2e6';this.style.boxShadow='none'"
-            >${escHtml(obsActual)}</textarea>`,
+        html: '<p class="text-muted small mb-3">Escribe una nota o comentario.</p>' +
+              '<textarea id="swal-obs" class="form-control" rows="4" placeholder="Escribe una observación...">' + obsActual + '</textarea>',
         showCancelButton: true,
         confirmButtonText: '<i class="ti ti-check me-1"></i>Guardar',
         cancelButtonText: 'Cancelar',
         confirmButtonColor: '#4F46E5',
         cancelButtonColor: '#6c757d',
         width: 480,
-        padding: '1.5rem',
         customClass: { htmlContainer: 'text-start' },
-        preConfirm: () => document.getElementById('swal-obs').value.trim(),
-        didOpen: () => {
-            const ta = document.getElementById('swal-obs');
+        preConfirm: function() { return document.getElementById('swal-obs').value.trim(); },
+        didOpen: function() {
+            var ta = document.getElementById('swal-obs');
             ta.focus();
             ta.setSelectionRange(ta.value.length, ta.value.length);
-        },
+        }
     });
     if (!result.isConfirmed) return;
-    await fetch(`/admin/visitantes/${id}/observacion`, {
+    await fetch('/admin/visitantes/' + id + '/observacion', {
         method: 'POST',
         headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ observacion: result.value || null }),
+        body: JSON.stringify({ observacion: result.value || null })
     });
-    loadVisitantes();
-}
-
-function botonForzarSalida(v) {
-    if (v.hora_salida) return '';
-    return `<button class="btn btn-sm btn-outline-danger" onclick="forzarSalida(${v.id})" title="Registrar salida">
-        <i class="ti ti-door-exit"></i> Salida
-    </button>`;
+    cargarTabla();
 }
 
 async function forzarSalida(id) {
-    const result = await Swal.fire({
+    var result = await Swal.fire({
         title: '¿Registrar salida?',
         text: 'Se registrará la hora de salida de este visitante.',
         icon: 'question',
@@ -546,229 +641,252 @@ async function forzarSalida(id) {
         confirmButtonText: 'Sí, registrar',
         cancelButtonText: 'Cancelar',
         confirmButtonColor: '#4F46E5',
-        cancelButtonColor: '#6c757d',
+        cancelButtonColor: '#6c757d'
     });
     if (!result.isConfirmed) return;
-    await fetch(`/admin/visitantes/${id}/forzar-salida`, {
+    await fetch('/admin/visitantes/' + id + '/forzar-salida', {
         method: 'POST',
-        headers: { 'X-CSRF-TOKEN': csrfToken },
+        headers: { 'X-CSRF-TOKEN': csrfToken }
     });
-    loadVisitantes();
-}
-
-function formatDT(dt) {
-    if (!dt) return '—';
-    const d = parseDate(dt);
-    const dd   = String(d.getDate()).padStart(2, '0');
-    const mm   = String(d.getMonth() + 1).padStart(2, '0');
-    const yyyy = d.getFullYear();
-    const hh   = String(d.getHours()).padStart(2, '0');
-    const min  = String(d.getMinutes()).padStart(2, '0');
-    return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
+    cargarTabla();
 }
 
 async function verFoto(visitanteId) {
-    const spinner = document.getElementById('fotoSpinner');
-    const content = document.getElementById('fotoContent');
+    var spinner = document.getElementById('fotoSpinner');
+    var content = document.getElementById('fotoContent');
     spinner.classList.remove('d-none');
     content.classList.add('d-none');
     new bootstrap.Modal(document.getElementById('fotoModal')).show();
-
-    const res  = await fetch(`/admin/visitantes/${visitanteId}/foto`);
-    const data = await res.json();
-
-    const imgE = document.getElementById('fotoEntrada');
-    const imgS = document.getElementById('fotoSalida');
-    const vacE = document.getElementById('fotoEntradaVacio');
-    const vacS = document.getElementById('fotoSalidaVacio');
-
+    var res = await fetch('/admin/visitantes/' + visitanteId + '/foto');
+    var data = await res.json();
+    var imgE = document.getElementById('fotoEntrada'), imgS = document.getElementById('fotoSalida');
+    var vacE = document.getElementById('fotoEntradaVacio'), vacS = document.getElementById('fotoSalidaVacio');
     if (data.entrada) { imgE.src = data.entrada; imgE.classList.remove('d-none'); vacE.classList.add('d-none'); }
-    else              { imgE.classList.add('d-none'); vacE.classList.remove('d-none'); }
-
+    else { imgE.classList.add('d-none'); vacE.classList.remove('d-none'); }
     if (data.salida)  { imgS.src = data.salida;  imgS.classList.remove('d-none'); vacS.classList.add('d-none'); }
-    else              { imgS.classList.add('d-none'); vacS.classList.remove('d-none'); }
-
+    else { imgS.classList.add('d-none'); vacS.classList.remove('d-none'); }
     spinner.classList.add('d-none');
     content.classList.remove('d-none');
 }
 
-function exportarExcel() {
-    const params = new URLSearchParams({
-        sede_id: document.getElementById('filterSede').value,
-        desde:   document.getElementById('filterDesde').value,
-        hasta:   document.getElementById('filterHasta').value,
-        search:  document.getElementById('filterSearch').value,
-        estado:  document.getElementById('filterEstado').value,
-        export:  'xlsx',
-    });
-    window.location.href = `/admin/visitantes/list?${params}`;
-}
-
-function clearFilters() {
-    document.getElementById('filterSede').value   = '';
-    document.getElementById('filterSearch').value = '';
-    document.getElementById('filterEstado').value = '';
-    document.getElementById('filterDesde').value  = localDateStr();
-    document.getElementById('filterHasta').value  = localDateStr();
-    loadVisitantes();
-}
-
-// Actualiza en vivo los contadores de visitantes en sede cada 30 s
-setInterval(() => {
+// Actualiza contadores en vivo cada 30s
+setInterval(function() {
     if (!dataLoadedAt) return;
-    const elapsedMins = Math.floor((new Date() - dataLoadedAt) / 60000);
-    document.querySelectorAll('[data-minutos]').forEach(el => {
-        const base = parseInt(el.getAttribute('data-minutos'), 10);
-        el.textContent = '⏳ ' + formatMins(base + elapsedMins);
+    var elapsedMins = Math.floor((new Date() - dataLoadedAt) / 60000);
+    $('[data-minutos]').each(function() {
+        var base = parseInt($(this).attr('data-minutos'), 10);
+        $(this).text('\u23f3 ' + formatMins(base + elapsedMins));
     });
 }, 30000);
 
-document.addEventListener('DOMContentLoaded', () => {
-    loadSedes();
-    loadVisitantes();
+var LOG_LABELS = {
+    nombre: 'Nombre', cedula: 'Cédula', telefono: 'Teléfono', empresa: 'Empresa',
+    eps: 'EPS', arl: 'ARL', placa: 'Placa', persona_visita: 'Visita a',
+    hora_entrada: 'Entrada', hora_salida: 'Salida',
+    induccion_requerida: 'Inducción req.', induccion_fecha: 'Fecha inducción',
+    observacion: 'Observación', sede_id: 'Sede', user_id: 'Usuario reg.'
+};
 
-    // Forzar mayúsculas en valor real (no solo visual)
-    document.querySelectorAll('.rm-upper').forEach(el => {
-        el.addEventListener('input', () => {
-            const pos = el.selectionStart;
-            el.value = el.value.toUpperCase();
-            el.setSelectionRange(pos, pos);
-        });
-    });
+async function verLog(id) {
+    var spinner = document.getElementById('logSpinner');
+    var content = document.getElementById('logContent');
+    var tbody   = document.getElementById('logTbody');
+    var vacio   = document.getElementById('logVacio');
 
-    // Sorting por click en cabeceras
-    document.querySelectorAll('thead th.sortable').forEach(th => {
-        th.style.cursor = 'pointer';
-        th.style.userSelect = 'none';
-        th.addEventListener('click', () => {
-            const field = th.dataset.field;
-            if (sortField === field) {
-                sortDir = sortDir === 'asc' ? 'desc' : 'asc';
-            } else {
-                sortField = field;
-                sortDir   = 'asc';
-            }
-            renderTabla();
-            actualizarIconosSort();
-        });
-    });
-});
+    spinner.classList.remove('d-none');
+    content.classList.add('d-none');
+    new bootstrap.Modal(document.getElementById('modalLog')).show();
 
-// ── Registro manual ──────────────────────────────────────────────────────────
-async function buscarPorCedula() {
-    const cedula = document.getElementById('rm_cedula').value.trim();
-    const msg    = document.getElementById('rm_cedula_msg');
-    const btn    = document.getElementById('btnBuscarCedula');
+    var res  = await fetch('/admin/visitantes/' + id + '/log');
+    var logs = await res.json();
 
-    if (!cedula) {
-        msg.className = 'form-text text-warning';
-        msg.textContent = 'Ingresa una cédula primero.';
-        msg.classList.remove('d-none');
+    spinner.classList.add('d-none');
+    content.classList.remove('d-none');
+
+    if (!logs.length) {
+        tbody.innerHTML = '';
+        vacio.classList.remove('d-none');
         return;
     }
+    vacio.classList.add('d-none');
 
+    var rows = [];
+    logs.forEach(function(log) {
+        var badgeClass = log.evento === 'DELETE' ? 'bg-danger' : 'bg-warning text-dark';
+        var anterior = log.anterior || {};
+        var nuevo    = log.nuevo    || {};
+        var campos   = Object.keys(Object.assign({}, anterior, nuevo));
+        var cambios  = campos.filter(function(k) {
+            return JSON.stringify(anterior[k]) !== JSON.stringify(nuevo[k]);
+        });
+
+        if (!cambios.length) cambios = campos;
+
+        cambios.forEach(function(campo, i) {
+            rows.push(
+                '<tr>' +
+                (i === 0
+                    ? '<td rowspan="' + cambios.length + '" class="align-middle small text-muted">' + (log.created_at || '') + '</td>' +
+                      '<td rowspan="' + cambios.length + '" class="align-middle"><span class="badge ' + badgeClass + '">' + log.evento + '</span></td>' +
+                      '<td rowspan="' + cambios.length + '" class="align-middle small">' + log.usuario + '</td>'
+                    : '') +
+                '<td class="small fw-semibold">' + (LOG_LABELS[campo] || campo) + '</td>' +
+                '<td class="small text-danger">' + (anterior[campo] != null ? anterior[campo] : '—') + '</td>' +
+                '<td class="small text-success">' + (nuevo[campo]    != null ? nuevo[campo]    : '—') + '</td>' +
+                '</tr>'
+            );
+        });
+    });
+
+    tbody.innerHTML = rows.join('');
+}
+
+function toLocalDatetimeInput(dt) {
+    if (!dt) return '';
+    var d = new Date(dt);
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+}
+
+function abrirEdicion(id) {
+    var v = visitantesData.find(function(x) { return x.id === id; });
+    if (!v) return;
+    document.getElementById('edit_id').value             = v.id;
+    document.getElementById('edit_cedula').value         = v.cedula || '';
+    document.getElementById('edit_nombre').value         = v.nombre || '';
+    document.getElementById('edit_telefono').value       = v.telefono || '';
+    document.getElementById('edit_empresa').value        = v.empresa || '';
+    document.getElementById('edit_eps').value            = v.eps || '';
+    document.getElementById('edit_arl').value            = v.arl || '';
+    document.getElementById('edit_placa').value          = v.placa || '';
+    document.getElementById('edit_persona_visita').value = v.persona_visita || '';
+    document.getElementById('edit_hora_entrada').value   = toLocalDatetimeInput(v.hora_entrada);
+    document.getElementById('edit_hora_salida').value    = toLocalDatetimeInput(v.hora_salida);
+    document.getElementById('editarAlert').className = 'd-none mb-3';
+    new bootstrap.Modal(document.getElementById('modalEditarVisitante')).show();
+}
+
+async function guardarEdicion() {
+    var btn = document.getElementById('btnGuardarEdicion');
+    var alertEl = document.getElementById('editarAlert');
+    var id = document.getElementById('edit_id').value;
+    var payload = {
+        cedula:         document.getElementById('edit_cedula').value.trim(),
+        nombre:         document.getElementById('edit_nombre').value.trim(),
+        telefono:       document.getElementById('edit_telefono').value.trim() || null,
+        empresa:        document.getElementById('edit_empresa').value.trim() || null,
+        eps:            document.getElementById('edit_eps').value.trim() || null,
+        arl:            document.getElementById('edit_arl').value.trim() || null,
+        placa:          document.getElementById('edit_placa').value.trim().toUpperCase() || null,
+        persona_visita: document.getElementById('edit_persona_visita').value.trim(),
+        hora_entrada:   document.getElementById('edit_hora_entrada').value,
+        hora_salida:    document.getElementById('edit_hora_salida').value || null,
+    };
+    if (!payload.cedula || !payload.nombre || !payload.persona_visita || !payload.hora_entrada) {
+        alertEl.className = 'alert alert-warning mb-3';
+        alertEl.textContent = 'Completa los campos obligatorios.';
+        return;
+    }
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-    msg.classList.add('d-none');
-
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Guardando...';
     try {
-        const res  = await fetch(`/admin/visitantes/buscar-cedula?cedula=${encodeURIComponent(cedula)}`);
-        const data = await res.json();
-
-        if (data.found) {
-            const d = data.data;
-            document.getElementById('rm_nombre').value   = d.nombre   ?? '';
-            document.getElementById('rm_telefono').value = d.telefono ?? '';
-            document.getElementById('rm_empresa').value  = d.empresa  ?? '';
-            document.getElementById('rm_eps').value      = d.eps      ?? '';
-            document.getElementById('rm_arl').value      = d.arl      ?? '';
-            msg.className = 'form-text text-success';
-            msg.textContent = '✓ Datos del último registro cargados. Puedes editarlos.';
+        var res = await fetch('/admin/visitantes/' + id, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify(payload)
+        });
+        var data = await res.json();
+        if (res.ok && data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('modalEditarVisitante')).hide();
+            cargarTabla();
         } else {
-            msg.className = 'form-text text-muted';
-            msg.textContent = 'No se encontraron registros anteriores para esta cédula.';
+            alertEl.className = 'alert alert-danger mb-3';
+            alertEl.textContent = data.message || 'Error al guardar.';
         }
-    } catch {
-        msg.className = 'form-text text-danger';
-        msg.textContent = 'Error al buscar. Intenta de nuevo.';
+    } catch(e) {
+        alertEl.className = 'alert alert-danger mb-3';
+        alertEl.textContent = 'Error de conexión.';
     } finally {
-        msg.classList.remove('d-none');
         btn.disabled = false;
-        btn.innerHTML = '<i class="ti ti-search"></i>';
+        btn.innerHTML = '<i class="ti ti-check me-1"></i> Guardar cambios';
     }
 }
 
+async function buscarPorCedula() {
+    var cedula = $('#rm_cedula').val().trim();
+    var msg = document.getElementById('rm_cedula_msg');
+    var btn = document.getElementById('btnBuscarCedula');
+    if (!cedula) { msg.className = 'form-text text-warning'; msg.textContent = 'Ingresa una cédula primero.'; msg.classList.remove('d-none'); return; }
+    btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'; msg.classList.add('d-none');
+    try {
+        var res = await fetch('/admin/visitantes/buscar-cedula?cedula=' + encodeURIComponent(cedula));
+        var data = await res.json();
+        if (data.found) {
+            var d = data.data;
+            $('#rm_nombre').val(d.nombre||''); $('#rm_telefono').val(d.telefono||''); $('#rm_empresa').val(d.empresa||''); $('#rm_eps').val(d.eps||''); $('#rm_arl').val(d.arl||'');
+            msg.className = 'form-text text-success'; msg.textContent = '\u2713 Datos cargados. Puedes editarlos.';
+        } else { msg.className = 'form-text text-muted'; msg.textContent = 'No se encontraron registros anteriores.'; }
+    } catch(e) { msg.className = 'form-text text-danger'; msg.textContent = 'Error al buscar.'; }
+    finally { msg.classList.remove('d-none'); btn.disabled = false; btn.innerHTML = '<i class="ti ti-search"></i>'; }
+}
+
 function abrirRegistroManual() {
-    // Resetear campos
-    ['rm_sede_id','rm_cedula','rm_nombre','rm_telefono','rm_empresa',
-     'rm_eps','rm_arl','rm_placa','rm_persona_visita'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = '';
+    ['rm_sede_id','rm_cedula','rm_nombre','rm_telefono','rm_empresa','rm_eps','rm_arl','rm_placa','rm_persona_visita'].forEach(function(id) {
+        var el = document.getElementById(id); if (el) el.value = '';
     });
-    // Hora de entrada: ahora por defecto en hora local del navegador
-    const now = new Date();
-    now.setSeconds(0, 0);
-    const localISO = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-    document.getElementById('rm_hora_entrada').value = localISO;
+    var now = new Date(); now.setSeconds(0,0);
+    document.getElementById('rm_hora_entrada').value = new Date(now.getTime() - now.getTimezoneOffset()*60000).toISOString().slice(0,16);
     document.getElementById('registroManualAlert').className = 'd-none mb-3';
     document.getElementById('rm_cedula_msg').className = 'form-text d-none';
     new bootstrap.Modal(document.getElementById('modalRegistroManual')).show();
 }
 
 async function guardarVisitanteManual() {
-    const btn    = document.getElementById('btnGuardarVisitante');
-    const alert  = document.getElementById('registroManualAlert');
-
-    const payload = {
-        sede_id:        document.getElementById('rm_sede_id').value,
-        cedula:         document.getElementById('rm_cedula').value.trim(),
-        nombre:         document.getElementById('rm_nombre').value.trim(),
-        telefono:       document.getElementById('rm_telefono').value.trim(),
-        empresa:        document.getElementById('rm_empresa').value.trim(),
-        eps:            document.getElementById('rm_eps').value.trim(),
-        arl:            document.getElementById('rm_arl').value.trim(),
-        placa:          document.getElementById('rm_placa').value.trim().toUpperCase() || null,
-        persona_visita: document.getElementById('rm_persona_visita').value.trim(),
-        hora_entrada:   document.getElementById('rm_hora_entrada').value || null,
+    var btn = document.getElementById('btnGuardarVisitante');
+    var alertEl = document.getElementById('registroManualAlert');
+    var payload = {
+        sede_id: $('#rm_sede_id').val(), cedula: $('#rm_cedula').val().trim(), nombre: $('#rm_nombre').val().trim(),
+        telefono: $('#rm_telefono').val().trim(), empresa: $('#rm_empresa').val().trim(),
+        eps: $('#rm_eps').val().trim(), arl: $('#rm_arl').val().trim(),
+        placa: $('#rm_placa').val().trim().toUpperCase() || null,
+        persona_visita: $('#rm_persona_visita').val().trim(),
+        hora_entrada: $('#rm_hora_entrada').val() || null
     };
-
-    // Validación básica
-    const requeridos = ['sede_id','cedula','nombre','telefono','empresa','eps','arl','persona_visita'];
-    const faltante = requeridos.find(k => !payload[k]);
-    if (faltante) {
-        alert.className = 'alert alert-warning mb-3';
-        alert.textContent = 'Completa todos los campos obligatorios.';
-        return;
+    var requeridos = ['sede_id','cedula','nombre','telefono','empresa','eps','arl','persona_visita'];
+    if (requeridos.find(function(k) { return !payload[k]; })) {
+        alertEl.className = 'alert alert-warning mb-3'; alertEl.textContent = 'Completa todos los campos obligatorios.'; return;
     }
-
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Guardando...';
-
+    btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Guardando...';
     try {
-        const res  = await fetch('{{ route("admin.visitantes.store") }}', {
+        var res = await fetch('{{ route("admin.visitantes.store") }}', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            },
-            body: JSON.stringify(payload),
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify(payload)
         });
-        const data = await res.json();
-
+        var data = await res.json();
         if (res.ok && data.success) {
             bootstrap.Modal.getInstance(document.getElementById('modalRegistroManual')).hide();
-            loadVisitantes();
-        } else {
-            alert.className = 'alert alert-danger mb-3';
-            alert.textContent = data.message || 'Error al guardar.';
-        }
-    } catch (e) {
-        alert.className = 'alert alert-danger mb-3';
-        alert.textContent = 'Error de conexión.';
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="ti ti-check me-1"></i> Registrar entrada';
-    }
+            cargarTabla();
+        } else { alertEl.className = 'alert alert-danger mb-3'; alertEl.textContent = data.message || 'Error al guardar.'; }
+    } catch(e) { alertEl.className = 'alert alert-danger mb-3'; alertEl.textContent = 'Error de conexión.'; }
+    finally { btn.disabled = false; btn.innerHTML = '<i class="ti ti-check me-1"></i> Registrar entrada'; }
 }
+
+$(document).ready(function() {
+    // Cargar sedes
+    sedesData.forEach(function(s) {
+        $('#filterSede').append('<option value="' + s.id + '">' + s.nombre + '</option>');
+    });
+    // Fechas por defecto
+    $('#filterDesde').val(localDateStr());
+    $('#filterHasta').val(localDateStr());
+    // Cargar tabla
+    cargarTabla();
+    // Mayúsculas
+    $('.rm-upper').on('input', function() {
+        var pos = this.selectionStart;
+        this.value = this.value.toUpperCase();
+        this.setSelectionRange(pos, pos);
+    });
+});
 </script>
 @endpush

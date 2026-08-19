@@ -448,10 +448,9 @@ class AdminController extends Controller
             );
         }
 
-        $visitantes = $query->paginate(50);
+        $visitantes = $query->paginate(min((int) $request->input('per_page', 50), 5000));
         $visitantes->getCollection()->transform(function ($v) {
-            $img = $v->imagenes->first();
-            $v->imagen_entrada = $img?->thumbnail_base64;
+            $v->imagen_entrada = $v->imagenes->isNotEmpty();
             // DB guarda en hora Colombia (APP_TIMEZONE); comparar en la misma zona
             $entrada   = \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $v->getRawOriginal('hora_entrada'));
             $salidaRaw = $v->getRawOriginal('hora_salida');
@@ -561,6 +560,63 @@ class AdminController extends Controller
         }
         $visitante->update(['hora_salida' => now()]);
         return response()->json(['success' => true]);
+    }
+
+    public function visitantesUpdate(Request $request, int $id): JsonResponse
+    {
+        $visitante = Visitante::findOrFail($id);
+
+        $request->validate([
+            'nombre'         => 'required|string|max:255',
+            'cedula'         => 'required|string|max:20',
+            'telefono'       => 'nullable|string|max:20',
+            'empresa'        => 'nullable|string|max:255',
+            'eps'            => 'nullable|string|max:100',
+            'arl'            => 'nullable|string|max:100',
+            'placa'          => 'nullable|string|max:20',
+            'persona_visita' => 'required|string|max:255',
+            'hora_entrada'   => 'required|date',
+            'hora_salida'    => 'nullable|date',
+        ]);
+
+        \DB::connection('tenant')->statement('SET @audit_user_id = ?', [auth()->id()]);
+
+        $visitante->update([
+            'nombre'         => strtoupper($request->nombre),
+            'cedula'         => $request->cedula,
+            'telefono'       => $request->telefono,
+            'empresa'        => $request->empresa ? strtoupper($request->empresa) : null,
+            'eps'            => $request->eps     ? strtoupper($request->eps)     : null,
+            'arl'            => $request->arl     ? strtoupper($request->arl)     : null,
+            'placa'          => $request->placa   ? strtoupper($request->placa)   : null,
+            'persona_visita' => strtoupper($request->persona_visita),
+            'hora_entrada'   => $request->hora_entrada,
+            'hora_salida'    => $request->hora_salida ?: null,
+        ]);
+
+        return response()->json(['success' => true]);
+    }
+
+    public function visitantesLog(int $id): JsonResponse
+    {
+        $logs = \DB::connection('tenant')->table('tbl_visitantes_log')
+            ->where('visitante_id', $id)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($row) {
+                $user = $row->user_id
+                    ? \App\Models\User::find($row->user_id)?->name ?? 'Usuario #' . $row->user_id
+                    : 'Sistema';
+                return [
+                    'evento'     => $row->evento,
+                    'anterior'   => $row->anterior ? json_decode($row->anterior, true) : null,
+                    'nuevo'      => $row->nuevo    ? json_decode($row->nuevo,    true) : null,
+                    'usuario'    => $user,
+                    'created_at' => $row->created_at,
+                ];
+            });
+
+        return response()->json($logs);
     }
 
     public function visitantesFoto(int $id): JsonResponse
