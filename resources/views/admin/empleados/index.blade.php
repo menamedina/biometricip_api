@@ -262,15 +262,37 @@
 </div>
 {{-- Modal Log Empleado --}}
 <div class="modal fade" id="modalLogEmpleado" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="fa-solid fa-clock-rotate-left me-2 text-secondary"></i>Historial de cambios — <span id="logEmpleadoNombre"></span></h5>
+                <h5 class="modal-title"><i class="fa-solid fa-clock-rotate-left me-2"></i>Historial de cambios</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body p-2">
-                <div id="logEmpleadoContent">
-                    <div class="text-center text-muted py-3">Cargando...</div>
+            <div class="modal-body p-3">
+                <div id="logEmpleadoSpinner" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                </div>
+                <div id="logEmpleadoContent" class="d-none">
+                    <div class="card border mb-0">
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width:130px">Fecha</th>
+                                            <th style="width:80px">Evento</th>
+                                            <th style="width:140px">Usuario</th>
+                                            <th>Campo</th>
+                                            <th>Anterior</th>
+                                            <th>Nuevo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="logEmpleadoTbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="logEmpleadoVacio" class="text-center text-muted py-4 d-none">Sin registros de cambios.</div>
                 </div>
             </div>
         </div>
@@ -828,43 +850,64 @@ async function ejecutarImportEmpleados() {
 }
 
 // ── Log de cambios ────────────────────────────────────────────────────────────
+const LOG_LABELS_EMP = {
+    name: 'Nombre', cedula: 'Cédula', email: 'Email', role: 'Rol', tipo: 'Tipo',
+    admin_tenant: 'Admin multi-empresa', is_active: 'Activo', empresa_id: 'Empresa',
+    empleador_id: 'Empleador', lider_id: 'Líder', codigo_empleado: 'Código',
+    departamento_id: 'Departamento', cargo_id: 'Cargo', horario_id: 'Horario', telefono: 'Teléfono'
+};
+
 async function verLogEmpleado(id) {
-    document.getElementById('logEmpleadoNombre').textContent = '';
-    document.getElementById('logEmpleadoContent').innerHTML = '<div class="text-center text-muted py-3">Cargando...</div>';
+    var spinner = document.getElementById('logEmpleadoSpinner');
+    var content = document.getElementById('logEmpleadoContent');
+    var tbody   = document.getElementById('logEmpleadoTbody');
+    var vacio   = document.getElementById('logEmpleadoVacio');
+
+    spinner.classList.remove('d-none');
+    content.classList.add('d-none');
     new bootstrap.Modal(document.getElementById('modalLogEmpleado')).show();
-    try {
-        const res = await fetch(`/admin/empleados/${id}/log`);
-        const logs = await res.json();
-        const contenedor = document.getElementById('logEmpleadoContent');
-        if (!logs.length) {
-            contenedor.innerHTML = '<div class="text-center text-muted py-3">Sin cambios registrados.</div>';
-            return;
-        }
-        const eventoBadge = ev => ev === 'DELETE'
-            ? '<span class="badge bg-danger">DELETE</span>'
-            : '<span class="badge bg-warning text-dark">UPDATE</span>';
-        const diffHtml = (anterior, nuevo) => {
-            if (!anterior) return '';
-            const keys = Object.keys(anterior);
-            const rows = keys.filter(k => String(anterior[k]) !== String((nuevo || {})[k])).map(k => `
-                <tr>
-                    <td class="fw-semibold text-nowrap">${k}</td>
-                    <td class="text-danger text-decoration-line-through">${anterior[k] ?? '<em class="text-muted">null</em>'}</td>
-                    <td class="text-success">${nuevo ? (nuevo[k] ?? '<em class="text-muted">null</em>') : '—'}</td>
-                </tr>`).join('');
-            return rows ? `<table class="table table-sm table-bordered mb-0 small"><thead><tr><th>Campo</th><th>Antes</th><th>Después</th></tr></thead><tbody>${rows}</tbody></table>` : '<span class="text-muted small">Sin diferencias detectadas</span>';
-        };
-        contenedor.innerHTML = logs.map(log => `
-            <div class="card mb-2">
-                <div class="card-header d-flex justify-content-between align-items-center py-1 px-2">
-                    <span>${eventoBadge(log.evento)}</span>
-                    <span class="text-muted small">${log.usuario} &mdash; ${log.created_at}</span>
-                </div>
-                <div class="card-body p-2">${diffHtml(log.anterior, log.nuevo)}</div>
-            </div>`).join('');
-    } catch(e) {
-        document.getElementById('logEmpleadoContent').innerHTML = `<div class="text-danger py-3">Error al cargar: ${e.message}</div>`;
+
+    var res  = await fetch('/admin/empleados/' + id + '/log');
+    var logs = await res.json();
+
+    spinner.classList.add('d-none');
+    content.classList.remove('d-none');
+
+    if (!logs.length) {
+        tbody.innerHTML = '';
+        vacio.classList.remove('d-none');
+        return;
     }
+    vacio.classList.add('d-none');
+
+    var rows = [];
+    logs.forEach(function(log) {
+        var badgeClass = log.evento === 'DELETE' ? 'bg-danger' : 'bg-warning text-dark';
+        var anterior = log.anterior || {};
+        var nuevo    = log.nuevo    || {};
+        var campos   = Object.keys(Object.assign({}, anterior, nuevo));
+        var cambios  = campos.filter(function(k) {
+            return JSON.stringify(anterior[k]) !== JSON.stringify(nuevo[k]);
+        });
+        if (!cambios.length) cambios = campos;
+
+        cambios.forEach(function(campo, i) {
+            rows.push(
+                '<tr>' +
+                (i === 0
+                    ? '<td rowspan="' + cambios.length + '" class="align-middle small text-muted">' + (log.created_at || '') + '</td>' +
+                      '<td rowspan="' + cambios.length + '" class="align-middle"><span class="badge ' + badgeClass + '">' + log.evento + '</span></td>' +
+                      '<td rowspan="' + cambios.length + '" class="align-middle small">' + log.usuario + '</td>'
+                    : '') +
+                '<td class="small fw-semibold">' + (LOG_LABELS_EMP[campo] || campo) + '</td>' +
+                '<td class="small text-danger">' + (anterior[campo] != null ? anterior[campo] : '—') + '</td>' +
+                '<td class="small text-success">' + (nuevo[campo]    != null ? nuevo[campo]    : '—') + '</td>' +
+                '</tr>'
+            );
+        });
+    });
+
+    tbody.innerHTML = rows.join('');
 }
 
 function updateSortIcons() {
