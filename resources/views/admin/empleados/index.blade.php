@@ -260,6 +260,22 @@
         </div>
     </div>
 </div>
+{{-- Modal Log Empleado --}}
+<div class="modal fade" id="modalLogEmpleado" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa-solid fa-clock-rotate-left me-2 text-secondary"></i>Historial de cambios — <span id="logEmpleadoNombre"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-2">
+                <div id="logEmpleadoContent">
+                    <div class="text-center text-muted py-3">Cargando...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -476,6 +492,7 @@ async function loadEmpleados(page = 1) {
                     </td>
                     <td>
                         <button class="btn btn-sm btn-outline-primary me-1" onclick="editEmpleado(${e.id}, '${e.encrypted_id}')"><i class="fa-solid fa-pen"></i></button>
+                        <button class="btn btn-sm btn-outline-secondary me-1" onclick="verLogEmpleado(${e.id})" title="Ver historial de cambios"><i class="fa-solid fa-clock-rotate-left"></i></button>
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteEmpleado('${e.encrypted_id}')" ${isSupervisor ? 'disabled' : ''}><i class="fa-solid fa-trash"></i></button>
                     </td>
                 </tr>`;
@@ -807,6 +824,46 @@ async function ejecutarImportEmpleados() {
         btn.disabled       = false;
         cancelBtn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-file-import me-1"></i> Importar';
+    }
+}
+
+// ── Log de cambios ────────────────────────────────────────────────────────────
+async function verLogEmpleado(id) {
+    document.getElementById('logEmpleadoNombre').textContent = '';
+    document.getElementById('logEmpleadoContent').innerHTML = '<div class="text-center text-muted py-3">Cargando...</div>';
+    new bootstrap.Modal(document.getElementById('modalLogEmpleado')).show();
+    try {
+        const res = await fetch(`/admin/empleados/${id}/log`);
+        const logs = await res.json();
+        const contenedor = document.getElementById('logEmpleadoContent');
+        if (!logs.length) {
+            contenedor.innerHTML = '<div class="text-center text-muted py-3">Sin cambios registrados.</div>';
+            return;
+        }
+        const eventoBadge = ev => ev === 'DELETE'
+            ? '<span class="badge bg-danger">DELETE</span>'
+            : '<span class="badge bg-warning text-dark">UPDATE</span>';
+        const diffHtml = (anterior, nuevo) => {
+            if (!anterior) return '';
+            const keys = Object.keys(anterior);
+            const rows = keys.filter(k => String(anterior[k]) !== String((nuevo || {})[k])).map(k => `
+                <tr>
+                    <td class="fw-semibold text-nowrap">${k}</td>
+                    <td class="text-danger text-decoration-line-through">${anterior[k] ?? '<em class="text-muted">null</em>'}</td>
+                    <td class="text-success">${nuevo ? (nuevo[k] ?? '<em class="text-muted">null</em>') : '—'}</td>
+                </tr>`).join('');
+            return rows ? `<table class="table table-sm table-bordered mb-0 small"><thead><tr><th>Campo</th><th>Antes</th><th>Después</th></tr></thead><tbody>${rows}</tbody></table>` : '<span class="text-muted small">Sin diferencias detectadas</span>';
+        };
+        contenedor.innerHTML = logs.map(log => `
+            <div class="card mb-2">
+                <div class="card-header d-flex justify-content-between align-items-center py-1 px-2">
+                    <span>${eventoBadge(log.evento)}</span>
+                    <span class="text-muted small">${log.usuario} &mdash; ${log.created_at}</span>
+                </div>
+                <div class="card-body p-2">${diffHtml(log.anterior, log.nuevo)}</div>
+            </div>`).join('');
+    } catch(e) {
+        document.getElementById('logEmpleadoContent').innerHTML = `<div class="text-danger py-3">Error al cargar: ${e.message}</div>`;
     }
 }
 

@@ -579,20 +579,21 @@ class AdminController extends Controller
             'hora_salida'    => 'nullable|date',
         ]);
 
-        \DB::connection('tenant')->statement('SET @audit_user_id = ?', [auth()->id()]);
-
-        $visitante->update([
-            'nombre'         => strtoupper($request->nombre),
-            'cedula'         => $request->cedula,
-            'telefono'       => $request->telefono,
-            'empresa'        => $request->empresa ? strtoupper($request->empresa) : null,
-            'eps'            => $request->eps     ? strtoupper($request->eps)     : null,
-            'arl'            => $request->arl     ? strtoupper($request->arl)     : null,
-            'placa'          => $request->placa   ? strtoupper($request->placa)   : null,
-            'persona_visita' => strtoupper($request->persona_visita),
-            'hora_entrada'   => $request->hora_entrada,
-            'hora_salida'    => $request->hora_salida ?: null,
-        ]);
+        \DB::connection('tenant')->transaction(function () use ($visitante, $request) {
+            \DB::connection('tenant')->statement('SET @audit_user_id = ?', [auth()->id()]);
+            $visitante->update([
+                'nombre'         => strtoupper($request->nombre),
+                'cedula'         => $request->cedula,
+                'telefono'       => $request->telefono,
+                'empresa'        => $request->empresa ? strtoupper($request->empresa) : null,
+                'eps'            => $request->eps     ? strtoupper($request->eps)     : null,
+                'arl'            => $request->arl     ? strtoupper($request->arl)     : null,
+                'placa'          => $request->placa   ? strtoupper($request->placa)   : null,
+                'persona_visita' => strtoupper($request->persona_visita),
+                'hora_entrada'   => $request->hora_entrada,
+                'hora_salida'    => $request->hora_salida ?: null,
+            ]);
+        });
 
         return response()->json(['success' => true]);
     }
@@ -606,6 +607,28 @@ class AdminController extends Controller
             ->map(function ($row) {
                 $user = $row->user_id
                     ? \App\Models\User::find($row->user_id)?->name ?? 'Usuario #' . $row->user_id
+                    : 'Sistema';
+                return [
+                    'evento'     => $row->evento,
+                    'anterior'   => $row->anterior ? json_decode($row->anterior, true) : null,
+                    'nuevo'      => $row->nuevo    ? json_decode($row->nuevo,    true) : null,
+                    'usuario'    => $user,
+                    'created_at' => $row->created_at,
+                ];
+            });
+
+        return response()->json($logs);
+    }
+
+    public function empleadosLog(int $id): JsonResponse
+    {
+        $logs = \DB::table('tbl_users_log')
+            ->where('user_id', $id)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($row) {
+                $user = $row->changed_by
+                    ? \App\Models\User::find($row->changed_by)?->name ?? 'Usuario #' . $row->changed_by
                     : 'Sistema';
                 return [
                     'evento'     => $row->evento,

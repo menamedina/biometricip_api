@@ -156,6 +156,7 @@ Route::middleware(['auth', 'admin', 'role:admin,supervisor', 'tenancy.session'])
     Route::get ('/admin/visitantes/{id}/foto',                [AdminController::class,      'visitantesFoto'])->name('admin.visitantes.foto');
     Route::put ('/admin/visitantes/{id}',                     [AdminController::class,      'visitantesUpdate'])->name('admin.visitantes.update');
     Route::get ('/admin/visitantes/{id}/log',                 [AdminController::class,      'visitantesLog'])->name('admin.visitantes.log');
+    Route::get ('/admin/empleados/{id}/log',                  [AdminController::class,      'empleadosLog'])->name('admin.empleados.log');
     Route::get('/admin/dispositivos',   [AdminController::class, 'dispositivosIndex'])->name('admin.dispositivos.index');
     Route::get('/admin/permisos',       [AdminController::class, 'permisosIndex'])->name('admin.permisos.index');
     Route::get   ('/admin/empleadores',        [AdminController::class, 'empleadoresIndex'])->name('admin.empleadores.index');

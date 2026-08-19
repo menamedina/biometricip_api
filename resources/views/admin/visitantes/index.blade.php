@@ -529,8 +529,8 @@ function cargarTabla() {
                         orderable: false,
                         render: function(data, type, row) {
                             var btnSalida = data ? '' :
-                                '<button class="btn btn-sm btn-outline-danger me-1" onclick="forzarSalida(' + row.id + ')">' +
-                                    '<i class="ti ti-door-exit"></i> Salida' +
+                                '<button class="btn btn-sm btn-outline-danger me-1" onclick="forzarSalida(' + row.id + ')" title="Registrar salida">' +
+                                    '<i class="ti ti-door-exit"></i>' +
                                 '</button>';
                             var btnEditar =
                                 '<button class="btn btn-sm btn-outline-secondary me-1" onclick="abrirEdicion(' + row.id + ')" title="Editar">' +

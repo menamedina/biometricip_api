@@ -290,7 +290,10 @@ class EmpleadoController extends Controller
         }
         unset($data['sede_ids']);
 
-        $empleado->update($data);
+        \DB::transaction(function () use ($empleado, $data) {
+            \DB::statement('SET @audit_user_id = ?', [auth()->id()]);
+            $empleado->update($data);
+        });
 
         return response()->json(['data' => $this->withNames($empleado->fresh())]);
     }
@@ -308,7 +311,10 @@ class EmpleadoController extends Controller
         }
 
         $empleado = $query->firstOrFail();
-        $empleado->update(['is_active' => false]);
+        \DB::transaction(function () use ($empleado) {
+            \DB::statement('SET @audit_user_id = ?', [auth()->id()]);
+            $empleado->update(['is_active' => false]);
+        });
 
         return response()->json(['message' => 'Empleado desactivado correctamente.']);
     }
