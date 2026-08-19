@@ -381,7 +381,7 @@ function cargarTabla() {
                 data: datos,
                 order: [[8, 'desc']],
                 scrollX: true,
-                pageLength: 25,
+                pageLength: 10,
                 lengthMenu: [10, 25, 50, 100],
                 language: {
                     url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json'
