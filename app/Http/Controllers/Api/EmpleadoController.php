@@ -190,20 +190,31 @@ class EmpleadoController extends Controller
         $empleado = $query->firstOrFail();
 
         $data = $this->withNames($empleado);
-
-        // Para admin_tenant: indicar si tiene movimientos (para bloquear cambio de empresa en UI)
-        if ($authUser->admin_tenant && $empleado->empresa_id) {
-            try {
-                TenantHelper::switchTenant($empleado->empresa_id);
-                $data['tiene_movimientos'] = AttendanceRecord::where('user_id', $empleado->id)->exists();
-            } catch (\Throwable $e) {
-                $data['tiene_movimientos'] = false;
-            }
-        } else {
-            $data['tiene_movimientos'] = false;
-        }
+        $data['tiene_movimientos'] = false; // se consulta lazy vía /admin/empleados/{id}/movimientos
 
         return response()->json(['data' => $data]);
+    }
+
+    public function tieneMovimientos(Request $request, int $id): JsonResponse
+    {
+        $authUser = $request->user();
+        if (!$authUser->admin_tenant) {
+            return response()->json(['tiene_movimientos' => false]);
+        }
+
+        $empleado = User::where('id', $id)->first();
+        if (!$empleado || !$empleado->empresa_id) {
+            return response()->json(['tiene_movimientos' => false]);
+        }
+
+        try {
+            TenantHelper::switchTenant($empleado->empresa_id);
+            $tiene = AttendanceRecord::where('user_id', $id)->exists();
+        } catch (\Throwable $e) {
+            $tiene = false;
+        }
+
+        return response()->json(['tiene_movimientos' => $tiene]);
     }
 
     public function update(Request $request, string $token): JsonResponse

@@ -100,6 +100,10 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
+                <div id="empleadoModalLoader" class="d-none text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <div class="text-muted mt-2 small">Cargando datos...</div>
+                </div>
                 <form id="empleadoForm">
                     <input type="hidden" id="empleadoId">
                     <div class="row">
@@ -513,7 +517,7 @@ async function loadEmpleados(page = 1) {
                         </button>
                     </td>
                     <td>
-                        <button class="btn btn-sm btn-outline-primary me-1" onclick="editEmpleado(${e.id}, '${e.encrypted_id}')"><i class="fa-solid fa-pen"></i></button>
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="this.disabled=true;editEmpleado(${e.id}, '${e.encrypted_id}').finally(()=>this.disabled=false)"><i class="fa-solid fa-pen"></i></button>
                         <button class="btn btn-sm btn-outline-secondary me-1" onclick="verLogEmpleado(${e.id})" title="Ver historial de cambios"><i class="fa-solid fa-clock-rotate-left"></i></button>
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteEmpleado('${e.encrypted_id}')" ${isSupervisor ? 'disabled' : ''}><i class="fa-solid fa-trash"></i></button>
                     </td>
@@ -541,9 +545,19 @@ function renderPagination(data) {
 }
 
 async function editEmpleado(id, encryptedId) {
+    const loader = document.getElementById('empleadoModalLoader');
+    const form   = document.getElementById('empleadoForm');
+    loader.classList.remove('d-none');
+    form.classList.add('d-none');
+    document.getElementById('empleadoModalTitle').textContent = 'Cargando...';
+    new bootstrap.Modal(document.getElementById('empleadoModal')).show();
     try {
         const res = await fetch(`/admin/empleados/${id}/detail`);
-        if (!res.ok) { alert('Error ' + res.status + ' al cargar empleado'); return; }
+        if (!res.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('empleadoModal')).hide();
+            alert('Error ' + res.status + ' al cargar empleado');
+            return;
+        }
         const data = await res.json();
         const e = data.data;
         currentEmpleadoId = encryptedId || e.encrypted_id;
@@ -553,13 +567,17 @@ async function editEmpleado(id, encryptedId) {
         if (isAdminTenant) {
             const selEmp = document.getElementById('empEmpresaId');
             selEmp.value = e.empresa_id || '';
-            if (e.tiene_movimientos) {
-                selEmp.disabled = true;
-                selEmp.title = 'No se puede cambiar: el empleado tiene registros de asistencia';
-            } else {
-                selEmp.disabled = false;
-                selEmp.title = '';
-            }
+            selEmp.disabled = false;
+            selEmp.title = '';
+            // Verificar movimientos en background (no bloquea apertura del modal)
+            fetch(`/admin/empleados/${id}/movimientos`)
+                .then(r => r.json())
+                .then(m => {
+                    if (m.tiene_movimientos) {
+                        selEmp.disabled = true;
+                        selEmp.title = 'No se puede cambiar: el empleado tiene registros de asistencia';
+                    }
+                });
             // Cargar catálogos y sedes del tenant de la empresa del empleado
             await loadCatalogosParaEmpresa(e.empresa_id);
             await loadSedesParaEmpresa(e.empresa_id, e.sede_ids || []);
@@ -596,8 +614,12 @@ async function editEmpleado(id, encryptedId) {
         document.getElementById('empRole').value         = e.role || 'empleado';
         document.getElementById('empActivo').checked     = !!e.is_active;
         document.getElementById('empleadoModalTitle').textContent = 'Editar Usuario';
-        new bootstrap.Modal(document.getElementById('empleadoModal')).show();
-    } catch(e) { console.error(e); }
+        loader.classList.add('d-none');
+        form.classList.remove('d-none');
+    } catch(e) {
+        bootstrap.Modal.getInstance(document.getElementById('empleadoModal')).hide();
+        console.error(e);
+    }
 }
 
 async function saveEmpleado(id) {
