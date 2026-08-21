@@ -43,7 +43,48 @@ class AdminController extends Controller
             ? collect()
             : User::where('is_active', true)->orderBy('name')->get(['id', 'name', 'email']);
 
-        return view('admin.notificaciones.index', compact('empleados', 'empresas'));
+        // Dispositivos con token FCM registrado + último acceso Sanctum
+        $dispositivos = DB::table('device_tokens')
+            ->join('users', 'device_tokens.user_id', '=', 'users.id')
+            ->leftJoin('personal_access_tokens', function ($join) {
+                $join->on('personal_access_tokens.tokenable_id', '=', 'users.id')
+                     ->where('personal_access_tokens.tokenable_type', '=', 'App\\Models\\User');
+            })
+            ->select(
+                'device_tokens.id',
+                'users.name',
+                'users.email',
+                'device_tokens.device_type',
+                'device_tokens.device_name',
+                'device_tokens.is_active as token_active',
+                'device_tokens.created_at as token_registered_at',
+                'device_tokens.updated_at as token_updated_at',
+                DB::raw('MAX(personal_access_tokens.last_used_at) as last_access'),
+                DB::raw('MAX(personal_access_tokens.expires_at) as token_expires_at')
+            )
+            ->groupBy(
+                'device_tokens.id',
+                'users.name',
+                'users.email',
+                'device_tokens.device_type',
+                'device_tokens.device_name',
+                'device_tokens.is_active',
+                'device_tokens.created_at',
+                'device_tokens.updated_at'
+            )
+            ->orderByDesc('device_tokens.updated_at')
+            ->get();
+
+        return view('admin.notificaciones.index', compact('empleados', 'empresas', 'dispositivos'));
+    }
+
+    public function deleteDeviceToken(int $id): JsonResponse
+    {
+        $deleted = DB::table('device_tokens')->where('id', $id)->delete();
+
+        return response()->json([
+            'message' => $deleted ? 'Token eliminado correctamente' : 'Token no encontrado',
+        ], $deleted ? 200 : 404);
     }
 
     public function notificacionesEmpleados(Request $request): JsonResponse

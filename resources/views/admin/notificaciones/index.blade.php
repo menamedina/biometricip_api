@@ -121,6 +121,103 @@
             </div>
         </div>
     </div>
+
+    {{-- Dispositivos registrados --}}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0"><i class="ti ti-device-mobile-check me-1"></i> Dispositivos con Token FCM</h5>
+                    <span class="badge bg-primary">{{ $dispositivos->count() }} dispositivo(s)</span>
+                </div>
+                <div class="card-body p-0">
+                    @if($dispositivos->count() > 0)
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Empleado</th>
+                                    <th>Dispositivo</th>
+                                    <th>Token FCM</th>
+                                    <th>Registrado</th>
+                                    <th>Último acceso</th>
+                                    <th>Estado</th>
+                                    <th class="text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($dispositivos as $d)
+                                @php
+                                    $lastAccess = $d->last_access ? \Carbon\Carbon::parse($d->last_access) : null;
+                                    $tokenUpdated = \Carbon\Carbon::parse($d->token_updated_at);
+                                    $inactive = !$d->token_active;
+                                    $stale = $lastAccess ? $lastAccess->diffInDays(now()) > 30 : $tokenUpdated->diffInDays(now()) > 30;
+                                @endphp
+                                <tr id="token-row-{{ $d->id }}" class="{{ $inactive ? 'table-danger' : ($stale ? 'table-warning' : '') }}">
+                                    <td>
+                                        <div class="fw-semibold">{{ $d->name }}</div>
+                                        <small class="text-muted">{{ $d->email }}</small>
+                                    </td>
+                                    <td>
+                                        @if($d->device_type === 'android')
+                                            <i class="fa-brands fa-android text-success me-1"></i>
+                                        @elseif($d->device_type === 'ios')
+                                            <i class="fa-brands fa-apple me-1"></i>
+                                        @else
+                                            <i class="fa-solid fa-globe me-1"></i>
+                                        @endif
+                                        {{ ucfirst($d->device_type) }}
+                                        @if($d->device_name)
+                                            <br><small class="text-muted">{{ $d->device_name }}</small>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <span class="badge {{ $d->token_active ? 'bg-success' : 'bg-danger' }}">
+                                            {{ $d->token_active ? 'Activo' : 'Inactivo' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small>{{ \Carbon\Carbon::parse($d->token_registered_at)->format('d/m/Y H:i') }}</small>
+                                    </td>
+                                    <td>
+                                        @if($lastAccess)
+                                            <small class="{{ $stale ? 'text-warning fw-semibold' : '' }}">
+                                                {{ $lastAccess->format('d/m/Y H:i') }}
+                                            </small>
+                                            <br><small class="text-muted">{{ $lastAccess->diffForHumans() }}</small>
+                                        @else
+                                            <small class="text-muted">Sin registro</small>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($inactive)
+                                            <span class="badge bg-danger"><i class="ti ti-x me-1"></i>Token inactivo</span>
+                                        @elseif($stale)
+                                            <span class="badge bg-warning text-dark"><i class="ti ti-clock me-1"></i>Sin actividad (+30d)</span>
+                                        @else
+                                            <span class="badge bg-success"><i class="ti ti-check me-1"></i>OK</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteToken({{ $d->id }}, '{{ $d->name }}')" title="Eliminar token">
+                                            <i class="ti ti-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    @else
+                    <div class="p-4 text-center text-muted">
+                        <i class="ti ti-device-mobile-off" style="font-size: 32px;"></i>
+                        <p class="mt-2 mb-0">No hay dispositivos con token FCM registrado</p>
+                    </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
 
@@ -299,6 +396,39 @@ async function sendNotification() {
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Enviar Notificación';
+    }
+}
+
+async function deleteToken(id, name) {
+    const result = await Swal.fire({
+        title: 'Eliminar token',
+        text: `¿Eliminar el token FCM de ${name}? El dispositivo dejará de recibir notificaciones.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'Eliminar',
+        cancelButtonText: 'Cancelar',
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+        const res = await fetch(`/admin/notificaciones/device-token/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+        });
+
+        if (res.ok) {
+            document.getElementById(`token-row-${id}`)?.remove();
+            Swal.fire('Eliminado', 'Token eliminado correctamente.', 'success');
+        } else {
+            Swal.fire('Error', 'No se pudo eliminar el token.', 'error');
+        }
+    } catch (e) {
+        Swal.fire('Error', 'Error de conexión.', 'error');
     }
 }
 </script>

@@ -20,6 +20,12 @@ class DeviceTokenController extends Controller
             'device_name' => 'nullable|string|max:255',
         ]);
 
+        // Eliminar tokens anteriores del mismo usuario y tipo de dispositivo
+        DeviceToken::where('user_id', $request->user()->id)
+            ->where('device_type', $request->device_type)
+            ->where('token', '!=', $request->token)
+            ->delete();
+
         $deviceToken = DeviceToken::updateOrCreate(
             ['token' => $request->token],
             [
