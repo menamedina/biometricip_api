@@ -16,6 +16,8 @@ use App\Http\Controllers\Api\AgentController;
 use App\Http\Controllers\Api\DeviceController;
 use App\Http\Controllers\Api\AdmsController;
 use App\Http\Controllers\Api\VisitanteController;
+use App\Http\Controllers\Api\DeviceTokenController;
+use App\Http\Controllers\Api\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 // Agente local — sincronización desde servicio Windows
@@ -43,6 +45,10 @@ Route::middleware(['auth:sanctum', 'tenancy'])->group(function () {
     Route::get('/auth/me',               [AuthController::class, 'me']);
     Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
     Route::post('/auth/upload-photo',    [AuthController::class, 'uploadProfilePhoto']);
+
+    // Device tokens FCM
+    Route::post('/device-tokens',   [DeviceTokenController::class, 'store']);
+    Route::delete('/device-tokens', [DeviceTokenController::class, 'destroy']);
 
     Route::post('/attendance/clock',        [AttendanceController::class, 'clock']);
     Route::post('/attendance/offline-sync', [AttendanceController::class, 'offlineSync']);
@@ -136,6 +142,9 @@ Route::middleware(['auth:sanctum', 'tenancy'])->group(function () {
         Route::post  ('/tenant-tablas',      [TenantTablaController::class, 'store']);
         Route::put   ('/tenant-tablas/{id}', [TenantTablaController::class, 'update']);
         Route::delete('/tenant-tablas/{id}', [TenantTablaController::class, 'destroy']);
+
+        // Notificaciones push
+        Route::post('/notifications/send', [NotificationController::class, 'send']);
 
         // Dispositivos biométricos ZKTeco
         Route::post('/devices/ping',                    [DeviceController::class, 'ping']);
