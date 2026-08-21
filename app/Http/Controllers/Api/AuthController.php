@@ -25,8 +25,9 @@ class AuthController extends Controller
     {
         try {
             $request->validate([
-                'email'    => 'required|email',
-                'password' => 'required',
+                'email'              => 'required|email',
+                'password'           => 'required',
+                'tratamiento_datos'  => 'nullable|boolean',
             ]);
 
             $user = User::where('email', $request->email)->first();
@@ -43,6 +44,24 @@ class AuthController extends Controller
 
             if ($user->empresa_id !== null) {
                 TenantHelper::switchTenant($user->empresa_id);
+            }
+
+            // Validar tratamiento de datos
+            if (!$user->tratamiento_datos) {
+                // Primera vez: requiere aceptación
+                if (!$request->tratamiento_datos) {
+                    return response()->json([
+                        'message' => 'Debes aceptar la política de tratamiento de datos.',
+                        'requires_tratamiento' => true,
+                    ], 422);
+                }
+                $user->update([
+                    'tratamiento_datos'    => true,
+                    'tratamiento_datos_at' => now(),
+                ]);
+            } else {
+                // Ya aceptó antes: actualizar fecha
+                $user->update(['tratamiento_datos_at' => now()]);
             }
 
             $token = $user->createToken('auth-token')->plainTextToken;

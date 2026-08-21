@@ -39,6 +39,8 @@ class User extends Authenticatable
         'last_login_at',
         'otp_code',
         'otp_expires_at',
+        'tratamiento_datos',
+        'tratamiento_datos_at',
     ];
 
     protected $hidden = [
@@ -56,6 +58,8 @@ class User extends Authenticatable
             'admin_tenant'      => 'boolean',
             'empresa_id'        => 'integer',
             'face_descriptor'   => 'array',
+            'tratamiento_datos' => 'boolean',
+            'tratamiento_datos_at' => 'datetime',
         ];
     }
 
