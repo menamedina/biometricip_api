@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\AdmsController;
 use App\Http\Controllers\Api\AttendanceController as ApiAttendanceController;
 use App\Http\Controllers\Api\PermisoController as ApiPermisoController;
 use App\Http\Controllers\Api\DeviceController as ApiDeviceController;
+use App\Http\Controllers\Api\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 // ZKTeco ADMS PUSH — sin autenticación ni CSRF
@@ -200,6 +201,11 @@ Route::middleware(['auth', 'admin', 'role:admin,supervisor', 'tenancy.session'])
     Route::post  ('/admin/permisos/{id}/aprobar',    [ApiPermisoController::class, 'aprobar']);
     Route::post  ('/admin/permisos/{id}/rechazar',   [ApiPermisoController::class, 'rechazar']);
     Route::delete('/admin/permisos/{id}',            [ApiPermisoController::class, 'destroy']);
+    // Notificaciones push
+    Route::get   ('/admin/notificaciones',             [AdminController::class, 'notificacionesIndex'])->name('admin.notificaciones.index');
+    Route::get   ('/admin/notificaciones/empleados',  [AdminController::class, 'notificacionesEmpleados']);
+    Route::post  ('/admin/notificaciones/send',       [NotificationController::class, 'send']);
+
     // Dispositivos biométricos
     Route::post  ('/admin/dispositivos/ping',              [ApiDeviceController::class, 'ping']);
     Route::get   ('/admin/dispositivos/list',              [ApiDeviceController::class, 'index']);

@@ -227,6 +227,14 @@
                         </li>
                         @endif
 
+                        <li class="side-nav-title mt-2">Comunicación</li>
+                        <li class="side-nav-item">
+                            <a href="{{ route('admin.notificaciones.index') }}" class="side-nav-link {{ request()->routeIs('admin.notificaciones.*') ? 'active' : '' }}">
+                                <span class="menu-icon"><i class="ti ti-bell-ringing"></i></span>
+                                <span class="menu-text">Notificaciones</span>
+                            </a>
+                        </li>
+
                         <li class="side-nav-title mt-2">Configuración</li>
                         <li class="side-nav-item">
                             <a href="{{ route('admin.horarios.index') }}" class="side-nav-link {{ request()->routeIs('admin.horarios.*') ? 'active' : '' }}">

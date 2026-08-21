@@ -32,6 +32,34 @@ class AdminController extends Controller
         return view('admin.dashboard');
     }
 
+    public function notificacionesIndex(): View
+    {
+        $isAdminTenant = auth()->user()->admin_tenant;
+        $empresas = $isAdminTenant
+            ? Empresa::orderBy('nombre')->get(['id', 'nombre'])
+            : collect();
+
+        $empleados = $isAdminTenant
+            ? collect()
+            : User::where('is_active', true)->orderBy('name')->get(['id', 'name', 'email']);
+
+        return view('admin.notificaciones.index', compact('empleados', 'empresas'));
+    }
+
+    public function notificacionesEmpleados(Request $request): JsonResponse
+    {
+        $empresaId = (int) $request->input('empresa_id');
+        if ($empresaId) {
+            TenantHelper::switchTenant($empresaId);
+        }
+
+        $empleados = User::where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
+
+        return response()->json($empleados);
+    }
+
     public function sedesIndex(): View
     {
         $empresas = auth()->user()->admin_tenant
