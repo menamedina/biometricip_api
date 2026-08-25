@@ -586,12 +586,13 @@ class AttendanceController extends Controller
 
         $diasUnicos      = $diasConAsistencia->unique()->count();
         $empleadosUnicos = $empleadosActivos->unique()->count();
-        $totalHoras      = round($totalMinutes / 60, 1);
-        $promedioDia     = $diasUnicos > 0 ? round($totalMinutes / 60 / $diasUnicos, 1) : 0;
+
+        $fmtHoras = fn(int $mins) => ($mins >= 60 ? intdiv($mins, 60) . 'h ' : '') . ($mins % 60) . 'm';
+        $promMinutes = $diasUnicos > 0 ? intdiv($totalMinutes, $diasUnicos) : 0;
 
         return response()->json([
-            'total_horas_semana'  => $totalHoras,
-            'promedio_horas_dia'  => $promedioDia,
+            'total_horas_semana'  => $fmtHoras($totalMinutes),
+            'promedio_horas_dia'  => $fmtHoras($promMinutes),
             'dias_con_asistencia' => $diasUnicos,
             'empleados_activos'   => $empleadosUnicos,
             'semana_inicio'       => $startOfWeek->toDateString(),
