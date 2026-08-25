@@ -76,10 +76,10 @@
                                 <th>Tipo</th>
                                 <th>Fecha/Hora</th>
                                 <th>Método</th>
-                                <th>Foto</th>
                                 <th>QR</th>
                                 <th>Geocerca</th>
                                 <th>Distancia</th>
+                                <th>Foto</th>
                             </tr>
                         </thead>
                         <tbody id="recordsTbody">
@@ -101,6 +101,7 @@
 <script>
 const csrfToken  = '{{ csrf_token() }}';
 const isEmpleado = {{ auth()->user()->role === 'empleado' ? 'true' : 'false' }};
+const canViewPhoto = {{ auth()->user()->role === 'admin' ? 'true' : 'false' }};
 const myUserId   = {{ auth()->id() }};
 let recordsPage  = 1;
 
@@ -124,7 +125,7 @@ async function loadRecords(page = 1) {
             tbody.innerHTML = data.data.map(r => {
                 const tienefoto = r.foto_evidencia === 'base64';
                 const fotoHtml = tienefoto
-                    ? `<button class="btn btn-sm btn-outline-primary" onclick="verFoto(${r.id})" title="Ver foto">
+                    ? `<button class="btn btn-sm btn-outline-primary" onclick="verFoto(${r.id})" title="Ver foto" ${canViewPhoto ? '' : 'disabled'}>
                          <i class="fa-solid fa-camera"></i>
                        </button>`
                     : '<span class="text-muted">—</span>';
@@ -136,10 +137,10 @@ async function loadRecords(page = 1) {
                     <td><span class="badge ${r.tipo.includes('entrada') ? 'bg-success' : 'bg-danger'}">${r.tipo.replace(/_/g, ' ')}</span></td>
                     <td>${new Date(r.fecha_hora).toLocaleString('es-CO', {timeZone: 'America/Bogota'})}</td>
                     <td><span class="badge bg-info">${r.metodo}</span></td>
-                    <td>${fotoHtml}</td>
                     <td><span class="badge ${r.qr_validado ? 'bg-success' : 'bg-danger'}">${r.qr_validado ? 'Sí' : 'No'}</span></td>
                     <td><span class="badge ${r.geocerca_validada ? 'bg-success' : 'bg-danger'}">${r.geocerca_validada ? 'Sí' : 'No'}</span></td>
                     <td>${r.distancia_oficina_mts ? r.distancia_oficina_mts + 'm' : '—'}</td>
+                    <td>${fotoHtml}</td>
                 </tr>`;
             }).join('');
         }

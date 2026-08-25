@@ -19,7 +19,7 @@ class AttendanceController extends Controller
     {
         $query = AttendanceRecord::select(
                 'id','user_id','sede_id','tipo','fecha_hora','metodo',
-                'qr_validado','geocerca_validada','distancia_oficina_mts','observacion'
+                'qr_validado','geocerca_validada','distancia_oficina_mts','observacion','foto_evidencia'
             )
             ->with([
                 'user:id,name,cedula,codigo_empleado,role,departamento_id,cargo_id,empresa_id',
@@ -525,6 +525,71 @@ class AttendanceController extends Controller
             'en_planta'       => $enPlanta,
             'en_dia'          => $enDia,
             'en_mes'          => $enMes,
+        ]);
+    }
+
+    public function weeklyHours(Request $request): JsonResponse
+    {
+        $empresaId   = $request->user()->empresa_id;
+        $startOfWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
+        $endOfWeek   = Carbon::now()->endOfWeek(Carbon::SUNDAY);
+
+        $user = $request->user();
+        $esEmpleado = $user->role === 'empleado';
+
+        if ($esEmpleado) {
+            $empleadoIds = collect([$user->id]);
+        } else {
+            $empleadoIds = User::where('empresa_id', $empresaId)
+                ->where('role', 'empleado')
+                ->pluck('id');
+        }
+
+        $records = AttendanceRecord::whereBetween('fecha_hora', [$startOfWeek, $endOfWeek])
+            ->whereIn('user_id', $empleadoIds)
+            ->whereIn('tipo', ['entrada', 'salida'])
+            ->orderBy('user_id')
+            ->orderBy('fecha_hora')
+            ->get(['user_id', 'tipo', 'fecha_hora']);
+
+        $totalMinutes      = 0;
+        $diasConAsistencia = collect();
+        $empleadosActivos  = collect();
+
+        $byUserDay = $records->groupBy(fn($r) =>
+            $r->user_id . '_' . Carbon::parse($r->fecha_hora)->toDateString()
+        );
+
+        foreach ($byUserDay as $key => $dayRecords) {
+            [$userId, $date] = explode('_', $key, 2);
+            $diasConAsistencia->push($date);
+            $empleadosActivos->push($userId);
+
+            $entradas = $dayRecords->where('tipo', 'entrada')->sortBy('fecha_hora')->values();
+            $salidas  = $dayRecords->where('tipo', 'salida')->sortBy('fecha_hora')->values();
+            $pairs    = min($entradas->count(), $salidas->count());
+
+            for ($i = 0; $i < $pairs; $i++) {
+                $entrada = Carbon::parse($entradas[$i]->fecha_hora);
+                $salida  = Carbon::parse($salidas[$i]->fecha_hora);
+                if ($salida->gt($entrada)) {
+                    $totalMinutes += $entrada->diffInMinutes($salida);
+                }
+            }
+        }
+
+        $diasUnicos      = $diasConAsistencia->unique()->count();
+        $empleadosUnicos = $empleadosActivos->unique()->count();
+        $totalHoras      = round($totalMinutes / 60, 1);
+        $promedioDia     = $diasUnicos > 0 ? round($totalMinutes / 60 / $diasUnicos, 1) : 0;
+
+        return response()->json([
+            'total_horas_semana'  => $totalHoras,
+            'promedio_horas_dia'  => $promedioDia,
+            'dias_con_asistencia' => $diasUnicos,
+            'empleados_activos'   => $empleadosUnicos,
+            'semana_inicio'       => $startOfWeek->toDateString(),
+            'semana_fin'          => $endOfWeek->toDateString(),
         ]);
     }
 
