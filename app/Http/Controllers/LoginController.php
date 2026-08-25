@@ -48,7 +48,7 @@ class LoginController extends Controller
             session(['api_token'  => $token]);
             session(['empresa_id' => $user->empresa_id]);
 
-            return redirect()->intended(route('admin.dashboard'));
+            return redirect()->route('admin.dashboard');
 
         } catch (\Throwable $e) {
             Log::error('Admin login exception', [
