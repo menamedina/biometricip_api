@@ -205,7 +205,7 @@
     <div class="col-12">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3">
-                <h5 class="mb-0 fw-semibold"><i class="fa-solid fa-list-check me-1 text-primary"></i> Registros de hoy</h5>
+                <h5 class="mb-0 fw-semibold"><i class="fa-solid fa-list-check me-1 text-primary"></i> @if(auth()->user()->role === 'empleado') Mis registros de la semana @else Registros de hoy @endif</h5>
                 <span id="recordCount" class="badge bg-secondary rounded-pill">0</span>
             </div>
             <div class="card-body p-0" style="max-height: 400px; overflow-y: auto;">
@@ -325,12 +325,20 @@ async function loadDashboard() {
     } catch(e) { console.error('Stats:', e); }
 
     try {
-        const res  = await fetch('/admin/attendance/records?per_page=20&only_mine=' + (esEmpleado ? 1 : 0), { headers: { 'X-CSRF-TOKEN': csrfToken } });
+        let recordsUrl = '/admin/attendance/records?per_page=50&only_mine=' + (esEmpleado ? 1 : 0);
+        if (esEmpleado) {
+            const hoy = new Date();
+            const lunes = new Date(hoy); lunes.setDate(hoy.getDate() - ((hoy.getDay() + 6) % 7));
+            const domingo = new Date(lunes); domingo.setDate(lunes.getDate() + 6);
+            const fmt = d => d.toISOString().slice(0, 10);
+            recordsUrl += '&date_from=' + fmt(lunes) + '&date_to=' + fmt(domingo);
+        }
+        const res  = await fetch(recordsUrl, { headers: { 'X-CSRF-TOKEN': csrfToken } });
         const data = await res.json();
         const tbody = document.getElementById('attendanceTbody');
 
         if (!data.data || data.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4"><i class="fa-solid fa-inbox me-1"></i> Sin registros hoy</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4"><i class="fa-solid fa-inbox me-1"></i> Sin registros ${esEmpleado ? 'esta semana' : 'hoy'}</td></tr>`;
             document.getElementById('recordCount').textContent = '0';
         } else {
             document.getElementById('recordCount').textContent = data.data.length;
