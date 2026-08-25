@@ -278,10 +278,11 @@ async function loadWeeklyHours() {
     try {
         const res  = await fetch('/admin/attendance/weekly-hours', { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
         const data = await res.json();
-        document.getElementById('wkTotalHoras').textContent  = (data.total_horas_semana  ?? '--') + ' h';
-        document.getElementById('wkPromedioDia').textContent = (data.promedio_horas_dia   ?? '--') + ' h';
-        document.getElementById('wkDias').textContent        =  data.dias_con_asistencia  ?? '--';
-        document.getElementById('wkEmpleados').textContent   =  data.empleados_activos    ?? '--';
+        const set  = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+        set('wkTotalHoras',  (data.total_horas_semana ?? '--') + ' h');
+        set('wkPromedioDia', (data.promedio_horas_dia  ?? '--') + ' h');
+        set('wkDias',         data.dias_con_asistencia ?? '--');
+        set('wkEmpleados',    data.empleados_activos   ?? '--');
     } catch(e) { console.error('WeeklyHours:', e); }
 }
 
