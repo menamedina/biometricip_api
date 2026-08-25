@@ -18,7 +18,11 @@ use App\Http\Controllers\Api\AdmsController;
 use App\Http\Controllers\Api\VisitanteController;
 use App\Http\Controllers\Api\DeviceTokenController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\WhatsAppAttendanceController;
 use Illuminate\Support\Facades\Route;
+
+// Integraciones externas — token validado dentro del controlador
+Route::post('/ext/attendance/clock', [WhatsAppAttendanceController::class, 'clock']);
 
 // Agente local — sincronización desde servicio Windows
 Route::middleware('agent.token')->group(function () {
@@ -51,6 +55,9 @@ Route::middleware(['auth:sanctum', 'tenancy'])->group(function () {
     Route::delete('/device-tokens', [DeviceTokenController::class, 'destroy']);
 
     Route::post('/attendance/clock',        [AttendanceController::class, 'clock']);
+
+    // WhatsApp API — registro de asistencia por coordenadas GPS
+    Route::post('/whatsapp/attendance/clock', [WhatsAppAttendanceController::class, 'clock']);
     Route::post('/attendance/offline-sync', [AttendanceController::class, 'offlineSync']);
     Route::get('/attendance/my-history',    [AttendanceController::class, 'myHistory']);
     Route::get('/attendance/my-report',     [AttendanceController::class, 'myReport']);

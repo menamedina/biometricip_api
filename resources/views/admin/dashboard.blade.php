@@ -142,7 +142,7 @@
     <div class="col-12">
         <h6 class="text-muted fw-semibold mb-0"><i class="fa-solid fa-calendar-week me-1"></i> Resumen semana</h6>
     </div>
-    <div class="col-6 @if(auth()->user()->role === 'empleado') col-xl-6 @else col-xl-3 @endif">
+    <div class="col-6 col-xl-6">
         <div class="card h-100 border-0 shadow-sm" style="border-left: 4px solid #4F46E5 !important;">
             <div class="card-body d-flex align-items-center gap-3 py-3">
                 <span class="avatar-title bg-primary bg-opacity-10 text-primary rounded-2 fs-3" style="width:52px;height:52px;min-width:52px;">
@@ -150,14 +150,12 @@
                 </span>
                 <div class="overflow-hidden">
                     <h2 class="mb-0 fw-bold" id="wkTotalHoras">--</h2>
-                    <p class="text-muted mb-0 small text-truncate">
-                        @if(auth()->user()->role === 'empleado') Mis horas esta semana @else Horas totales semana @endif
-                    </p>
+                    <p class="text-muted mb-0 small text-truncate">Mis horas esta semana</p>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-6 @if(auth()->user()->role === 'empleado') col-xl-6 @else col-xl-3 @endif">
+    <div class="col-6 col-xl-6">
         <div class="card h-100 border-0 shadow-sm" style="border-left: 4px solid #0acf97 !important;">
             <div class="card-body d-flex align-items-center gap-3 py-3">
                 <span class="avatar-title bg-success bg-opacity-10 text-success rounded-2 fs-3" style="width:52px;height:52px;min-width:52px;">
@@ -170,34 +168,6 @@
             </div>
         </div>
     </div>
-    @if(auth()->user()->role !== 'empleado')
-    <div class="col-6 col-xl-3">
-        <div class="card h-100 border-0 shadow-sm" style="border-left: 4px solid #23c6c8 !important;">
-            <div class="card-body d-flex align-items-center gap-3 py-3">
-                <span class="avatar-title bg-info bg-opacity-10 text-info rounded-2 fs-3" style="width:52px;height:52px;min-width:52px;">
-                    <i class="fa-solid fa-calendar-days"></i>
-                </span>
-                <div class="overflow-hidden">
-                    <h2 class="mb-0 fw-bold" id="wkDias">--</h2>
-                    <p class="text-muted mb-0 small text-truncate">Días con asistencia</p>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-6 col-xl-3">
-        <div class="card h-100 border-0 shadow-sm" style="border-left: 4px solid #f8ac59 !important;">
-            <div class="card-body d-flex align-items-center gap-3 py-3">
-                <span class="avatar-title bg-warning bg-opacity-10 text-warning rounded-2 fs-3" style="width:52px;height:52px;min-width:52px;">
-                    <i class="fa-solid fa-user-group"></i>
-                </span>
-                <div class="overflow-hidden">
-                    <h2 class="mb-0 fw-bold" id="wkEmpleados">--</h2>
-                    <p class="text-muted mb-0 small text-truncate">Empleados activos</p>
-                </div>
-            </div>
-        </div>
-    </div>
-    @endif
 </div>
 
 {{-- Contenido principal --}}

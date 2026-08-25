@@ -534,16 +534,8 @@ class AttendanceController extends Controller
         $startOfWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
         $endOfWeek   = Carbon::now()->endOfWeek(Carbon::SUNDAY);
 
-        $user = $request->user();
-        $esEmpleado = $user->role === 'empleado';
-
-        if ($esEmpleado) {
-            $empleadoIds = collect([$user->id]);
-        } else {
-            $empleadoIds = User::where('empresa_id', $empresaId)
-                ->where('role', 'empleado')
-                ->pluck('id');
-        }
+        $user        = $request->user();
+        $empleadoIds = collect([$user->id]);
 
         $records = AttendanceRecord::whereBetween('fecha_hora', [$startOfWeek, $endOfWeek])
             ->whereIn('user_id', $empleadoIds)

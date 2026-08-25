@@ -193,8 +193,8 @@ Route::middleware(['auth', 'admin', 'role:admin,supervisor', 'tenancy.session'])
     Route::post  ('/admin/empresas',                    [\App\Http\Controllers\Api\EmpresaController::class, 'store']);
     Route::put   ('/admin/empresas/{id}',               [\App\Http\Controllers\Api\EmpresaController::class, 'updateById']);
     Route::delete('/admin/empresas/{id}',               [\App\Http\Controllers\Api\EmpresaController::class, 'destroyById']);
-    Route::post  ('/admin/empresas/{id}/agent-token',   [\App\Http\Controllers\Api\EmpresaController::class, 'generateAgentToken']);
-    Route::delete('/admin/empresas/{id}/agent-token',   [\App\Http\Controllers\Api\EmpresaController::class, 'revokeAgentToken']);
+    Route::post  ('/admin/empresas/{id}/agent-token',      [\App\Http\Controllers\Api\EmpresaController::class, 'generateAgentToken']);
+    Route::delete('/admin/empresas/{id}/agent-token',      [\App\Http\Controllers\Api\EmpresaController::class, 'revokeAgentToken']);
     Route::get('/admin/reports/export', [ReportController::class, 'attendance'])->name('admin.reports.export');
     // Permisos
     Route::get   ('/admin/permisos/list',            [ApiPermisoController::class, 'index']);
