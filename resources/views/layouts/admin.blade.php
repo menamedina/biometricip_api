@@ -132,7 +132,7 @@
                 <div id="user-profile-settings" class="sidenav-user" style="background: url({{ asset('assets/images/user-bg-pattern.svg') }})">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <span class="sidenav-user-name fw-bold" title="{{ auth()->user()->name ?? 'Admin' }}">{{ Str::limit(auth()->user()->name ?? 'Admin', 25) }}</span>
+                            <span class="sidenav-user-name fw-bold" title="{{ auth()->user()->name ?? 'Admin' }}">{{ Str::limit(auth()->user()->name ?? 'Admin', 20) }}</span>
                             <span class="fs-12 fw-semibold d-block">{{ ['admin' => 'Administrador', 'supervisor' => 'Supervisor', 'empleado' => 'Empleado'][auth()->user()->role] ?? auth()->user()->role }}</span>
                         </div>
                     </div>
