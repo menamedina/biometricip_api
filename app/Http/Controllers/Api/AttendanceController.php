@@ -562,19 +562,25 @@ class AttendanceController extends Controller
 
         foreach ($byUserDay as $key => $dayRecords) {
             [$userId, $date] = explode('_', $key, 2);
-            $diasConAsistencia->push($date);
             $empleadosActivos->push($userId);
 
             $entradas = $dayRecords->where('tipo', 'entrada')->sortBy('fecha_hora')->values();
             $salidas  = $dayRecords->where('tipo', 'salida')->sortBy('fecha_hora')->values();
             $pairs    = min($entradas->count(), $salidas->count());
 
+            $minutesDia = 0;
             for ($i = 0; $i < $pairs; $i++) {
                 $entrada = Carbon::parse($entradas[$i]->fecha_hora);
                 $salida  = Carbon::parse($salidas[$i]->fecha_hora);
                 if ($salida->gt($entrada)) {
-                    $totalMinutes += $entrada->diffInMinutes($salida);
+                    $minutesDia += $entrada->diffInMinutes($salida);
                 }
+            }
+
+            // Solo contar el día si tiene al menos un par entrada-salida completo
+            if ($minutesDia > 0) {
+                $totalMinutes += $minutesDia;
+                $diasConAsistencia->push($date);
             }
         }
 
