@@ -630,10 +630,8 @@ class AttendanceController extends Controller
         if ($request->has('sede_id'))        $data['sede_id']     = $request->sede_id;
         if ($request->has('observacion'))    $data['observacion'] = $request->observacion;
 
-        \DB::connection('tenant')->transaction(function () use ($record, $data, $request) {
-            \DB::connection('tenant')->statement('SET @audit_user_id = ?', [$request->user()->id]);
-            $record->update($data);
-        });
+        \DB::connection('tenant')->statement('SET @audit_user_id = ?', [$request->user()->id]);
+        $record->update($data);
 
         return response()->json([
             'message' => 'Registro actualizado correctamente.',
