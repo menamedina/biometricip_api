@@ -231,7 +231,8 @@ class AdminController extends Controller
             ->with([
                 'user:id,name,codigo_empleado,departamento_id',
                 'sede:id,nombre',
-                'horario:id,nombre,hora_entrada,hora_salida,duracion_almuerzo_min,retardo_min',
+                'horario:id,nombre',
+                'horario.dias',
             ])
             ->whereBetween('fecha_hora', [
                 $request->date_from . ' 00:00:00',

@@ -17,4 +17,9 @@ class Horario extends Model
             'is_active' => 'boolean',
         ];
     }
+
+    public function dias()
+    {
+        return $this->hasMany(HorarioDia::class)->orderBy('dia_semana');
+    }
 }

@@ -24,7 +24,8 @@ class AttendanceController extends Controller
             ->with([
                 'user:id,name,cedula,codigo_empleado,role,departamento_id,cargo_id,empresa_id',
                 'sede:id,nombre',
-                'horario:id,nombre,hora_entrada,hora_salida,retardo_min',
+                'horario:id,nombre',
+                'horario.dias',
             ]);
 
         if ($request->filled('date_from') && $request->filled('date_to')) {
@@ -366,12 +367,12 @@ class AttendanceController extends Controller
         $prevStart = $start->copy()->subMonth()->startOfDay();
         $prevEnd   = $start->copy()->subMonth()->endOfMonth()->endOfDay();
 
-        $records = AttendanceRecord::with('horario')->where('user_id', $user->id)
+        $records = AttendanceRecord::with(['horario.dias'])->where('user_id', $user->id)
             ->whereBetween('fecha_hora', [$start, $end])
             ->orderBy('fecha_hora')
             ->get();
 
-        $prevRecords = AttendanceRecord::with('horario')->where('user_id', $user->id)
+        $prevRecords = AttendanceRecord::with(['horario.dias'])->where('user_id', $user->id)
             ->whereBetween('fecha_hora', [$prevStart, $prevEnd])
             ->get();
 
@@ -407,14 +408,19 @@ class AttendanceController extends Controller
             }
         }
 
-        // Tardanzas (entrada después de hora_entrada + retardo_min del horario del registro)
+        // Tardanzas usando el día de semana específico del horario del registro
         $esTardanza = function ($r) {
-            $horario     = $r->horario;
-            $horaEntrada = $horario ? $horario->hora_entrada : '09:00:00';
-            $retardoMin  = $horario ? ($horario->retardo_min ?? 0) : 0;
-            $llegada     = Carbon::parse($r->fecha_hora);
-            $limite      = Carbon::parse($r->fecha_hora->toDateString() . ' ' . $horaEntrada)->addMinutes($retardoMin);
-            return $llegada->gt($limite);
+            $horario = $r->horario;
+            if (!$horario) {
+                $limite = Carbon::parse($r->fecha_hora->toDateString() . ' 09:00:00');
+                return Carbon::parse($r->fecha_hora)->gt($limite);
+            }
+            $diaSemana = Carbon::parse($r->fecha_hora)->isoWeekday(); // 1=Lun, 7=Dom
+            $dia = $horario->dias->firstWhere('dia_semana', $diaSemana);
+            if (!$dia || !$dia->hora_entrada) return false; // día no laboral
+            $limite = Carbon::parse($r->fecha_hora->toDateString() . ' ' . $dia->hora_entrada)
+                             ->addMinutes($dia->retardo_min ?? 0);
+            return Carbon::parse($r->fecha_hora)->gt($limite);
         };
 
         $tardanzas     = $records->where('tipo', 'entrada')->filter($esTardanza)->count();
@@ -487,17 +493,22 @@ class AttendanceController extends Controller
 
         $ausentes = $totalEmpleados - $presentes;
 
-        $tardanzas = AttendanceRecord::with('horario')
+        $tardanzas = AttendanceRecord::with(['horario.dias'])
             ->whereDate('fecha_hora', $date)
             ->where('tipo', 'entrada')
             ->get()
             ->filter(function ($r) {
-                $horario     = $r->horario;
-                $horaEntrada = $horario ? $horario->hora_entrada : '09:00:00';
-                $retardoMin  = $horario ? ($horario->retardo_min ?? 0) : 0;
-                $llegada     = Carbon::parse($r->fecha_hora);
-                $limite      = Carbon::parse($r->fecha_hora->toDateString() . ' ' . $horaEntrada)->addMinutes($retardoMin);
-                return $llegada->gt($limite);
+                $horario = $r->horario;
+                if (!$horario) {
+                    $limite = Carbon::parse($r->fecha_hora->toDateString() . ' 09:00:00');
+                    return Carbon::parse($r->fecha_hora)->gt($limite);
+                }
+                $diaSemana = Carbon::parse($r->fecha_hora)->isoWeekday();
+                $dia = $horario->dias->firstWhere('dia_semana', $diaSemana);
+                if (!$dia || !$dia->hora_entrada) return false;
+                $limite = Carbon::parse($r->fecha_hora->toDateString() . ' ' . $dia->hora_entrada)
+                                 ->addMinutes($dia->retardo_min ?? 0);
+                return Carbon::parse($r->fecha_hora)->gt($limite);
             })->count();
 
         $empleadoIds = User::where('empresa_id', $empresaId)

@@ -247,17 +247,12 @@ class AuthController extends Controller
                 $liderNombre = User::find($user->lider_id)?->name;
             }
             if ($user->horario_id) {
-                $h = Horario::find($user->horario_id);
+                $h = Horario::with('dias')->find($user->horario_id);
                 if ($h) {
                     $horarioData = [
-                        'id'                     => $h->id,
-                        'nombre'                 => $h->nombre,
-                        'hora_entrada'           => $h->hora_entrada,
-                        'hora_salida'            => $h->hora_salida,
-                        'tiene_almuerzo_marcado' => (bool) $h->tiene_almuerzo_marcado,
-                        'duracion_almuerzo_min'  => $h->duracion_almuerzo_min,
-                        'hora_almuerzo_inicio'   => $h->hora_almuerzo_inicio,
-                        'hora_almuerzo_fin'      => $h->hora_almuerzo_fin,
+                        'id'    => $h->id,
+                        'nombre'=> $h->nombre,
+                        'dias'  => $h->dias,
                     ];
                 }
             }

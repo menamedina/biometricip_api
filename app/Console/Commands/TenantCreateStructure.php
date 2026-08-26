@@ -104,15 +104,28 @@ class TenantCreateStructure extends Command
         $this->info('Creando tbl_horarios...');
         DB::connection('tenant')->statement("
             CREATE TABLE IF NOT EXISTS `tbl_horarios` (
-                `id`                     BIGINT UNSIGNED   NOT NULL AUTO_INCREMENT,
-                `nombre`                VARCHAR(100)      NOT NULL,
-                `hora_entrada`          TIME              NOT NULL,
-                `hora_salida`           TIME              NOT NULL,
-                `duracion_almuerzo_min` SMALLINT UNSIGNED NULL     DEFAULT NULL,
-                `is_active`             TINYINT(1)        NOT NULL DEFAULT 1,
-                `created_at`             TIMESTAMP         NULL,
-                `updated_at`             TIMESTAMP         NULL,
+                `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                `nombre`     VARCHAR(100)    NOT NULL,
+                `is_active`  TINYINT(1)      NOT NULL DEFAULT 1,
+                `created_at` TIMESTAMP       NULL,
+                `updated_at` TIMESTAMP       NULL,
                 PRIMARY KEY (`id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
+
+        $this->info('Creando tbl_horario_dias...');
+        DB::connection('tenant')->statement("
+            CREATE TABLE IF NOT EXISTS `tbl_horario_dias` (
+                `id`                    BIGINT UNSIGNED   NOT NULL AUTO_INCREMENT,
+                `horario_id`            BIGINT UNSIGNED   NOT NULL,
+                `dia_semana`            TINYINT UNSIGNED  NOT NULL COMMENT '1=Lun 2=Mar 3=Mié 4=Jue 5=Vie 6=Sáb 7=Dom',
+                `hora_entrada`          TIME              NULL     COMMENT 'NULL = día no laboral',
+                `hora_salida`           TIME              NULL,
+                `duracion_almuerzo_min` SMALLINT UNSIGNED NULL     DEFAULT NULL,
+                `retardo_min`           SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uq_horario_dia` (`horario_id`, `dia_semana`),
+                CONSTRAINT `fk_horario_dias_horario` FOREIGN KEY (`horario_id`) REFERENCES `tbl_horarios` (`id`) ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ");
 

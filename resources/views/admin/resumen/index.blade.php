@@ -345,9 +345,20 @@ async function cargarResumen() {
                 }
             }
 
-            const horario = sorted.find(r => r.horario)?.horario;
-            if (horario?.duracion_almuerzo_min && totalMin > horario.duracion_almuerzo_min) {
-                totalMin = totalMin - horario.duracion_almuerzo_min;
+            // Descuento de almuerzo usando el día específico de cada sesión
+            for (const s of sessions) {
+                if (s.e && s.s) {
+                    const fechaEntrada = toDate(s.e.fecha_hora);
+                    const isoDay = fechaEntrada.getDay() === 0 ? 7 : fechaEntrada.getDay();
+                    const horario = s.e.horario;
+                    const dia = (horario?.dias || []).find(d => d.dia_semana === isoDay);
+                    if (dia?.duracion_almuerzo_min) {
+                        const durMin = Math.round((toDate(s.s.fecha_hora) - fechaEntrada) / 60000);
+                        if (durMin > dia.duracion_almuerzo_min) {
+                            totalMin -= dia.duracion_almuerzo_min;
+                        }
+                    }
+                }
             }
 
             // Construir celdas clickeables (hasta 4 pares entrada/salida)

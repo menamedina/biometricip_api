@@ -413,7 +413,7 @@ function poblarCatalogos(data, soloModal = false) {
 
     deptos.forEach(d => selDepto.innerHTML     += `<option value="${d.id}">${d.nombre}</option>`);
     cargos.forEach(c => selCargo.innerHTML     += `<option value="${c.id}">${c.nombre}</option>`);
-    horarios.forEach(h => selHorario.innerHTML += `<option value="${h.id}">${h.nombre} (${h.hora_entrada?.slice(0,5)} - ${h.hora_salida?.slice(0,5)})</option>`);
+    horarios.forEach(h => selHorario.innerHTML += `<option value="${h.id}">${h.nombre}</option>`);
     empleadores.forEach(e => selEmpleador.innerHTML += `<option value="${e.id}">${e.nombre}</option>`);
 
     if (!soloModal) {
