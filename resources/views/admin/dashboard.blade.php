@@ -331,7 +331,20 @@ async function loadDashboard() {
                         </div>
                     </td>
                     <td class="text-nowrap">${fecha}</td>
-                    <td class="text-nowrap">${hora}</td>
+                    <td class="text-nowrap">${(function() {
+                        if (r.tipo !== 'entrada' || !r.horario) return hora;
+                        const dt2    = new Date(r.fecha_hora);
+                        const isoDay = dt2.getDay() === 0 ? 7 : dt2.getDay();
+                        const dia    = (r.horario.dias || []).find(d => d.dia_semana === isoDay);
+                        if (!dia?.hora_entrada) return hora;
+                        const [hE, mE] = dia.hora_entrada.split(':').map(Number);
+                        const limite = new Date(dt2);
+                        limite.setHours(hE, mE + (dia.retardo_min || 0), 0, 0);
+                        return (dt2 > limite
+                            ? '<i class="fa-solid fa-circle-exclamation text-danger me-1" title="Tardanza"></i>'
+                            : '<i class="fa-solid fa-circle-check text-success me-1" title="A tiempo"></i>'
+                        ) + hora;
+                    })()}</td>
                     <td>${tipoBadge(r.tipo)}</td>
                     <td><span class="badge bg-info-subtle text-info border border-info-subtle">${r.metodo}</span></td>
                     <td>${r.qr_validado
