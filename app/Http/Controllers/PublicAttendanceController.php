@@ -164,6 +164,7 @@ class PublicAttendanceController extends Controller
         $record = AttendanceRecord::create([
             'user_id'               => $user->id,
             'sede_id'               => $sede->id,
+            'horario_id'            => $user->horario_id ?: null,
             'tipo'                  => $request->tipo,
             'metodo'                => 'qr_web',
             'qr_validado'           => true,

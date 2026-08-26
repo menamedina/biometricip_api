@@ -150,7 +150,23 @@ async function loadRecords(page = 1) {
                     <td><span class="badge bg-primary">${r.user?.codigo_empleado || '—'}</span></td>
                     <td>${r.sede?.nombre || '—'}</td>
                     <td><span class="badge ${r.tipo.includes('entrada') ? 'bg-success' : 'bg-danger'}">${r.tipo.replace(/_/g, ' ')}</span></td>
-                    <td>${new Date(r.fecha_hora).toLocaleString('es-CO', {timeZone: 'America/Bogota'})}</td>
+                    <td>${(function() {
+                            const fechaStr = new Date(r.fecha_hora).toLocaleString('es-CO', {timeZone: 'America/Bogota'});
+                            if (r.tipo !== 'entrada') return fechaStr;
+                            if (!r.horario) return fechaStr;
+                            const fecha   = new Date(r.fecha_hora);
+                            const isoDay  = fecha.getDay() === 0 ? 7 : fecha.getDay();
+                            const dia     = (r.horario.dias || []).find(d => d.dia_semana === isoDay);
+                            if (!dia?.hora_entrada) return fechaStr;
+                            const [hE, mE] = dia.hora_entrada.split(':').map(Number);
+                            const limite = new Date(fecha);
+                            limite.setHours(hE, mE + (dia.retardo_min || 0), 0, 0);
+                            const tarde = fecha > limite;
+                            const icono = tarde
+                                ? '<i class="fa-solid fa-circle-exclamation text-danger me-1" title="Tardanza"></i>'
+                                : '<i class="fa-solid fa-circle-check text-success me-1" title="A tiempo"></i>';
+                            return icono + fechaStr;
+                        })()}</td>
                     <td><span class="badge bg-info">${r.metodo}</span></td>
                     <td><span class="badge ${r.qr_validado ? 'bg-success' : 'bg-danger'}">${r.qr_validado ? 'Sí' : 'No'}</span></td>
                     <td><span class="badge ${r.geocerca_validada ? 'bg-success' : 'bg-danger'}">${r.geocerca_validada ? 'Sí' : 'No'}</span></td>
