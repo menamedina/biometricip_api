@@ -152,9 +152,9 @@
                             </select>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Horario</label>
-                            <select id="empHorario" class="form-select">
-                                <option value="">— Sin horario —</option>
+                            <label class="form-label">Horario <span class="text-danger">*</span></label>
+                            <select id="empHorario" class="form-select" required>
+                                <option value="">— Seleccionar horario —</option>
                             </select>
                         </div>
                         <div class="col-md-6 mb-3">
@@ -627,6 +627,10 @@ async function saveEmpleado(id) {
     const deptoVal     = document.getElementById('empDepartamento').value;
     const cargoVal     = document.getElementById('empCargo').value;
     const horarioVal   = document.getElementById('empHorario').value;
+    if (!horarioVal) {
+        Swal.fire({ icon: 'warning', title: 'Campo requerido', text: 'Debes seleccionar un horario para el empleado.' });
+        return;
+    }
     const empleadorVal = document.getElementById('empEmpleador').value;
     const payload = {
         name:             document.getElementById('empName').value,
