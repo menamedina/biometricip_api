@@ -24,13 +24,14 @@
                         <th>Entrada</th>
                         <th>Salida</th>
                         <th>Desc. almuerzo</th>
+                        <th>Retardo</th>
                         <th>Horas laborables</th>
                         <th>Estado</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="horariosTbody">
-                    <tr><td colspan="7" class="text-center text-muted py-3">Cargando...</td></tr>
+                    <tr><td colspan="8" class="text-center text-muted py-3">Cargando...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -65,6 +66,11 @@
                     <label class="form-label">Minutos de almuerzo a descontar <small class="text-muted">(dejar vacío si no aplica)</small></label>
                     <input type="number" id="hDuracion" class="form-control" min="0" max="240" placeholder="Ej: 60">
                 </div>
+                <div class="mb-3">
+                    <label class="form-label">Minutos de retardo permitido</label>
+                    <input type="number" id="hRetardo" class="form-control" min="0" max="120" placeholder="Ej: 10" value="0">
+                    <small class="text-muted">0 = sin tolerancia. Si el empleado llega dentro de este margen, no se cuenta como tardanza.</small>
+                </div>
                 <div class="form-check form-switch">
                     <input class="form-check-input" type="checkbox" id="hActivo" checked>
                     <label class="form-check-label">Activo</label>
@@ -89,11 +95,12 @@ async function loadHorarios() {
     const data = await res.json();
     const tbody = document.getElementById('horariosTbody');
     if (!data.data?.length) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Sin horarios</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">Sin horarios</td></tr>';
         return;
     }
     tbody.innerHTML = data.data.map(h => {
         const almuerzo = h.duracion_almuerzo_min ? `${h.duracion_almuerzo_min} min` : '—';
+        const retardo  = h.retardo_min ? `${h.retardo_min} min` : '0 min';
 
         // Calcular horas laborables = (salida - entrada) - descuento almuerzo
         let horasLabel = '—';
@@ -112,6 +119,7 @@ async function loadHorarios() {
             <td>${h.hora_entrada?.slice(0,5) ?? '—'}</td>
             <td>${h.hora_salida?.slice(0,5) ?? '—'}</td>
             <td>${almuerzo}</td>
+            <td>${retardo}</td>
             <td>${horasLabel}</td>
             <td><span class="badge ${h.is_active ? 'bg-success' : 'bg-secondary'}">${h.is_active ? 'Activo' : 'Inactivo'}</span></td>
             <td>
@@ -128,6 +136,7 @@ function openModal(data = null) {
     document.getElementById('hEntrada').value  = data?.hora_entrada?.slice(0,5) || '';
     document.getElementById('hSalida').value   = data?.hora_salida?.slice(0,5) || '';
     document.getElementById('hDuracion').value = data?.duracion_almuerzo_min || '';
+    document.getElementById('hRetardo').value  = data?.retardo_min ?? 0;
     document.getElementById('hActivo').checked = data ? data.is_active : true;
     document.getElementById('modalTitle').textContent = data ? 'Editar Horario' : 'Nuevo Horario';
     document.getElementById('horarioError').style.display = 'none';
@@ -147,6 +156,7 @@ async function saveHorario() {
         hora_entrada:          toTime(document.getElementById('hEntrada').value),
         hora_salida:           toTime(document.getElementById('hSalida').value),
         duracion_almuerzo_min: parseInt(document.getElementById('hDuracion').value) || null,
+        retardo_min:           parseInt(document.getElementById('hRetardo').value) || 0,
         is_active:             document.getElementById('hActivo').checked,
     };
     const url    = id ? `/admin/horarios/${id}` : '/admin/horarios';

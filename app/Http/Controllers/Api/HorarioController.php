@@ -22,9 +22,11 @@ class HorarioController extends Controller
             'hora_entrada'          => 'required|date_format:H:i:s',
             'hora_salida'           => 'required|date_format:H:i:s',
             'duracion_almuerzo_min' => 'nullable|integer|min:0|max:240',
+            'retardo_min'           => 'nullable|integer|min:0|max:120',
             'is_active'             => 'nullable|boolean',
         ]);
         $data['is_active'] ??= true;
+        $data['retardo_min'] ??= 0;
 
         $horario = Horario::create($data);
         return response()->json(['data' => $horario], 201);
@@ -43,6 +45,7 @@ class HorarioController extends Controller
             'hora_entrada'          => 'sometimes|date_format:H:i:s',
             'hora_salida'           => 'sometimes|date_format:H:i:s',
             'duracion_almuerzo_min' => 'nullable|integer|min:0|max:240',
+            'retardo_min'           => 'nullable|integer|min:0|max:120',
             'is_active'             => 'nullable|boolean',
         ]);
         $horario->update($data);

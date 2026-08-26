@@ -365,12 +365,12 @@ class AttendanceController extends Controller
         $prevStart = $start->copy()->subMonth()->startOfDay();
         $prevEnd   = $start->copy()->subMonth()->endOfMonth()->endOfDay();
 
-        $records = AttendanceRecord::where('user_id', $user->id)
+        $records = AttendanceRecord::with('horario')->where('user_id', $user->id)
             ->whereBetween('fecha_hora', [$start, $end])
             ->orderBy('fecha_hora')
             ->get();
 
-        $prevRecords = AttendanceRecord::where('user_id', $user->id)
+        $prevRecords = AttendanceRecord::with('horario')->where('user_id', $user->id)
             ->whereBetween('fecha_hora', [$prevStart, $prevEnd])
             ->get();
 
@@ -406,15 +406,18 @@ class AttendanceController extends Controller
             }
         }
 
-        // Tardanzas (entrada después de la hora configurada, por defecto 09:00)
-        $horaEntrada = '09:00:00';
-        if ($user->horario_id) {
-            $horario = \App\Models\Horario::find($user->horario_id);
-            if ($horario) $horaEntrada = $horario->hora_entrada;
-        }
+        // Tardanzas (entrada después de hora_entrada + retardo_min del horario del registro)
+        $esTardanza = function ($r) {
+            $horario     = $r->horario;
+            $horaEntrada = $horario ? $horario->hora_entrada : '09:00:00';
+            $retardoMin  = $horario ? ($horario->retardo_min ?? 0) : 0;
+            $llegada     = Carbon::parse($r->fecha_hora);
+            $limite      = Carbon::parse($r->fecha_hora->toDateString() . ' ' . $horaEntrada)->addMinutes($retardoMin);
+            return $llegada->gt($limite);
+        };
 
-        $tardanzas     = $records->where('tipo', 'entrada')->filter(fn($r) => Carbon::parse($r->fecha_hora)->format('H:i:s') > $horaEntrada)->count();
-        $prevTardanzas = $prevRecords->where('tipo', 'entrada')->filter(fn($r) => Carbon::parse($r->fecha_hora)->format('H:i:s') > $horaEntrada)->count();
+        $tardanzas     = $records->where('tipo', 'entrada')->filter($esTardanza)->count();
+        $prevTardanzas = $prevRecords->where('tipo', 'entrada')->filter($esTardanza)->count();
 
         // Faltas (días hábiles sin entrada)
         $diasHabiles   = 0;
@@ -483,10 +486,18 @@ class AttendanceController extends Controller
 
         $ausentes = $totalEmpleados - $presentes;
 
-        $tardanzas = AttendanceRecord::whereDate('fecha_hora', $date)
+        $tardanzas = AttendanceRecord::with('horario')
+            ->whereDate('fecha_hora', $date)
             ->where('tipo', 'entrada')
-            ->whereTime('fecha_hora', '>', '09:00:00')
-            ->count();
+            ->get()
+            ->filter(function ($r) {
+                $horario     = $r->horario;
+                $horaEntrada = $horario ? $horario->hora_entrada : '09:00:00';
+                $retardoMin  = $horario ? ($horario->retardo_min ?? 0) : 0;
+                $llegada     = Carbon::parse($r->fecha_hora);
+                $limite      = Carbon::parse($r->fecha_hora->toDateString() . ' ' . $horaEntrada)->addMinutes($retardoMin);
+                return $llegada->gt($limite);
+            })->count();
 
         $empleadoIds = User::where('empresa_id', $empresaId)
             ->where('role', 'empleado')
