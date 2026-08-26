@@ -633,20 +633,35 @@ async function editarObservacion(id) {
 }
 
 async function forzarSalida(id) {
+    // Fecha/hora actual como valor por defecto
+    var now = new Date();
+    var pad = n => String(n).padStart(2, '0');
+    var defaultDt = now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate()) +
+                    'T' + pad(now.getHours()) + ':' + pad(now.getMinutes());
+
     var result = await Swal.fire({
         title: '¿Registrar salida?',
-        text: 'Se registrará la hora de salida de este visitante.',
         icon: 'question',
+        html:
+            '<p class="text-muted small mb-3">Confirma la fecha y hora de salida del visitante.</p>' +
+            '<label class="form-label fw-semibold small w-100 text-start">Fecha y hora de salida</label>' +
+            '<input id="swal-hora-salida" type="datetime-local" class="form-control form-control-sm" value="' + defaultDt + '">',
         showCancelButton: true,
         confirmButtonText: 'Sí, registrar',
         cancelButtonText: 'Cancelar',
         confirmButtonColor: '#4F46E5',
-        cancelButtonColor: '#6c757d'
+        cancelButtonColor: '#6c757d',
+        preConfirm: () => {
+            var val = document.getElementById('swal-hora-salida').value;
+            if (!val) { Swal.showValidationMessage('Debes indicar la fecha y hora de salida'); return false; }
+            return val;
+        }
     });
     if (!result.isConfirmed) return;
     await fetch('/admin/visitantes/' + id + '/forzar-salida', {
         method: 'POST',
-        headers: { 'X-CSRF-TOKEN': csrfToken }
+        headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hora_salida: result.value })
     });
     cargarTabla();
 }

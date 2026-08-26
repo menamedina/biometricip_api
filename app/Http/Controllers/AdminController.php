@@ -623,13 +623,16 @@ class AdminController extends Controller
         return response()->json(['success' => true]);
     }
 
-    public function visitantesForzarSalida(int $id): JsonResponse
+    public function visitantesForzarSalida(Request $request, int $id): JsonResponse
     {
         $visitante = Visitante::findOrFail($id);
         if ($visitante->hora_salida) {
             return response()->json(['message' => 'Ya tiene salida registrada.'], 422);
         }
-        $visitante->update(['hora_salida' => now()]);
+        $horaSalida = $request->input('hora_salida')
+            ? \Carbon\Carbon::parse($request->input('hora_salida'))
+            : now();
+        $visitante->update(['hora_salida' => $horaSalida]);
         return response()->json(['success' => true]);
     }
 
