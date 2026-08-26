@@ -629,7 +629,11 @@ class AttendanceController extends Controller
         if ($request->filled('fecha_hora'))  $data['fecha_hora']  = $request->fecha_hora;
         if ($request->has('sede_id'))        $data['sede_id']     = $request->sede_id;
         if ($request->has('observacion'))    $data['observacion'] = $request->observacion;
-        $record->update($data);
+
+        \DB::connection('tenant')->transaction(function () use ($record, $data, $request) {
+            \DB::connection('tenant')->statement('SET @audit_user_id = ?', [$request->user()->id]);
+            $record->update($data);
+        });
 
         return response()->json([
             'message' => 'Registro actualizado correctamente.',
@@ -650,20 +654,24 @@ class AttendanceController extends Controller
         $empleado = User::findOrFail($request->user_id);
         $horario = $empleado->horario_id ? Horario::find($empleado->horario_id) : null;
 
-        $record = AttendanceRecord::create([
-            'user_id'               => $empleado->id,
-            'sede_id'               => $request->sede_id,
-            'horario_id'            => $horario?->id,
-            'tipo'                  => $request->tipo,
-            'lat'                   => 0,
-            'lng'                   => 0,
-            'metodo'                => 'manual',
-            'observacion'           => $request->observacion ?: null,
-            'qr_validado'           => false,
-            'geocerca_validada'     => false,
-            'distancia_oficina_mts' => 0,
-            'fecha_hora'            => $request->fecha_hora,
-        ]);
+        $record = null;
+        \DB::connection('tenant')->transaction(function () use ($request, $empleado, $horario, &$record) {
+            \DB::connection('tenant')->statement('SET @audit_user_id = ?', [$request->user()->id]);
+            $record = AttendanceRecord::create([
+                'user_id'               => $empleado->id,
+                'sede_id'               => $request->sede_id,
+                'horario_id'            => $horario?->id,
+                'tipo'                  => $request->tipo,
+                'lat'                   => 0,
+                'lng'                   => 0,
+                'metodo'                => 'manual',
+                'observacion'           => $request->observacion ?: null,
+                'qr_validado'           => false,
+                'geocerca_validada'     => false,
+                'distancia_oficina_mts' => 0,
+                'fecha_hora'            => $request->fecha_hora,
+            ]);
+        });
 
         $record->load(['user', 'sede']);
 
