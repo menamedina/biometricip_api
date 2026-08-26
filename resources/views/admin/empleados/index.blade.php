@@ -133,7 +133,7 @@
                             <input type="text" id="empName" class="form-control" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Email</label>
+                            <label class="form-label">Email <span class="text-danger">*</span></label>
                             <input type="email" id="empEmail" class="form-control" required>
                         </div>
                         <div class="col-md-6 mb-3">
@@ -173,6 +173,14 @@
                             <select id="empLider" class="form-select">
                                 <option value="">— Sin líder —</option>
                             </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Centro de costo</label>
+                            <input type="text" id="empCentroCosto" class="form-control" placeholder="Ej: CC-001">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Ruta</label>
+                            <input type="text" id="empRuta" class="form-control" placeholder="Ej: Ruta Norte">
                         </div>
                         <div class="col-12 mb-3">
                             <label class="form-label">Sedes asignadas</label>
@@ -611,6 +619,8 @@ async function editEmpleado(id, encryptedId) {
                 cb.checked = (e.sede_ids || []).includes(parseInt(cb.value));
             });
         }
+        document.getElementById('empCentroCosto').value  = e.centro_costo || '';
+        document.getElementById('empRuta').value         = e.ruta || '';
         document.getElementById('empRole').value         = e.role || 'empleado';
         document.getElementById('empActivo').checked     = !!e.is_active;
         document.getElementById('empleadoModalTitle').textContent = 'Editar Usuario';
@@ -638,6 +648,8 @@ async function saveEmpleado(id) {
         horario_id:       horarioVal   ? parseInt(horarioVal)   : null,
         empleador_id:     empleadorVal ? parseInt(empleadorVal) : null,
         lider_id:         document.getElementById('empLider').value ? parseInt(document.getElementById('empLider').value) : null,
+        centro_costo:     document.getElementById('empCentroCosto').value || null,
+        ruta:             document.getElementById('empRuta').value || null,
         sede_ids:         getSelectedSedeIds(),
         role:             document.getElementById('empRole').value,
         is_active:        document.getElementById('empActivo').checked,

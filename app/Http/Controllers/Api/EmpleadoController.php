@@ -60,7 +60,7 @@ class EmpleadoController extends Controller
         $sortDir = $request->dir === 'desc' ? 'desc' : 'asc';
 
         $empleados = $query
-            ->select(['id','name','cedula','email','role','tipo','admin_tenant','is_active','empresa_id','empleador_id','lider_id','codigo_empleado','departamento_id','cargo_id','horario_id','telefono','foto_url','last_login_at','created_at',
+            ->select(['id','name','cedula','email','role','tipo','admin_tenant','is_active','empresa_id','empleador_id','lider_id','codigo_empleado','departamento_id','cargo_id','horario_id','telefono','centro_costo','ruta','foto_url','last_login_at','created_at',
                 DB::raw('(face_descriptor IS NOT NULL) AS has_face_descriptor')])
             ->with('userSedes')
             ->orderBy($sortCol, $sortDir)
@@ -138,7 +138,9 @@ class EmpleadoController extends Controller
 
         $data = $request->validate([
             'name'            => 'required|string|max:255',
-            'email'           => 'required|email|unique:users,email',
+            'email'           => ['required', 'email',
+                Rule::unique('users', 'email')->where('empresa_id', $empresaId),
+            ],
             'password'        => 'required|string|min:6',
             'role'            => 'nullable|in:admin,supervisor,empleado',
             'tipo'            => 'nullable|in:usuario,kiosco',
@@ -150,8 +152,12 @@ class EmpleadoController extends Controller
             'lider_id'        => 'nullable|integer|exists:users,id',
             'sede_ids'        => 'nullable|array',
             'sede_ids.*'      => 'integer',
-            'cedula'          => 'required|string|max:20',
+            'cedula'          => ['required', 'string', 'max:20',
+                Rule::unique('users', 'cedula')->where('empresa_id', $empresaId),
+            ],
             'telefono'        => 'nullable|string|max:20',
+            'centro_costo'    => 'nullable|string|max:100',
+            'ruta'            => 'nullable|string|max:100',
         ]);
 
         $user = User::create([
@@ -171,6 +177,8 @@ class EmpleadoController extends Controller
             'lider_id'        => $data['lider_id'] ?? null,
             'cedula'          => $data['cedula'] ?? null,
             'telefono'        => $data['telefono'] ?? null,
+            'centro_costo'    => $data['centro_costo'] ?? null,
+            'ruta'            => $data['ruta'] ?? null,
         ]);
 
         $this->syncSedes($user->id, $empresaId, $data['sede_ids'] ?? []);
@@ -254,7 +262,9 @@ class EmpleadoController extends Controller
 
         $data = $request->validate([
             'name'            => 'sometimes|string|max:255',
-            'email'           => 'sometimes|email|unique:users,email,' . $empleado->id,
+            'email'           => ['sometimes', 'email',
+                Rule::unique('users', 'email')->where('empresa_id', $efectivoEmpresaId)->ignore($empleado->id),
+            ],
             'password'        => 'nullable|string|min:6',
             'codigo_empleado' => [
                 'sometimes', 'string', 'max:20',
@@ -273,8 +283,12 @@ class EmpleadoController extends Controller
             'lider_id'        => 'nullable|integer|exists:users,id',
             'sede_ids'        => 'nullable|array',
             'sede_ids.*'      => 'integer',
-            'cedula'          => 'nullable|string|max:20',
+            'cedula'          => ['nullable', 'string', 'max:20',
+                Rule::unique('users', 'cedula')->where('empresa_id', $efectivoEmpresaId)->ignore($empleado->id),
+            ],
             'telefono'        => 'nullable|string|max:20',
+            'centro_costo'    => 'nullable|string|max:100',
+            'ruta'            => 'nullable|string|max:100',
             'is_active'       => 'nullable|boolean',
         ]);
 

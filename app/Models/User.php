@@ -34,6 +34,8 @@ class User extends Authenticatable
         'cargo_id',
         'horario_id',
         'telefono',
+        'centro_costo',
+        'ruta',
         'foto_url',
         'face_descriptor',
         'last_login_at',
