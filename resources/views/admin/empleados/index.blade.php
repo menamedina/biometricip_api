@@ -114,11 +114,6 @@
                                 <option value="">— Seleccionar empresa —</option>
                             </select>
                         </div>
-                        @else
-                        <div class="col-md-12 mb-3" id="empEmpresaRow" style="display:none">
-                            <label class="form-label">Empresa</label>
-                            <input type="text" id="empEmpresa" class="form-control" readonly disabled style="background-color: #f8f9fa; font-weight: 600;">
-                        </div>
                         @endif
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Cédula <span class="text-danger">*</span></label>
@@ -591,12 +586,7 @@ async function editEmpleado(id, encryptedId) {
             await loadSedesParaEmpresa(e.empresa_id, e.sede_ids || []);
             await cargarLideres(e.empresa_id, e.lider_id);
         } else {
-            if (e.empresa) {
-                document.getElementById('empEmpresa').value = e.empresa;
-                document.getElementById('empEmpresaRow').style.display = '';
-            } else {
-                document.getElementById('empEmpresaRow').style.display = 'none';
-            }
+            // Para usuarios no-admin_tenant la empresa se toma del usuario logueado, no se muestra
             await cargarLideres(null, e.lider_id);
         }
 
