@@ -131,7 +131,14 @@ async function loadRecords(page = 1) {
                     : '<span class="text-muted">—</span>';
                 return `
                 <tr>
-                    <td><strong>${r.user?.name || 'N/A'}</strong></td>
+                    <td>
+                        ${r.horario
+                            ? `<i class="fa-solid fa-circle-question text-muted me-1" style="cursor:default;"
+                                 data-bs-toggle="tooltip"
+                                 title="Horario: ${r.horario.nombre} | Entrada: ${r.horario.hora_entrada?.slice(0,5)} | Salida: ${r.horario.hora_salida?.slice(0,5)}${r.horario.retardo_min ? ' | Retardo: ' + r.horario.retardo_min + ' min' : ''}"></i>`
+                            : '<i class="fa-solid fa-circle-question text-light me-1" data-bs-toggle="tooltip" title="Sin horario asignado"></i>'
+                        }<strong>${r.user?.name || 'N/A'}</strong>
+                    </td>
                     <td><span class="badge bg-primary">${r.user?.codigo_empleado || '—'}</span></td>
                     <td>${r.sede?.nombre || '—'}</td>
                     <td><span class="badge ${r.tipo.includes('entrada') ? 'bg-success' : 'bg-danger'}">${r.tipo.replace(/_/g, ' ')}</span></td>
@@ -146,6 +153,7 @@ async function loadRecords(page = 1) {
         }
         document.getElementById('recordsInfo').textContent = `${data.total || 0} registros`;
         renderRecordsPagination(data);
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
     } catch(e) { console.error(e); }
 }
 

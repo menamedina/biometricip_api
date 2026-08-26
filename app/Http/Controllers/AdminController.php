@@ -227,10 +227,11 @@ class AdminController extends Controller
         ]);
 
         $query = \App\Models\AttendanceRecord::query()
-            ->select('id', 'user_id', 'sede_id', 'tipo', 'fecha_hora', 'metodo', 'observacion')
+            ->select('id', 'user_id', 'sede_id', 'horario_id', 'tipo', 'fecha_hora', 'metodo', 'observacion')
             ->with([
                 'user:id,name,codigo_empleado,departamento_id',
                 'sede:id,nombre',
+                'horario:id,nombre,hora_entrada,hora_salida,duracion_almuerzo_min,retardo_min',
             ])
             ->whereBetween('fecha_hora', [
                 $request->date_from . ' 00:00:00',

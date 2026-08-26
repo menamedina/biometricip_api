@@ -69,7 +69,7 @@
                 <div class="mb-3">
                     <label class="form-label">Minutos de retardo permitido</label>
                     <input type="number" id="hRetardo" class="form-control" min="0" max="120" placeholder="Ej: 10" value="0">
-                    <small class="text-muted">0 = sin tolerancia. Si el empleado llega dentro de este margen, no se cuenta como tardanza.</small>
+                    <small class="text-muted">0 = sin tolerancia. Si el empleado llega dentro de este margen, no se cuenta como tardanza. Máximo 120 min.</small>
                 </div>
                 <div class="form-check form-switch">
                     <input class="form-check-input" type="checkbox" id="hActivo" checked>

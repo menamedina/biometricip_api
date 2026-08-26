@@ -18,12 +18,13 @@ class AttendanceController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = AttendanceRecord::select(
-                'id','user_id','sede_id','tipo','fecha_hora','metodo',
+                'id','user_id','sede_id','horario_id','tipo','fecha_hora','metodo',
                 'qr_validado','geocerca_validada','distancia_oficina_mts','observacion','foto_evidencia'
             )
             ->with([
                 'user:id,name,cedula,codigo_empleado,role,departamento_id,cargo_id,empresa_id',
                 'sede:id,nombre',
+                'horario:id,nombre,hora_entrada,hora_salida,retardo_min',
             ]);
 
         if ($request->filled('date_from') && $request->filled('date_to')) {
