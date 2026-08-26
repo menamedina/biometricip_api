@@ -37,6 +37,9 @@
                                 <tr>
                                     <th>Código</th>
                                     <th>Nombre</th>
+                                    @if(auth()->user()->admin_tenant ?? false)
+                                    <th>Empresa</th>
+                                    @endif
                                     <th>Dirección</th>
                                     <th>Coordenadas</th>
                                     <th>Radio (mts)</th>
@@ -45,7 +48,7 @@
                                 </tr>
                             </thead>
                             <tbody id="sedesTbody">
-                                <tr><td colspan="7" class="text-center text-muted py-3">
+                                <tr><td colspan="{{ (auth()->user()->admin_tenant ?? false) ? 8 : 7 }}" class="text-center text-muted py-3">
                                     @if(auth()->user()->admin_tenant)
                                         Selecciona una empresa para ver sus sedes.
                                     @else
@@ -372,14 +375,19 @@ async function loadSedes() {
         const res = await fetch('/admin/sedes/list', { headers: buildHeaders() });
         const data = await res.json();
         const tbody = document.getElementById('sedesTbody');
+        const colCount = isAdminTenant ? 8 : 7;
         if (!data.data || data.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Sin sedes registradas</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="${colCount}" class="text-center text-muted py-3">Sin sedes registradas</td></tr>`;
             return;
         }
+        const empresaNombre = isAdminTenant
+            ? (empresasData.find(e => String(e.id) === String(currentEmpresaId))?.nombre || '—')
+            : null;
         tbody.innerHTML = data.data.map(s => `
             <tr>
                 <td><span class="badge bg-primary">${s.codigo}</span></td>
                 <td><strong>${s.nombre}</strong></td>
+                ${isAdminTenant ? `<td>${empresaNombre}</td>` : ''}
                 <td>${s.direccion || '—'}</td>
                 <td><small>${Number(s.lat).toFixed(4)}, ${Number(s.lng).toFixed(4)}</small></td>
                 <td>${s.radio_mts}m</td>

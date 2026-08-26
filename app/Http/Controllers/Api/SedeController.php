@@ -14,6 +14,16 @@ class SedeController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        $user = $request->user();
+
+        if ($user->admin_tenant) {
+            $empresaId = (int) $request->header('X-Empresa-Id', 0);
+            if (!$empresaId) {
+                return response()->json(['data' => []]);
+            }
+            TenantHelper::switchTenant($empresaId);
+        }
+
         try {
             $sedes = Sede::orderBy('nombre')->get();
         } catch (\Throwable $e) {
