@@ -30,9 +30,12 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fa-solid fa-building me-2 text-primary"></i>Sedes</h5>
+                </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table id="sedesTable" class="table table-hover w-100">
                             <thead>
                                 <tr>
                                     <th>Código</th>
@@ -44,18 +47,10 @@
                                     <th>Coordenadas</th>
                                     <th>Radio (mts)</th>
                                     <th>Estado</th>
-                                    <th>Acciones</th>
+                                    <th class="no-sort">Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody id="sedesTbody">
-                                <tr><td colspan="{{ (auth()->user()->admin_tenant ?? false) ? 8 : 7 }}" class="text-center text-muted py-3">
-                                    @if(auth()->user()->admin_tenant)
-                                        Selecciona una empresa para ver sus sedes.
-                                    @else
-                                        Cargando...
-                                    @endif
-                                </td></tr>
-                            </tbody>
+                            <tbody></tbody>
                         </table>
                     </div>
                 </div>
@@ -221,7 +216,24 @@
 </div>
 @endsection
 
+@push('styles')
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
+<style>
+div.dataTables_wrapper div.dataTables_length,
+div.dataTables_wrapper div.dataTables_filter { margin-bottom: 8px; }
+div.dataTables_wrapper div.dataTables_info,
+div.dataTables_wrapper div.dataTables_paginate { margin-top: 8px; }
+div.dataTables_wrapper div.dataTables_length label,
+div.dataTables_wrapper div.dataTables_filter label { font-size: .875rem; color: #6c757d; }
+div.dataTables_wrapper div.dataTables_filter input:focus { border-color: #4F46E5; box-shadow: 0 0 0 .2rem rgba(79,70,229,.15); }
+div.dataTables_wrapper div.dataTables_info { font-size: .8rem; color: #6c757d; }
+</style>
+@endpush
+
 @push('scripts')
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 const csrfToken    = '{{ csrf_token() }}';
@@ -365,42 +377,88 @@ function loadEmpresas() {
     });
 }
 
+let sedesTable = null;
+
+function buildSedesColumns() {
+    const cols = [
+        {
+            data: 'codigo',
+            render: d => `<span class="badge bg-primary">${d}</span>`
+        },
+        {
+            data: 'nombre',
+            render: d => `<strong>${d}</strong>`
+        },
+    ];
+
+    if (isAdminTenant) {
+        cols.push({
+            data: null,
+            render: () => {
+                const emp = empresasData.find(e => String(e.id) === String(currentEmpresaId));
+                return emp ? emp.nombre : '—';
+            }
+        });
+    }
+
+    cols.push(
+        { data: 'direccion', defaultContent: '—' },
+        {
+            data: null,
+            render: (d, t, s) => `<small>${Number(s.lat).toFixed(4)}, ${Number(s.lng).toFixed(4)}</small>`
+        },
+        { data: 'radio_mts', render: d => `${d}m` },
+        {
+            data: 'is_active',
+            render: d => `<span class="badge ${d ? 'bg-success' : 'bg-danger'}">${d ? 'Activo' : 'Inactivo'}</span>`
+        },
+        {
+            data: null,
+            orderable: false,
+            searchable: false,
+            render: (d, t, s) => {
+                const dis = isSupervisor ? 'disabled' : '';
+                const sNom = s.nombre.replace(/'/g, "\\'");
+                const sJson = JSON.stringify(s).replace(/'/g, "&#39;");
+                return `
+                    <button class="btn btn-sm btn-outline-success me-1" onclick="showQR(${s.id},'${sNom}')" title="QR dinámico (kiosco)" ${dis}><i class="fa-solid fa-qrcode"></i></button>
+                    <button class="btn btn-sm ${s.qr_static_token ? 'btn-outline-primary' : 'btn-outline-secondary'} me-1" onclick="showStaticQR(${s.id},'${sNom}',${s.qr_static_token ? 'true' : 'false'})" title="${s.qr_static_token ? 'QR estático (imprimible)' : 'Habilitar QR estático'}" ${dis}><i class="fa-solid fa-print"></i></button>
+                    <button class="btn btn-sm ${s.qr_v3_token ? 'btn-outline-info' : 'btn-outline-secondary'} me-1" onclick="showWebQR(${s.id},'${sNom}',${s.qr_v3_token ? 'true' : 'false'})" title="${s.qr_v3_token ? 'QR Web (sin app)' : 'Habilitar QR Web'}" ${dis}><i class="fa-solid fa-globe"></i></button>
+                    <button class="btn btn-sm btn-outline-primary me-1" onclick='editSede(${sJson})' ${dis}><i class="fa-solid fa-pen"></i></button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteSede(${s.id})" ${dis}><i class="fa-solid fa-trash"></i></button>
+                `;
+            }
+        }
+    );
+    return cols;
+}
+
 async function loadSedes() {
     if (isAdminTenant && !currentEmpresaId) {
-        document.getElementById('sedesTbody').innerHTML =
-            '<tr><td colspan="7" class="text-center text-muted py-3">Selecciona una empresa para ver sus sedes.</td></tr>';
+        if (sedesTable) { sedesTable.clear().draw(); }
         return;
     }
     try {
-        const res = await fetch('/admin/sedes/list', { headers: buildHeaders() });
+        const res  = await fetch('/admin/sedes/list', { headers: buildHeaders() });
         const data = await res.json();
-        const tbody = document.getElementById('sedesTbody');
-        const colCount = isAdminTenant ? 8 : 7;
-        if (!data.data || data.data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="${colCount}" class="text-center text-muted py-3">Sin sedes registradas</td></tr>`;
-            return;
+        const rows = data.data || [];
+
+        if ($.fn.DataTable.isDataTable('#sedesTable')) {
+            sedesTable.clear().rows.add(rows).draw();
+        } else {
+            sedesTable = $('#sedesTable').DataTable({
+                data: rows,
+                columns: buildSedesColumns(),
+                order: [[1, 'asc']],
+                pageLength: 10,
+                lengthMenu: [10, 25, 50],
+                language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
+                initComplete: function() {
+                    $('#sedesTable_length select').addClass('form-select form-select-sm d-inline-block w-auto');
+                    $('#sedesTable_filter input').addClass('form-control form-control-sm d-inline-block w-auto');
+                },
+            });
         }
-        const empresaNombre = isAdminTenant
-            ? (empresasData.find(e => String(e.id) === String(currentEmpresaId))?.nombre || '—')
-            : null;
-        tbody.innerHTML = data.data.map(s => `
-            <tr>
-                <td><span class="badge bg-primary">${s.codigo}</span></td>
-                <td><strong>${s.nombre}</strong></td>
-                ${isAdminTenant ? `<td>${empresaNombre}</td>` : ''}
-                <td>${s.direccion || '—'}</td>
-                <td><small>${Number(s.lat).toFixed(4)}, ${Number(s.lng).toFixed(4)}</small></td>
-                <td>${s.radio_mts}m</td>
-                <td><span class="badge ${s.is_active ? 'bg-success' : 'bg-danger'}">${s.is_active ? 'Activo' : 'Inactivo'}</span></td>
-                <td>
-                    <button class="btn btn-sm btn-outline-success me-1" onclick="showQR(${s.id}, '${s.nombre}')" title="QR dinámico (kiosco)" ${isSupervisor ? 'disabled' : ''}><i class="fa-solid fa-qrcode"></i></button>
-                    <button class="btn btn-sm ${s.qr_static_token ? 'btn-outline-primary' : 'btn-outline-secondary'} me-1" onclick="showStaticQR(${s.id}, '${s.nombre}', ${s.qr_static_token ? 'true' : 'false'})" title="${s.qr_static_token ? 'QR estático (imprimible)' : 'Habilitar QR estático'}" ${isSupervisor ? 'disabled' : ''}><i class="fa-solid fa-print"></i></button>
-                    <button class="btn btn-sm ${s.qr_v3_token ? 'btn-outline-info' : 'btn-outline-secondary'} me-1" onclick="showWebQR(${s.id}, '${s.nombre}', ${s.qr_v3_token ? 'true' : 'false'})" title="${s.qr_v3_token ? 'QR Web (sin app)' : 'Habilitar QR Web'}" ${isSupervisor ? 'disabled' : ''}><i class="fa-solid fa-globe"></i></button>
-                    <button class="btn btn-sm btn-outline-primary me-1" onclick='editSede(${JSON.stringify(s).replace(/'/g, "&#39;")})' ${isSupervisor ? 'disabled' : ''}><i class="fa-solid fa-pen"></i></button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteSede(${s.id})" ${isSupervisor ? 'disabled' : ''}><i class="fa-solid fa-trash"></i></button>
-                </td>
-            </tr>
-        `).join('');
     } catch(e) { console.error(e); }
 }
 
