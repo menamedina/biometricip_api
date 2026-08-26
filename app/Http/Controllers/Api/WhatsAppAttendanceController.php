@@ -148,11 +148,24 @@ class WhatsAppAttendanceController extends Controller
             'fecha_hora'            => Carbon::now(config('app.timezone')),
         ]);
 
-        $record->load(['user', 'sede']);
+        $record->load([
+            'user:id,name,cedula,codigo_empleado,empresa_id',
+            'sede:id,nombre,direccion',
+        ]);
 
         return response()->json([
             'message' => 'Asistencia registrada correctamente.',
-            'data'    => $record,
+            'data'    => [
+                'id'                    => $record->id,
+                'tipo'                  => $record->tipo,
+                'metodo'                => $record->metodo,
+                'fecha_hora'            => $record->fecha_hora,
+                'geocerca_validada'     => $record->geocerca_validada,
+                'distancia_oficina_mts' => $record->distancia_oficina_mts,
+                'empresa'               => ['id' => $empresa->id, 'nombre' => $empresa->nombre],
+                'empleado'              => $record->user,
+                'sede'                  => $record->sede,
+            ],
         ], 201);
     }
 
