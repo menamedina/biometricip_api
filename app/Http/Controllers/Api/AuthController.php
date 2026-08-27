@@ -240,6 +240,13 @@ class AuthController extends Controller
 
     private function userData(User $user): array
     {
+        Log::info('[userData] inicio', [
+            'user_id'    => $user->id,
+            'empresa_id' => $user->empresa_id,
+            'horario_id' => $user->horario_id,
+            'role'       => $user->role,
+        ]);
+
         $departamentoNombre = null;
         $cargoNombre        = null;
         $empresaNombre      = null;
@@ -264,15 +271,18 @@ class AuthController extends Controller
             }
             if ($user->horario_id) {
                 try {
+                    TenantHelper::switchTenant($user->empresa_id);
                     error_log('[LOGIN] buscando horario_id=' . $user->horario_id);
                     $h = Horario::with('dias')->find($user->horario_id);
                     error_log('[LOGIN] horario encontrado=' . ($h ? 'si' : 'no'));
                     if ($h) {
                         error_log('[LOGIN] dias count=' . $h->dias->count());
                         $horarioData = [
-                            'id'    => $h->id,
-                            'nombre'=> $h->nombre,
-                            'dias'  => $h->dias,
+                            'id'           => $h->id,
+                            'nombre'       => $h->nombre,
+                            'hora_entrada' => $h->hora_entrada,
+                            'hora_salida'  => $h->hora_salida,
+                            'dias'         => $h->dias,
                         ];
                         error_log('[LOGIN] horarioData OK');
                     }
@@ -306,6 +316,13 @@ class AuthController extends Controller
         if ($user->empresa_id !== null) {
             TenantHelper::switchTenant($user->empresa_id);
         }
+
+        Log::info('[userData] retornando', [
+            'user_id'      => $user->id,
+            'horario_id'   => $user->horario_id,
+            'horario_data' => $horarioData,
+            'sedes_count'  => count($sedesData),
+        ]);
 
         return [
             'id'              => $user->id,
