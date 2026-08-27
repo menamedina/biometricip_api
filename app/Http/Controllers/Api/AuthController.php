@@ -74,6 +74,10 @@ class AuthController extends Controller
         } catch (ValidationException $e) {
             throw $e;
         } catch (\Throwable $e) {
+            $msg = '[LOGIN ERROR] email=' . $request->email
+                 . ' | ' . $e->getMessage()
+                 . ' | ' . $e->getFile() . ':' . $e->getLine();
+            error_log($msg);
             Log::error('API Login exception', [
                 'message' => $e->getMessage(),
                 'file'    => $e->getFile(),
