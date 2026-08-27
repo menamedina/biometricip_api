@@ -563,7 +563,7 @@ class AdminController extends Controller
 
         $base = fn () => Visitante::when($sedeId, fn ($q) => $q->where('sede_id', $sedeId));
 
-        $enPlanta = $base()->whereDate('hora_entrada', today())->whereNull('hora_salida')->count();
+        $enPlanta = $base()->whereNull('hora_salida')->count();
 
         $enDia = $base()->whereDate('hora_entrada', today())->count();
 
