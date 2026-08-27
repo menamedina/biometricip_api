@@ -74,8 +74,12 @@ class AuthController extends Controller
 
             error_log('[LOGIN] generando userData empresa_id=' . $user->empresa_id);
 
+            $userData = $this->userData($user);
+            error_log('[LOGIN] OK userData generado para ' . $request->email);
+            error_log('[LOGIN] horario_id=' . ($user->horario_id ?? 'null') . ' horario=' . json_encode($userData['horario'] ?? null));
+
             return response()->json([
-                'user'  => $this->userData($user),
+                'user'  => $userData,
                 'token' => $token,
             ]);
 
@@ -260,13 +264,17 @@ class AuthController extends Controller
             }
             if ($user->horario_id) {
                 try {
+                    error_log('[LOGIN] buscando horario_id=' . $user->horario_id);
                     $h = Horario::with('dias')->find($user->horario_id);
+                    error_log('[LOGIN] horario encontrado=' . ($h ? 'si' : 'no'));
                     if ($h) {
+                        error_log('[LOGIN] dias count=' . $h->dias->count());
                         $horarioData = [
                             'id'    => $h->id,
                             'nombre'=> $h->nombre,
                             'dias'  => $h->dias,
                         ];
+                        error_log('[LOGIN] horarioData OK');
                     }
                 } catch (\Throwable $e) {
                     error_log('[LOGIN] horario error empresa_id=' . $user->empresa_id . ': ' . $e->getMessage());
