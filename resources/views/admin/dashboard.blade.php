@@ -118,22 +118,6 @@
     </div>
 </div>
 
-{{-- Barra de asistencia --}}
-<div class="card border-0 shadow-sm mb-3" id="barraAsistencia">
-    <div class="card-body py-3">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="fw-semibold small">Tasa de asistencia hoy</span>
-            <span class="fw-bold text-primary" id="statPct">--%</span>
-        </div>
-        <div class="progress" style="height:10px; border-radius:8px;">
-            <div id="attendanceBar" class="progress-bar bg-success" role="progressbar" style="width:0%; border-radius:8px;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-        </div>
-        <div class="d-flex justify-content-between mt-1">
-            <small class="text-muted"><i class="fa-solid fa-circle text-success me-1 fa-xs"></i><span id="barPresentes">0</span> presentes</small>
-            <small class="text-muted"><span id="barAusentes">0</span> ausentes <i class="fa-solid fa-circle text-danger ms-1 fa-xs"></i></small>
-        </div>
-    </div>
-</div>
 
 @endif {{-- fin bloque no-empleado --}}
 
