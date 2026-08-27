@@ -30,19 +30,25 @@ class AuthController extends Controller
                 'tratamiento_datos'  => 'nullable|boolean',
             ]);
 
+            error_log('[LOGIN] email=' . $request->email);
+
             $user = User::where('email', $request->email)->first();
 
             if (!$user || !Hash::check($request->password, $user->password)) {
+                error_log('[LOGIN] credenciales incorrectas: ' . $request->email);
                 throw ValidationException::withMessages([
                     'email' => ['Las credenciales proporcionadas son incorrectas.'],
                 ]);
             }
+
+            error_log('[LOGIN] usuario encontrado: id=' . $user->id . ' empresa_id=' . $user->empresa_id);
 
             if (!$user->is_active) {
                 return response()->json(['message' => 'Tu cuenta ha sido desactivada.'], 403);
             }
 
             if ($user->empresa_id !== null) {
+                error_log('[LOGIN] switchTenant empresa_id=' . $user->empresa_id);
                 TenantHelper::switchTenant($user->empresa_id);
             }
 
@@ -65,6 +71,8 @@ class AuthController extends Controller
             }
 
             $token = $user->createToken('auth-token')->plainTextToken;
+
+            error_log('[LOGIN] generando userData empresa_id=' . $user->empresa_id);
 
             return response()->json([
                 'user'  => $this->userData($user),
@@ -251,13 +259,17 @@ class AuthController extends Controller
                 $liderNombre = User::find($user->lider_id)?->name;
             }
             if ($user->horario_id) {
-                $h = Horario::with('dias')->find($user->horario_id);
-                if ($h) {
-                    $horarioData = [
-                        'id'    => $h->id,
-                        'nombre'=> $h->nombre,
-                        'dias'  => $h->dias,
-                    ];
+                try {
+                    $h = Horario::with('dias')->find($user->horario_id);
+                    if ($h) {
+                        $horarioData = [
+                            'id'    => $h->id,
+                            'nombre'=> $h->nombre,
+                            'dias'  => $h->dias,
+                        ];
+                    }
+                } catch (\Throwable $e) {
+                    error_log('[LOGIN] horario error empresa_id=' . $user->empresa_id . ': ' . $e->getMessage());
                 }
             }
         }
