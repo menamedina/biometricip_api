@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Horario extends Model
 {
-    protected $connection = 'tenant';
+    protected $connection = 'mysql';
     protected $table      = 'tbl_horarios';
 
     protected $guarded = [];
