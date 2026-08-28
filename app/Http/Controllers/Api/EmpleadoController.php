@@ -302,6 +302,7 @@ class EmpleadoController extends Controller
             'exportar_empleados' => 'nullable|boolean',
             'importar_empleados' => 'nullable|boolean',
             'crear_empleado'     => 'nullable|boolean',
+            'editar_empleado'    => 'nullable|boolean',
         ]);
 
         // Validar límite de usuarios:

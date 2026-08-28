@@ -567,10 +567,12 @@ async function loadEmpleados(page = 1) {
                             <span class="ms-1">${e.has_face_descriptor ? '✓' : '—'}</span>
                         </button>
                     </td>
-                    <td style="white-space:nowrap">
-                        <button class="btn btn-sm btn-outline-primary me-1" onclick="this.disabled=true;editEmpleado(${e.id}, '${e.encrypted_id}').finally(()=>this.disabled=false)" ${canEditEmpleado ? '' : 'disabled'}><i class="fa-solid fa-pen"></i></button>
-                        <button class="btn btn-sm btn-outline-secondary me-1" onclick="verLogEmpleado(${e.id})" title="Ver historial de cambios"><i class="fa-solid fa-clock-rotate-left"></i></button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteEmpleado('${e.encrypted_id}')" ${isSupervisor ? 'disabled' : ''}><i class="fa-solid fa-trash"></i></button>
+                    <td>
+                        <div class="d-flex flex-nowrap gap-1">
+                            <button class="btn btn-sm btn-outline-primary" onclick="this.disabled=true;editEmpleado(${e.id}, '${e.encrypted_id}').finally(()=>this.disabled=false)" ${canEditEmpleado ? '' : 'disabled'}><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="verLogEmpleado(${e.id})" title="Ver historial de cambios"><i class="fa-solid fa-clock-rotate-left"></i></button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteEmpleado('${e.encrypted_id}')" ${isSupervisor ? 'disabled' : ''}><i class="fa-solid fa-trash"></i></button>
+                        </div>
                     </td>
                 </tr>`;
             }).join('');
