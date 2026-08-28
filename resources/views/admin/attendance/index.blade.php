@@ -30,12 +30,8 @@
                 <div class="card-body p-2">
                     <div class="row g-2 mb-3 align-items-end">
                         <div class="col-md-2">
-                            <label class="form-label small">Fecha</label>
-                            <input type="date" class="form-control form-control-sm" id="filterDate" value="{{ date('Y-m-d') }}" onchange="loadRecords()">
-                        </div>
-                        <div class="col-md-2">
                             <label class="form-label small">Tipo</label>
-                            <select class="form-select form-select-sm" id="filterTipo" onchange="loadRecords()">
+                            <select class="form-select form-select-sm" id="filterTipo">
                                 <option value="">Todos</option>
                                 <option value="entrada">Entrada</option>
                                 <option value="salida_almuerzo">Salida Almuerzo</option>
@@ -45,24 +41,21 @@
                         </div>
                         <div class="col-md-3">
                             <label class="form-label small">Empleado</label>
-                            <select class="form-select form-select-sm" id="filterEmpleado" onchange="loadRecords()">
+                            <select class="form-select form-select-sm" id="filterEmpleado">
                                 <option value="">Todos</option>
                             </select>
                         </div>
-                        <div class="col-md-4">
-                            <div class="d-flex gap-2">
-                                <div>
-                                    <label class="form-label small">Desde</label>
-                                    <input type="date" class="form-control form-control-sm" id="reportFrom" value="{{ date('Y-m-01') }}">
-                                </div>
-                                <div>
-                                    <label class="form-label small">Hasta</label>
-                                    <input type="date" class="form-control form-control-sm" id="reportTo" value="{{ date('Y-m-d') }}">
-                                </div>
-                                <div class="d-flex align-items-end">
-                                    <button class="btn btn-sm btn-success" onclick="exportCSV()"><i class="fa-solid fa-file-csv me-1"></i> Exportar CSV</button>
-                                </div>
-                            </div>
+                        <div class="col-md-2">
+                            <label class="form-label small">Desde</label>
+                            <input type="date" class="form-control form-control-sm" id="reportFrom" value="{{ date('Y-m-d') }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small">Hasta</label>
+                            <input type="date" class="form-control form-control-sm" id="reportTo" value="{{ date('Y-m-d') }}">
+                        </div>
+                        <div class="col-md-auto d-flex align-items-end gap-2">
+                            <button class="btn btn-sm btn-primary" onclick="loadRecords()"><i class="fa-solid fa-filter me-1"></i> Filtrar</button>
+                            <button class="btn btn-sm btn-success" onclick="exportCSV()"><i class="fa-solid fa-file-csv me-1"></i> Exportar CSV</button>
                         </div>
                     </div>
                 </div>
@@ -107,11 +100,13 @@ let recordsPage  = 1;
 
 async function loadRecords(page = 1) {
     recordsPage = page;
-    const date  = document.getElementById('filterDate').value;
+    const from  = document.getElementById('reportFrom').value;
+    const to    = document.getElementById('reportTo').value;
     const tipo  = document.getElementById('filterTipo').value;
     const empId = isEmpleado ? myUserId : document.getElementById('filterEmpleado').value;
     let url = `/admin/attendance/records?page=${page}&per_page=20`;
-    if (date)  url += `&date=${date}`;
+    if (from)  url += `&date_from=${from}`;
+    if (to)    url += `&date_to=${to}`;
     if (tipo)  url += `&tipo=${tipo}`;
     if (empId) url += `&user_id=${empId}`;
 
