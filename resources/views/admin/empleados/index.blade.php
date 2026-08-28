@@ -11,6 +11,9 @@
                     <p class="text-muted mb-0">Gestión del personal</p>
                 </div>
                 <div class="d-flex gap-2">
+                    <button class="btn btn-outline-success" onclick="exportarEmpleados()">
+                        <i class="fa-solid fa-file-export me-1"></i> Exportar
+                    </button>
                     <button class="btn btn-outline-secondary" onclick="openImportEmpleados()">
                         <i class="fa-solid fa-file-import me-1"></i> Importar
                     </button>
@@ -805,6 +808,20 @@ async function eliminarRostro(imageId) {
             alert(err.message || 'Error al eliminar');
         }
     } catch(e) { alert('Error: ' + e.message); }
+}
+
+// ── Export Empleados ──────────────────────────────────────────────────────────
+function exportarEmpleados() {
+    let url = '{{ route('admin.empleados.export') }}';
+    @if(auth()->user()->admin_tenant)
+    const empresaId = document.getElementById('filterEmpresa').value;
+    if (!empresaId) {
+        alert('Selecciona una empresa antes de exportar.');
+        return;
+    }
+    url += `?empresa_id=${empresaId}`;
+    @endif
+    window.location.href = url;
 }
 
 // ── Import Empleados ──────────────────────────────────────────────────────────

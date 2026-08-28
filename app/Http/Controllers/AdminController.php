@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exports\CargosTemplateExport;
 use App\Exports\DepartamentosTemplateExport;
+use App\Exports\EmpleadosExport;
 use App\Exports\EmpleadosTemplateExport;
 use App\Helpers\TenantHelper;
 use App\Imports\CargosImport;
@@ -139,6 +140,23 @@ class AdminController extends Controller
         }
 
         return Excel::download(new EmpleadosTemplateExport($empresaId), 'plantilla_empleados.xlsx');
+    }
+
+    public function empleadosExport(Request $request)
+    {
+        $authUser  = auth()->user();
+        $empresaId = $authUser->admin_tenant
+            ? (int) $request->input('empresa_id', 0)
+            : (int) $authUser->empresa_id;
+
+        if ($authUser->admin_tenant) {
+            if (!$empresaId || !Empresa::where('id', $empresaId)->exists()) {
+                abort(422, 'Empresa no válida.');
+            }
+            TenantHelper::switchTenant($empresaId);
+        }
+
+        return Excel::download(new EmpleadosExport($empresaId), 'empleados_export.xlsx');
     }
 
     public function empleadosImport(Request $request)
