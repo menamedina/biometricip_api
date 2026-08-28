@@ -50,7 +50,13 @@ BEGIN
             'departamento_id',  OLD.departamento_id,
             'cargo_id',         OLD.cargo_id,
             'horario_id',       OLD.horario_id,
-            'telefono',         OLD.telefono
+            'telefono',             OLD.telefono,
+            'centro_costo',         OLD.centro_costo,
+            'ruta',                 OLD.ruta,
+            'exportar_empleados',   OLD.exportar_empleados,
+            'importar_empleados',   OLD.importar_empleados,
+            'crear_empleado',       OLD.crear_empleado,
+            'editar_empleado',      OLD.editar_empleado
         ),
         JSON_OBJECT(
             'name',             NEW.name,
@@ -67,7 +73,13 @@ BEGIN
             'departamento_id',  NEW.departamento_id,
             'cargo_id',         NEW.cargo_id,
             'horario_id',       NEW.horario_id,
-            'telefono',         NEW.telefono
+            'telefono',             NEW.telefono,
+            'centro_costo',         NEW.centro_costo,
+            'ruta',                 NEW.ruta,
+            'exportar_empleados',   NEW.exportar_empleados,
+            'importar_empleados',   NEW.importar_empleados,
+            'crear_empleado',       NEW.crear_empleado,
+            'editar_empleado',      NEW.editar_empleado
         ),
         IFNULL(@audit_user_id, 0),
         NOW()
@@ -106,7 +118,13 @@ BEGIN
             'departamento_id',  OLD.departamento_id,
             'cargo_id',         OLD.cargo_id,
             'horario_id',       OLD.horario_id,
-            'telefono',         OLD.telefono
+            'telefono',             OLD.telefono,
+            'centro_costo',         OLD.centro_costo,
+            'ruta',                 OLD.ruta,
+            'exportar_empleados',   OLD.exportar_empleados,
+            'importar_empleados',   OLD.importar_empleados,
+            'crear_empleado',       OLD.crear_empleado,
+            'editar_empleado',      OLD.editar_empleado
         ),
         NULL,
         IFNULL(@audit_user_id, 0),

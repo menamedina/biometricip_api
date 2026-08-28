@@ -963,7 +963,10 @@ const LOG_LABELS_EMP = {
     name: 'Nombre', cedula: 'Cédula', email: 'Email', role: 'Rol', tipo: 'Tipo',
     admin_tenant: 'Admin multi-empresa', is_active: 'Activo', empresa_id: 'Empresa',
     empleador_id: 'Empleador', lider_id: 'Líder', codigo_empleado: 'Código',
-    departamento_id: 'Departamento', cargo_id: 'Cargo', horario_id: 'Horario', telefono: 'Teléfono'
+    departamento_id: 'Departamento', cargo_id: 'Cargo', horario_id: 'Horario', telefono: 'Teléfono',
+    centro_costo: 'Centro de costo', ruta: 'Ruta',
+    exportar_empleados: 'Exportar empleados', importar_empleados: 'Importar empleados',
+    crear_empleado: 'Crear empleado', editar_empleado: 'Editar empleado'
 };
 
 async function verLogEmpleado(id) {
@@ -995,10 +998,14 @@ async function verLogEmpleado(id) {
         var anterior = log.anterior || {};
         var nuevo    = log.nuevo    || {};
         var campos   = Object.keys(Object.assign({}, anterior, nuevo));
-        var cambios  = campos.filter(function(k) {
-            return JSON.stringify(anterior[k]) !== JSON.stringify(nuevo[k]);
-        });
-        if (!cambios.length) cambios = campos;
+        var cambios  = log.evento === 'DELETE'
+            ? campos
+            : campos.filter(function(k) {
+                var a = anterior[k] == null ? '' : String(anterior[k]);
+                var b = nuevo[k]    == null ? '' : String(nuevo[k]);
+                return a !== b;
+            });
+        if (!cambios.length) return;
 
         cambios.forEach(function(campo, i) {
             rows.push(
