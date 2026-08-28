@@ -227,6 +227,7 @@ div.dataTables_wrapper div.dataTables_length label,
 div.dataTables_wrapper div.dataTables_filter label { font-size: .875rem; color: #6c757d; }
 div.dataTables_wrapper div.dataTables_filter input:focus { border-color: #4F46E5; box-shadow: 0 0 0 .2rem rgba(79,70,229,.15); }
 div.dataTables_wrapper div.dataTables_info { font-size: .8rem; color: #6c757d; }
+.pac-container { z-index: 1060 !important; }
 </style>
 @endpush
 
@@ -320,8 +321,37 @@ function syncMapFromInputs() {
 let googleMapsLoaded = false;
 let pendingMapInit = null;
 
+let autocomplete = null;
+
+function initAutocomplete() {
+    const input = document.getElementById('sedeDireccion');
+    autocomplete = new google.maps.places.Autocomplete(input, {
+        types: ['address'],
+        fields: ['geometry', 'formatted_address'],
+    });
+
+    autocomplete.addListener('place_changed', function () {
+        const place = autocomplete.getPlace();
+        if (!place.geometry || !place.geometry.location) return;
+
+        const lat = place.geometry.location.lat();
+        const lng = place.geometry.location.lng();
+
+        setCoords(lat, lng);
+
+        if (gMap) {
+            const pos = { lat, lng };
+            gMap.setCenter(pos);
+            gMap.setZoom(16);
+            gMarker.setPosition(pos);
+            gCircle.setCenter(pos);
+        }
+    });
+}
+
 function googleMapsReady() {
     googleMapsLoaded = true;
+    initAutocomplete();
     if (pendingMapInit) {
         const { lat, lng, radio } = pendingMapInit;
         pendingMapInit = null;
@@ -791,5 +821,5 @@ function printWebQR() {
     win.document.close();
 }
 </script>
-<script src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_MAPS_API_KEY') }}&loading=async&callback=googleMapsReady"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_MAPS_API_KEY') }}&libraries=places&loading=async&callback=googleMapsReady"></script>
 @endpush
