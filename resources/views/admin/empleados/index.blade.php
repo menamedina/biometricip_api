@@ -11,13 +11,13 @@
                     <p class="text-muted mb-0">Gestión del personal</p>
                 </div>
                 <div class="d-flex gap-2">
-                    <button class="btn btn-outline-success" onclick="exportarEmpleados()">
+                    <button class="btn btn-outline-success" onclick="exportarEmpleados()" @if(!auth()->user()->admin_tenant && !auth()->user()->exportar_empleados) disabled @endif>
                         <i class="fa-solid fa-file-export me-1"></i> Exportar
                     </button>
-                    <button class="btn btn-outline-secondary" onclick="openImportEmpleados()">
+                    <button class="btn btn-outline-secondary" onclick="openImportEmpleados()" @if(!auth()->user()->admin_tenant && !auth()->user()->importar_empleados) disabled @endif>
                         <i class="fa-solid fa-file-import me-1"></i> Importar
                     </button>
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#empleadoModal" onclick="resetForm()">
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#empleadoModal" onclick="resetForm()" @if(!auth()->user()->admin_tenant && !auth()->user()->crear_empleado) disabled @endif>
                         <i class="fa-solid fa-plus me-1"></i> Nuevo Empleado
                     </button>
                 </div>
@@ -202,6 +202,28 @@
                             </div>
                         </div>
                     </div>
+                    <hr class="mt-0 mb-2">
+                    <div class="row">
+                        <div class="col-12 mb-3 d-flex align-items-center gap-4">
+                            <small class="text-muted fw-bold">Permisos empleados:</small>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="empExportarEmpleados">
+                                <label class="form-check-label">Exportar</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="empImportarEmpleados">
+                                <label class="form-check-label">Importar</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="empCrearEmpleado">
+                                <label class="form-check-label">Crear</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="empEditarEmpleado">
+                                <label class="form-check-label">Editar</label>
+                            </div>
+                        </div>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -316,6 +338,7 @@
 const csrfToken     = '{{ csrf_token() }}';
 const isAdminTenant = {{ auth()->user()->admin_tenant ? 'true' : 'false' }};
 const isSupervisor  = {{ auth()->user()->role === 'supervisor' ? 'true' : 'false' }};
+const canEditEmpleado = {{ (auth()->user()->admin_tenant || auth()->user()->editar_empleado) ? 'true' : 'false' }};
 let currentPage = 1;
 let sortBy  = 'name';
 let sortDir = 'asc';
@@ -349,6 +372,10 @@ function resetForm() {
     document.getElementById('empRole').value = 'empleado';
     document.getElementById('empCodigoRow').style.display = 'none';
     document.getElementById('empActivo').checked = true;
+    document.getElementById('empExportarEmpleados').checked = false;
+    document.getElementById('empImportarEmpleados').checked = false;
+    document.getElementById('empCrearEmpleado').checked = false;
+    document.getElementById('empEditarEmpleado').checked = false;
     document.getElementById('empleadoModalTitle').textContent = 'Nuevo Usuario';
     document.getElementById('conteoUsuariosBadge').classList.add('d-none');
     document.querySelectorAll('.emp-sede-check').forEach(cb => cb.checked = false);
@@ -541,7 +568,7 @@ async function loadEmpleados(page = 1) {
                         </button>
                     </td>
                     <td>
-                        <button class="btn btn-sm btn-outline-primary me-1" onclick="this.disabled=true;editEmpleado(${e.id}, '${e.encrypted_id}').finally(()=>this.disabled=false)"><i class="fa-solid fa-pen"></i></button>
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="this.disabled=true;editEmpleado(${e.id}, '${e.encrypted_id}').finally(()=>this.disabled=false)" ${canEditEmpleado ? '' : 'disabled'}><i class="fa-solid fa-pen"></i></button>
                         <button class="btn btn-sm btn-outline-secondary me-1" onclick="verLogEmpleado(${e.id})" title="Ver historial de cambios"><i class="fa-solid fa-clock-rotate-left"></i></button>
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteEmpleado('${e.encrypted_id}')" ${isSupervisor ? 'disabled' : ''}><i class="fa-solid fa-trash"></i></button>
                     </td>
@@ -634,6 +661,10 @@ async function editEmpleado(id, encryptedId) {
         document.getElementById('empRuta').value         = e.ruta || '';
         document.getElementById('empRole').value         = e.role || 'empleado';
         document.getElementById('empActivo').checked     = !!e.is_active;
+        document.getElementById('empExportarEmpleados').checked = !!e.exportar_empleados;
+        document.getElementById('empImportarEmpleados').checked = !!e.importar_empleados;
+        document.getElementById('empCrearEmpleado').checked = !!e.crear_empleado;
+        document.getElementById('empEditarEmpleado').checked = !!e.editar_empleado;
         document.getElementById('empleadoModalTitle').textContent = 'Editar Usuario';
         fetchConteoUsuarios(e.empresa_id || {{ auth()->user()->empresa_id ?? 'null' }});
         loader.classList.add('d-none');
@@ -669,6 +700,10 @@ async function saveEmpleado(id) {
         sede_ids:         getSelectedSedeIds(),
         role:             document.getElementById('empRole').value,
         is_active:        document.getElementById('empActivo').checked,
+        exportar_empleados: document.getElementById('empExportarEmpleados').checked,
+        importar_empleados: document.getElementById('empImportarEmpleados').checked,
+        crear_empleado:     document.getElementById('empCrearEmpleado').checked,
+        editar_empleado:    document.getElementById('empEditarEmpleado').checked,
     };
     if (isAdminTenant) {
         const selEmp = document.getElementById('empEmpresaId');

@@ -43,6 +43,10 @@ class User extends Authenticatable
         'otp_expires_at',
         'tratamiento_datos',
         'tratamiento_datos_at',
+        'exportar_empleados',
+        'importar_empleados',
+        'crear_empleado',
+        'editar_empleado',
     ];
 
     protected $hidden = [

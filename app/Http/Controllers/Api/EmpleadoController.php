@@ -60,7 +60,7 @@ class EmpleadoController extends Controller
         $sortDir = $request->dir === 'desc' ? 'desc' : 'asc';
 
         $empleados = $query
-            ->select(['id','name','cedula','email','role','tipo','admin_tenant','is_active','empresa_id','empleador_id','lider_id','codigo_empleado','departamento_id','cargo_id','horario_id','telefono','centro_costo','ruta','foto_url','last_login_at','created_at',
+            ->select(['id','name','cedula','email','role','tipo','admin_tenant','is_active','exportar_empleados','importar_empleados','crear_empleado','editar_empleado','empresa_id','empleador_id','lider_id','codigo_empleado','departamento_id','cargo_id','horario_id','telefono','centro_costo','ruta','foto_url','last_login_at','created_at',
                 DB::raw('(face_descriptor IS NOT NULL) AS has_face_descriptor')])
             ->with('userSedes')
             ->orderBy($sortCol, $sortDir)
@@ -159,6 +159,10 @@ class EmpleadoController extends Controller
             'telefono'        => 'nullable|string|max:20',
             'centro_costo'    => 'nullable|string|max:100',
             'ruta'            => 'nullable|string|max:100',
+            'exportar_empleados' => 'nullable|boolean',
+            'importar_empleados' => 'nullable|boolean',
+            'crear_empleado'     => 'nullable|boolean',
+            'editar_empleado'    => 'nullable|boolean',
         ]);
 
         $user = User::create([
@@ -180,6 +184,10 @@ class EmpleadoController extends Controller
             'telefono'        => $data['telefono'] ?? null,
             'centro_costo'    => $data['centro_costo'] ?? null,
             'ruta'            => $data['ruta'] ?? null,
+            'exportar_empleados' => $data['exportar_empleados'] ?? false,
+            'importar_empleados' => $data['importar_empleados'] ?? false,
+            'crear_empleado'     => $data['crear_empleado'] ?? false,
+            'editar_empleado'    => $data['editar_empleado'] ?? false,
         ]);
 
         $this->syncSedes($user->id, $empresaId, $data['sede_ids'] ?? []);
@@ -291,6 +299,9 @@ class EmpleadoController extends Controller
             'centro_costo'    => 'nullable|string|max:100',
             'ruta'            => 'nullable|string|max:100',
             'is_active'       => 'nullable|boolean',
+            'exportar_empleados' => 'nullable|boolean',
+            'importar_empleados' => 'nullable|boolean',
+            'crear_empleado'     => 'nullable|boolean',
         ]);
 
         // Validar límite de usuarios:
