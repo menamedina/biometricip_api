@@ -341,12 +341,28 @@ document.getElementById('sedeModal').addEventListener('shown.bs.modal', function
 });
 // ─────────────────────────────────────────────────────────────────────────────
 
+function getNextSedeCodigo() {
+    let maxNum = 0;
+    if (sedesTable) {
+        sedesTable.rows().data().each(function(row) {
+            const match = (row.codigo || '').match(/^SEDE-(\d+)$/i);
+            if (match) {
+                const num = parseInt(match[1], 10);
+                if (num > maxNum) maxNum = num;
+            }
+        });
+    }
+    const next = String(maxNum + 1).padStart(3, '0');
+    return 'SEDE-' + next;
+}
+
 function resetForm() {
     document.getElementById('sedeForm').reset();
     document.getElementById('sedeId').value = '';
     document.getElementById('sedeModalTitle').textContent = 'Nueva Sede';
     document.getElementById('sedeActivo').checked = true;
     document.getElementById('sedeRadio').value = 150;
+    document.getElementById('sedeCodigo').value = getNextSedeCodigo();
     clearSedeError();
     if (isAdminTenant) {
         // Pre-selecciona la empresa del filtro activo
