@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Models\UserSede;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -271,18 +272,25 @@ class AuthController extends Controller
             }
             if ($user->horario_id) {
                 try {
-                    TenantHelper::switchTenant($user->empresa_id);
                     error_log('[LOGIN] buscando horario_id=' . $user->horario_id);
-                    $h = Horario::with('dias')->find($user->horario_id);
+                    $h = DB::connection('tenant')
+                        ->table('tbl_horarios')
+                        ->where('id', $user->horario_id)
+                        ->first();
                     error_log('[LOGIN] horario encontrado=' . ($h ? 'si' : 'no'));
                     if ($h) {
-                        error_log('[LOGIN] dias count=' . $h->dias->count());
+                        $dias = DB::connection('tenant')
+                            ->table('tbl_horario_dias')
+                            ->where('horario_id', $h->id)
+                            ->orderBy('dia_semana')
+                            ->get();
+                        error_log('[LOGIN] dias count=' . $dias->count());
                         $horarioData = [
                             'id'           => $h->id,
                             'nombre'       => $h->nombre,
                             'hora_entrada' => $h->hora_entrada,
                             'hora_salida'  => $h->hora_salida,
-                            'dias'         => $h->dias,
+                            'dias'         => $dias,
                         ];
                         error_log('[LOGIN] horarioData OK');
                     }
