@@ -137,6 +137,7 @@ Route::middleware(['auth', 'admin', 'role:admin,supervisor', 'tenancy.session'])
     Route::get   ('/admin/empleados/{id}/imagenes-rostro',            [ApiEmpleadoController::class, 'getImagenesRostro']);
     Route::post  ('/admin/empleados/{id}/imagenes-rostro',            [ApiEmpleadoController::class, 'storeImagenRostro']);
     Route::delete('/admin/empleados/{id}/imagenes-rostro/{imageId}',  [ApiEmpleadoController::class, 'destroyImagenRostro']);
+    Route::get   ('/admin/empleados/conteo-usuarios',   [ApiEmpleadoController::class, 'conteoUsuarios']);
     Route::get   ('/admin/empleados/tenant-catalogs',  [AdminController::class,       'empleadosCatalogos']);
     Route::get   ('/admin/empleados/tenant-sedes',     [AdminController::class,       'empleadosSedes']);
     Route::get   ('/admin/empleados/lideres',          [AdminController::class,       'empleadosLideres']);

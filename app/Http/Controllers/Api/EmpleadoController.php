@@ -113,8 +113,9 @@ class EmpleadoController extends Controller
         $actuales = $query->count();
 
         if ($actuales >= $maxUsuarios) {
+            $totalActivos = User::where('empresa_id', $empresaId)->where('is_active', true)->count();
             return response()->json([
-                'message' => "Límite de usuarios alcanzado ({$actuales}/{$maxUsuarios}). Actualice su plan para agregar más usuarios.",
+                'message' => "Límite de usuarios alcanzado ({$totalActivos}/{$maxUsuarios}). Actualice su plan para agregar más usuarios.",
             ], 422);
         }
 
@@ -292,9 +293,15 @@ class EmpleadoController extends Controller
             'is_active'       => 'nullable|boolean',
         ]);
 
-        // Si se está activando un usuario inactivo, validar límite
-        if (isset($data['is_active']) && $data['is_active'] && !$empleado->is_active) {
-            if ($denied = $this->checkMaxUsuarios($empresaId, $empleado->id)) return $denied;
+        // Validar límite de usuarios:
+        // - Si se desactiva el usuario, siempre permitir
+        // - Si se mantiene activo o se activa, validar que no se supere el máximo
+        $seDesactiva = isset($data['is_active']) && !$data['is_active'];
+        $estaraActivo = $seDesactiva ? false : ($data['is_active'] ?? $empleado->is_active);
+
+        if ($estaraActivo) {
+            $excludeId = $cambiaEmpresa ? null : $empleado->id;
+            if ($denied = $this->checkMaxUsuarios($efectivoEmpresaId, $excludeId)) return $denied;
         }
 
         if (!empty($data['password'])) {
@@ -321,6 +328,29 @@ class EmpleadoController extends Controller
         });
 
         return response()->json(['data' => $this->withNames($empleado->fresh())]);
+    }
+
+    public function conteoUsuarios(Request $request): JsonResponse
+    {
+        $authUser  = $request->user();
+        $empresaId = $authUser->admin_tenant
+            ? (int) $request->query('empresa_id', 0)
+            : $authUser->empresa_id;
+
+        if (!$empresaId) {
+            return response()->json(['activos' => 0, 'max' => 0]);
+        }
+
+        $empresa = Empresa::find($empresaId);
+        if (!$empresa) {
+            return response()->json(['activos' => 0, 'max' => 0]);
+        }
+
+        $max      = $empresa->max_usuarios ?? 50;
+        $activos  = User::where('empresa_id', $empresaId)->where('is_active', true)->count();
+        $total    = User::where('empresa_id', $empresaId)->count();
+
+        return response()->json(['activos' => $activos, 'total' => $total, 'max' => $max]);
     }
 
     public function destroy(Request $request, string $token): JsonResponse

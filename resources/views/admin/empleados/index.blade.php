@@ -97,6 +97,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="empleadoModalTitle">Nuevo Empleado</h5>
+                <span id="conteoUsuariosBadge" class="badge bg-info ms-2 d-none"></span>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -322,6 +323,20 @@ let sedeMap    = {};
 let empresaMap = {};
 let currentEmpleadoId = null;
 
+async function fetchConteoUsuarios(empresaId) {
+    const badge = document.getElementById('conteoUsuariosBadge');
+    if (!empresaId) { badge.classList.add('d-none'); return; }
+    try {
+        const res = await fetch(`/admin/empleados/conteo-usuarios?empresa_id=${empresaId}`, {
+            headers: { 'Accept': 'application/json' }
+        });
+        const data = await res.json();
+        badge.textContent = `Activos: ${data.activos} / ${data.max}`;
+        badge.className = 'badge ms-2 ' + (data.activos >= data.max ? 'bg-danger' : 'bg-info');
+        badge.classList.remove('d-none');
+    } catch(e) { badge.classList.add('d-none'); }
+}
+
 function resetForm() {
     currentEmpleadoId = null;
     document.getElementById('btnGuardarEmpleado').onclick = () => saveEmpleado(null);
@@ -332,12 +347,14 @@ function resetForm() {
     document.getElementById('empCodigoRow').style.display = 'none';
     document.getElementById('empActivo').checked = true;
     document.getElementById('empleadoModalTitle').textContent = 'Nuevo Usuario';
+    document.getElementById('conteoUsuariosBadge').classList.add('d-none');
     document.querySelectorAll('.emp-sede-check').forEach(cb => cb.checked = false);
     if (isAdminTenant) {
         document.getElementById('empEmpresaId').value = '';
         renderSedeOptions([], []);
     } else {
         cargarLideres();
+        fetchConteoUsuarios({{ auth()->user()->empresa_id ?? 'null' }});
     }
 }
 
@@ -362,7 +379,7 @@ function initCatalogos() {
 }
 
 async function loadCatalogosParaEmpresa(empresaId) {
-    if (!empresaId) { renderSedeOptions([], []); return; }
+    if (!empresaId) { renderSedeOptions([], []); fetchConteoUsuarios(null); return; }
 
     const [resCat, resSedes] = await Promise.all([
         fetch(`/admin/empleados/tenant-catalogs?empresa_id=${empresaId}`),
@@ -375,6 +392,7 @@ async function loadCatalogosParaEmpresa(empresaId) {
         renderSedeOptions(sedes, []);
     }
     await cargarLideres(empresaId);
+    fetchConteoUsuarios(empresaId);
 }
 
 async function cargarLideres(empresaId = null, selectedId = null) {
@@ -614,6 +632,7 @@ async function editEmpleado(id, encryptedId) {
         document.getElementById('empRole').value         = e.role || 'empleado';
         document.getElementById('empActivo').checked     = !!e.is_active;
         document.getElementById('empleadoModalTitle').textContent = 'Editar Usuario';
+        fetchConteoUsuarios(e.empresa_id || {{ auth()->user()->empresa_id ?? 'null' }});
         loader.classList.add('d-none');
         form.classList.remove('d-none');
     } catch(e) {
@@ -694,11 +713,19 @@ async function deleteEmpleado(id) {
     });
     if (!result.isConfirmed) return;
     try {
-        await fetch(`/admin/empleados/${id}`, {
+        const res = await fetch(`/admin/empleados/${id}`, {
             method: 'DELETE',
-            headers: { 'X-CSRF-TOKEN': csrfToken },
+            headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
         });
-        loadEmpleados(currentPage);
+        if (res.ok) {
+            loadEmpleados(currentPage);
+            Swal.fire({ icon: 'success', title: 'Desactivado', text: 'El empleado ha sido desactivado correctamente.', timer: 1800, showConfirmButton: false });
+        } else {
+            const text = await res.text();
+            let msg = 'Error ' + res.status;
+            try { const err = JSON.parse(text); msg = err.message || msg; } catch(_) {}
+            Swal.fire({ icon: 'error', title: 'Error', text: msg });
+        }
     } catch(e) { console.error(e); }
 }
 
