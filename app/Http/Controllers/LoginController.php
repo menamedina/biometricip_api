@@ -30,12 +30,16 @@ class LoginController extends Controller
         try {
             $user = User::where('email', $credentials['email'])->first();
 
-            if (!$user || !Hash::check($credentials['password'], $user->password)) {
+            if (!$user) {
                 return back()->withErrors(['email' => 'Credenciales incorrectas.'])->withInput();
             }
 
             if (!$user->is_active) {
-                return back()->withErrors(['email' => 'Tu cuenta ha sido desactivada.'])->withInput();
+                return back()->withErrors(['email' => 'Tu cuenta ha sido desactivada. Contacta al administrador.'])->withInput();
+            }
+
+            if (!Hash::check($credentials['password'], $user->password)) {
+                return back()->withErrors(['email' => 'Credenciales incorrectas.'])->withInput();
             }
 
             $remember = $request->boolean('remember');

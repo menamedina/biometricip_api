@@ -189,7 +189,7 @@
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Rol</label>
-                            <select id="empRole" class="form-select">
+                            <select id="empRole" class="form-select" @if(!auth()->user()->isAdmin()) disabled @endif>
                                 <option value="empleado">Empleado</option>
                                 <option value="supervisor">Supervisor</option>
                                 <option value="admin">Administrador</option>
@@ -335,6 +335,7 @@
 
 @push('scripts')
 <script>
+
 const csrfToken     = '{{ csrf_token() }}';
 const isAdminTenant = {{ auth()->user()->admin_tenant ? 'true' : 'false' }};
 const isSupervisor  = {{ auth()->user()->role === 'supervisor' ? 'true' : 'false' }};
