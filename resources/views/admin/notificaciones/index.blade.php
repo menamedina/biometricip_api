@@ -152,12 +152,14 @@
                             <thead class="table-light">
                                 <tr>
                                     <th>Fecha</th>
+                                    <th>Enviado por</th>
                                     <th>Título</th>
                                     <th>Mensaje</th>
                                     <th>Destinatarios</th>
                                     <th class="text-center">Enviados</th>
                                     <th class="text-center">Exitosos</th>
                                     <th class="text-center">Fallidos</th>
+                                    <th class="text-center no-sort"></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -167,6 +169,7 @@
                                         <small>{{ $h->created_at->format('d/m/Y H:i') }}</small>
                                         <br><small class="text-muted">{{ $h->created_at->diffForHumans() }}</small>
                                     </td>
+                                    <td><small class="fw-semibold">{{ $h->enviado_por_nombre }}</small></td>
                                     <td class="fw-semibold">{{ $h->titulo }}</td>
                                     <td><small class="text-muted">{{ Str::limit($h->mensaje, 80) }}</small></td>
                                     <td>
@@ -187,6 +190,15 @@
                                             <span class="text-danger fw-semibold">{{ $h->total_fallidos }}</span>
                                         @else
                                             <span class="text-muted">0</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
+                                        @if($h->tipo_destinatario !== 'all')
+                                        <button class="btn btn-sm btn-outline-primary" onclick="verDestinatarios({{ $h->id }}, '{{ addslashes($h->titulo) }}')" title="Ver destinatarios">
+                                            <i class="ti ti-users"></i>
+                                        </button>
+                                        @else
+                                        <span class="text-muted small">—</span>
                                         @endif
                                     </td>
                                 </tr>
@@ -310,6 +322,23 @@
         </div>
     </div>
 </div>
+{{-- Modal destinatarios --}}
+<div class="modal fade" id="modalDestinatarios" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="ti ti-users me-1"></i> Destinatarios — <span id="modalNotifTitulo"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div id="modalDestinatariosBody" class="p-3 text-center text-muted">
+                    <div class="spinner-border spinner-border-sm"></div> Cargando...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('styles')
@@ -536,7 +565,7 @@ $(document).ready(function () {
             language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
             pageLength: 10,
             order: [[0, 'desc']],
-            columnDefs: [{ orderable: false, targets: [2] }],
+            columnDefs: [{ orderable: false, targets: [3, 8] }],
             dom: "<'row mb-2'<'col-sm-6'l><'col-sm-6'f>>" +
                  "<'row'<'col-12'tr>>" +
                  "<'row mt-2'<'col-sm-5'i><'col-sm-7'p>>",
@@ -560,6 +589,45 @@ $(document).ready(function () {
         });
     }
 });
+
+async function verDestinatarios(id, titulo) {
+    document.getElementById('modalNotifTitulo').textContent = titulo;
+    document.getElementById('modalDestinatariosBody').innerHTML =
+        '<div class="p-3 text-center text-muted"><div class="spinner-border spinner-border-sm"></div> Cargando...</div>';
+
+    const modal = new bootstrap.Modal(document.getElementById('modalDestinatarios'));
+    modal.show();
+
+    try {
+        const res  = await fetch(`/admin/notificaciones/historial/${id}/destinatarios`, { headers: { 'Accept': 'application/json' } });
+        const data = await res.json();
+
+        if (!data.length) {
+            document.getElementById('modalDestinatariosBody').innerHTML =
+                '<div class="p-3 text-center text-muted">No hay destinatarios registrados</div>';
+            return;
+        }
+
+        const rows = data.map(d => `
+            <tr>
+                <td class="fw-semibold">${d.name}</td>
+                <td><small class="text-muted">${d.email}</small></td>
+            </tr>`).join('');
+
+        document.getElementById('modalDestinatariosBody').innerHTML = `
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr><th>Nombre</th><th>Correo</th></tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>`;
+    } catch (e) {
+        document.getElementById('modalDestinatariosBody').innerHTML =
+            '<div class="p-3 text-center text-danger">Error al cargar los destinatarios</div>';
+    }
+}
 
 async function deleteToken(id, name) {
     const result = await Swal.fire({

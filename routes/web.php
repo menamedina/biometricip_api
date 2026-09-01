@@ -209,6 +209,7 @@ Route::middleware(['auth', 'admin', 'role:admin,supervisor', 'tenancy.session'])
     Route::get   ('/admin/notificaciones/empleados',  [AdminController::class, 'notificacionesEmpleados']);
     Route::post  ('/admin/notificaciones/send',       [NotificationController::class, 'send']);
     Route::delete('/admin/notificaciones/device-token/{id}', [AdminController::class, 'deleteDeviceToken'])->name('admin.notificaciones.deleteToken');
+    Route::get   ('/admin/notificaciones/historial/{id}/destinatarios', [AdminController::class, 'notificacionesDestinatarios']);
 
     // Dispositivos biométricos
     Route::post  ('/admin/dispositivos/ping',              [ApiDeviceController::class, 'ping']);

@@ -12,6 +12,7 @@ use App\Imports\DepartamentosImport;
 use App\Imports\EmpleadosImport;
 use App\Models\Cargo;
 use App\Models\PushHistorial;
+use App\Models\PushHistorialDetalle;
 use App\Models\Departamento;
 use App\Models\Empleador;
 use App\Models\Empresa;
@@ -101,13 +102,30 @@ class AdminController extends Controller
             ->orderByDesc('device_tokens.updated_at')
             ->get();
 
-        $historial = PushHistorial::with([])
-            ->when(! $isAdminTenant, fn ($q) => $q->where('empresa_id', Auth::user()->empresa_id))
-            ->orderByDesc('created_at')
+        $historial = PushHistorial::select('tbl_push_historial.*', 'users.name as enviado_por_nombre')
+            ->join('users', 'users.id', '=', 'tbl_push_historial.enviado_por')
+            ->when(! $isAdminTenant, fn ($q) => $q->where('tbl_push_historial.empresa_id', Auth::user()->empresa_id))
+            ->orderByDesc('tbl_push_historial.created_at')
             ->limit(100)
             ->get();
 
         return view('admin.notificaciones.index', compact('empleados', 'empresas', 'dispositivos', 'lideres', 'historial'));
+    }
+
+    public function notificacionesDestinatarios(int $id): JsonResponse
+    {
+        $destinatarios = PushHistorialDetalle::select(
+                'tbl_push_historial_detalle.user_id',
+                'users.name',
+                'users.email',
+                'tbl_push_historial_detalle.exitoso'
+            )
+            ->join('users', 'users.id', '=', 'tbl_push_historial_detalle.user_id')
+            ->where('tbl_push_historial_detalle.historial_id', $id)
+            ->orderBy('users.name')
+            ->get();
+
+        return response()->json($destinatarios);
     }
 
     public function deleteDeviceToken(int $id): JsonResponse
