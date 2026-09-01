@@ -36,10 +36,13 @@ class EmpleadoController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function ($q) use ($search) {
+            $cargoIds = Cargo::where('nombre', 'like', "%{$search}%")->pluck('id');
+            $query->where(function ($q) use ($search, $cargoIds) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('codigo_empleado', 'like', "%{$search}%");
+                    ->orWhere('codigo_empleado', 'like', "%{$search}%")
+                    ->orWhere('cedula', 'like', "%{$search}%")
+                    ->orWhereIn('cargo_id', $cargoIds);
             });
         }
 
