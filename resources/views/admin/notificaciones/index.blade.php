@@ -36,9 +36,24 @@
                         <label class="form-label">Destinatarios <span class="text-danger">*</span></label>
                         <select id="destinatarios" class="form-select" onchange="onDestinatariosChange()">
                             <option value="all">Todos los empleados</option>
+                            @if(!auth()->user()->admin_tenant)
+                            <option value="lider">Por líder</option>
+                            @endif
                             <option value="selected">Seleccionar empleados</option>
                         </select>
                     </div>
+
+                    @if(!auth()->user()->admin_tenant)
+                    <div class="mb-3 d-none" id="liderSelectContainer">
+                        <label class="form-label">Líder</label>
+                        <select id="liderSelect" class="form-select" onchange="onLiderChange()">
+                            <option value="">— Selecciona un líder —</option>
+                            @foreach($lideres as $lider)
+                            <option value="{{ $lider->id }}">{{ $lider->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @endif
 
                     <div class="mb-3 d-none" id="empleadosSelectContainer">
                         <label class="form-label">Empleados</label>
@@ -278,11 +293,25 @@ function filterEmpleados() {
 }
 
 function onDestinatariosChange() {
-    const isSelected = destSelect.value === 'selected';
-    empContainer.classList.toggle('d-none', !isSelected);
-    if (isSelected && isAdminTenant) {
+    const val = destSelect.value;
+    const liderContainer = document.getElementById('liderSelectContainer');
+
+    empContainer.classList.toggle('d-none', val !== 'selected');
+    if (liderContainer) liderContainer.classList.toggle('d-none', val !== 'lider');
+
+    if (val === 'selected' && isAdminTenant) {
         loadEmpleados();
     }
+    if (val === 'lider') {
+        const liderSelect = document.getElementById('liderSelect');
+        if (liderSelect && liderSelect.value) onLiderChange();
+    }
+}
+
+function onLiderChange() {
+    const liderId = document.getElementById('liderSelect')?.value;
+    if (!liderId) return;
+    // Los empleados del líder se filtran al enviar; no precargamos lista
 }
 
 function onEmpresaChange() {
@@ -376,7 +405,14 @@ async function sendNotification() {
         }
     }
 
-    if (destSelect.value === 'selected') {
+    if (destSelect.value === 'lider') {
+        const liderId = document.getElementById('liderSelect')?.value;
+        if (!liderId) {
+            Swal.fire('Error', 'Selecciona un líder.', 'error');
+            return;
+        }
+        payload.lider_id = parseInt(liderId);
+    } else if (destSelect.value === 'selected') {
         const selected = [...document.querySelectorAll('.emp-check:checked')].map(cb => parseInt(cb.value));
         if (selected.length === 0) {
             Swal.fire('Error', 'Selecciona al menos un empleado.', 'error');

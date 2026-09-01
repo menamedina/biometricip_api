@@ -21,6 +21,7 @@ use App\Models\User;
 use App\Models\Visitante;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -35,7 +36,7 @@ class AdminController extends Controller
 
     public function notificacionesIndex(): View
     {
-        $isAdminTenant = auth()->user()->admin_tenant;
+        $isAdminTenant = Auth::user()->admin_tenant;
         $empresas = $isAdminTenant
             ? Empresa::orderBy('nombre')->get(['id', 'nombre'])
             : collect();
@@ -43,9 +44,21 @@ class AdminController extends Controller
         $empleados = $isAdminTenant
             ? collect()
             : User::where('is_active', true)
-                  ->where('empresa_id', auth()->user()->empresa_id)
+                  ->where('empresa_id', Auth::user()->empresa_id)
                   ->orderBy('name')
                   ->get(['id', 'name', 'email']);
+
+        // Líderes: empleados que tienen al menos un subordinado asignado (lider_id apunta a ellos)
+        // Si no hay datos de lider_id, mostramos todos los empleados activos como posibles líderes
+        $lideresIds = $isAdminTenant
+            ? collect()
+            : User::where('empresa_id', Auth::user()->empresa_id)->whereNotNull('lider_id')->pluck('lider_id')->unique();
+
+        $lideres = $isAdminTenant
+            ? collect()
+            : ($lideresIds->isNotEmpty()
+                ? User::whereIn('id', $lideresIds)->where('is_active', true)->orderBy('name')->get(['id', 'name'])
+                : User::where('is_active', true)->where('empresa_id', Auth::user()->empresa_id)->orderBy('name')->get(['id', 'name']));
 
         // Dispositivos con token FCM registrado + último acceso Sanctum
         $dispositivosQuery = DB::table('device_tokens')
@@ -57,7 +70,7 @@ class AdminController extends Controller
             });
 
         if (! $isAdminTenant) {
-            $dispositivosQuery->where('users.empresa_id', auth()->user()->empresa_id);
+            $dispositivosQuery->where('users.empresa_id', Auth::user()->empresa_id);
         }
 
         $dispositivos = $dispositivosQuery->select(
@@ -87,7 +100,7 @@ class AdminController extends Controller
             ->orderByDesc('device_tokens.updated_at')
             ->get();
 
-        return view('admin.notificaciones.index', compact('empleados', 'empresas', 'dispositivos'));
+        return view('admin.notificaciones.index', compact('empleados', 'empresas', 'dispositivos', 'lideres'));
     }
 
     public function deleteDeviceToken(int $id): JsonResponse
@@ -101,7 +114,7 @@ class AdminController extends Controller
 
     public function notificacionesEmpleados(Request $request): JsonResponse
     {
-        $isAdminTenant = auth()->user()->admin_tenant;
+        $isAdminTenant = Auth::user()->admin_tenant;
         $empresaId     = (int) $request->input('empresa_id');
 
         if ($isAdminTenant && $empresaId) {
@@ -111,7 +124,7 @@ class AdminController extends Controller
         $query = User::where('is_active', true)->orderBy('name');
 
         if (! $isAdminTenant) {
-            $query->where('empresa_id', auth()->user()->empresa_id);
+            $query->where('empresa_id', Auth::user()->empresa_id);
         }
 
         return response()->json($query->get(['id', 'name', 'email']));
@@ -119,7 +132,7 @@ class AdminController extends Controller
 
     public function sedesIndex(): View
     {
-        $empresas = auth()->user()->admin_tenant
+        $empresas = Auth::user()->admin_tenant
             ? Empresa::orderBy('nombre')->get(['id', 'nombre'])
             : collect();
 
@@ -128,7 +141,7 @@ class AdminController extends Controller
 
     public function empleadosIndex(): View
     {
-        $isAdminTenant = auth()->user()->admin_tenant;
+        $isAdminTenant = Auth::user()->admin_tenant;
 
         $deptos      = $isAdminTenant ? collect() : Departamento::orderBy('nombre')->get();
         $cargos      = $isAdminTenant ? collect() : Cargo::orderBy('nombre')->get();
@@ -142,7 +155,7 @@ class AdminController extends Controller
 
     public function empleadosTemplate(Request $request)
     {
-        $authUser  = auth()->user();
+        $authUser  = Auth::user();
         $empresaId = $authUser->admin_tenant
             ? (int) $request->input('empresa_id', 0)
             : (int) $authUser->empresa_id;
@@ -159,7 +172,7 @@ class AdminController extends Controller
 
     public function empleadosExport(Request $request)
     {
-        $authUser  = auth()->user();
+        $authUser  = Auth::user();
         $empresaId = $authUser->admin_tenant
             ? (int) $request->input('empresa_id', 0)
             : (int) $authUser->empresa_id;
@@ -178,7 +191,7 @@ class AdminController extends Controller
     {
         $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv|max:10240']);
 
-        $authUser = auth()->user();
+        $authUser = Auth::user();
 
         if ($authUser->admin_tenant) {
             $empresaId = (int) $request->input('empresa_id', 0);
@@ -206,7 +219,7 @@ class AdminController extends Controller
     public function empleadosCatalogos(Request $request): JsonResponse
     {
         $empresaId = $request->integer('empresa_id');
-        if ($empresaId && auth()->user()->admin_tenant) {
+        if ($empresaId && Auth::user()->admin_tenant) {
             TenantHelper::switchTenant($empresaId);
         }
         return response()->json([
@@ -219,7 +232,7 @@ class AdminController extends Controller
 
     public function empleadosLideres(Request $request): JsonResponse
     {
-        $authUser  = auth()->user();
+        $authUser  = Auth::user();
         $empresaId = $request->integer('empresa_id') ?: $authUser->empresa_id;
 
         $lideres = User::where('empresa_id', $empresaId)
@@ -233,7 +246,7 @@ class AdminController extends Controller
     public function empleadosSedes(Request $request): JsonResponse
     {
         $empresaId = $request->integer('empresa_id');
-        if ($empresaId && auth()->user()->admin_tenant) {
+        if ($empresaId && Auth::user()->admin_tenant) {
             TenantHelper::switchTenant($empresaId);
         }
         return response()->json([
@@ -686,8 +699,8 @@ class AdminController extends Controller
             'hora_salida'    => 'nullable|date',
         ]);
 
-        \DB::connection('tenant')->transaction(function () use ($visitante, $request) {
-            \DB::connection('tenant')->statement('SET @audit_user_id = ?', [auth()->id()]);
+        DB::connection('tenant')->transaction(function () use ($visitante, $request) {
+            DB::connection('tenant')->statement('SET @audit_user_id = ?', [Auth::id()]);
             $visitante->update([
                 'nombre'         => strtoupper($request->nombre),
                 'cedula'         => $request->cedula,
@@ -707,7 +720,7 @@ class AdminController extends Controller
 
     public function visitantesLog(int $id): JsonResponse
     {
-        $logs = \DB::connection('tenant')->table('tbl_visitantes_log')
+        $logs = DB::connection('tenant')->table('tbl_visitantes_log')
             ->where('visitante_id', $id)
             ->orderBy('created_at', 'desc')
             ->get()
@@ -729,7 +742,7 @@ class AdminController extends Controller
 
     public function empleadosLog(int $id): JsonResponse
     {
-        $logs = \DB::table('tbl_users_log')
+        $logs = DB::table('tbl_users_log')
             ->where('user_id', $id)
             ->orderBy('created_at', 'desc')
             ->get()
@@ -777,7 +790,7 @@ class AdminController extends Controller
 
         $visitante = Visitante::create([
             'sede_id'             => $request->sede_id,
-            'user_id'             => auth()->id(),
+            'user_id'             => Auth::id(),
             'cedula'              => $request->cedula,
             'nombre'              => $request->nombre,
             'telefono'            => $request->telefono,
@@ -816,7 +829,7 @@ class AdminController extends Controller
 
     public function tenantsDescargarSql(): Response
     {
-        abort_unless(auth()->user()->admin_tenant ?? false, 403);
+        abort_unless(Auth::user()->admin_tenant ?? false, 403);
 
         $tablasEstructura = TenantTabla::getTablasEstructura();
         $tablasDatos      = TenantTabla::getTablasDatos();
