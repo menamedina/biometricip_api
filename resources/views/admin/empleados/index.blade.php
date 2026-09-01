@@ -201,6 +201,15 @@
                                 <label class="form-check-label">Activo</label>
                             </div>
                         </div>
+                        <div class="col-12 d-none" id="empTratamientoInfo">
+                            <div id="empTratamientoAlert" class="alert d-flex align-items-start gap-2 py-2 px-3 mb-3" role="alert">
+                                <span id="empTratamientoIcon" class="fs-5"></span>
+                                <div>
+                                    <div class="fw-semibold small" id="empTratamientoTitulo"></div>
+                                    <div class="small text-muted" id="empTratamientoDetalle"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <hr class="mt-0 mb-2">
                     <div class="row">
@@ -379,6 +388,7 @@ function resetForm() {
     document.getElementById('empEditarEmpleado').checked = false;
     document.getElementById('empleadoModalTitle').textContent = 'Nuevo Usuario';
     document.getElementById('conteoUsuariosBadge').classList.add('d-none');
+    document.getElementById('empTratamientoInfo').classList.add('d-none');
     document.querySelectorAll('.emp-sede-check').forEach(cb => cb.checked = false);
     if (isAdminTenant) {
         document.getElementById('empEmpresaId').value = '';
@@ -669,6 +679,53 @@ async function editEmpleado(id, encryptedId) {
         document.getElementById('empCrearEmpleado').checked = !!e.crear_empleado;
         document.getElementById('empEditarEmpleado').checked = !!e.editar_empleado;
         document.getElementById('empleadoModalTitle').textContent = 'Editar Usuario';
+
+        // Tratamiento de datos
+        const tratWrap  = document.getElementById('empTratamientoInfo');
+        const tratAlert = document.getElementById('empTratamientoAlert');
+        const tratIcon  = document.getElementById('empTratamientoIcon');
+        const tratTit   = document.getElementById('empTratamientoTitulo');
+        const tratDet   = document.getElementById('empTratamientoDetalle');
+        tratAlert.className = 'alert d-flex align-items-start gap-2 py-2 px-3 mb-3';
+        if (!e.tratamiento_datos) {
+            tratAlert.classList.add('alert-secondary');
+            tratIcon.textContent = '🔒';
+            tratTit.textContent  = 'Sin tratamiento de datos';
+            tratDet.textContent  = 'El usuario aún no ha aceptado la política de tratamiento de datos.';
+        } else {
+            const dias     = e.dias_tratamiento_dato ?? 365;
+            const aceptoMs = e.tratamiento_datos_at ? new Date(e.tratamiento_datos_at).getTime() : null;
+            if (!aceptoMs) {
+                tratAlert.classList.add('alert-warning');
+                tratIcon.textContent = '⚠️';
+                tratTit.textContent  = 'Tratamiento aceptado (fecha desconocida)';
+                tratDet.textContent  = `Vigencia configurada: ${dias} día(s).`;
+            } else {
+                const vence     = new Date(aceptoMs + dias * 86400000);
+                const hoy       = new Date();
+                const diffMs    = vence - hoy;
+                const diffDias  = Math.ceil(diffMs / 86400000);
+                const fmtVence  = vence.toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' });
+                if (diffDias < 0) {
+                    tratAlert.classList.add('alert-danger');
+                    tratIcon.textContent = '❌';
+                    tratTit.textContent  = 'Tratamiento VENCIDO';
+                    tratDet.textContent  = `Venció el ${fmtVence} (hace ${Math.abs(diffDias)} día(s)). Debe renovarlo al iniciar sesión.`;
+                } else if (diffDias <= 30) {
+                    tratAlert.classList.add('alert-warning');
+                    tratIcon.textContent = '⚠️';
+                    tratTit.textContent  = `Tratamiento próximo a vencer — ${diffDias} día(s) restantes`;
+                    tratDet.textContent  = `Vence el ${fmtVence}.`;
+                } else {
+                    tratAlert.classList.add('alert-success');
+                    tratIcon.textContent = '✅';
+                    tratTit.textContent  = `Tratamiento vigente — ${diffDias} día(s) restantes`;
+                    tratDet.textContent  = `Vence el ${fmtVence}.`;
+                }
+            }
+        }
+        tratWrap.classList.remove('d-none');
+
         fetchConteoUsuarios(e.empresa_id || {{ auth()->user()->empresa_id ?? 'null' }});
         loader.classList.add('d-none');
         form.classList.remove('d-none');

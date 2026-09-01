@@ -46,6 +46,7 @@ Route::post('/auth/reset-password',  [AuthController::class, 'resetPassword']);
 // Autenticadas con tenancy (switch automático al tenant del usuario)
 Route::middleware(['auth:sanctum', 'tenancy'])->group(function () {
     Route::post('/auth/logout',          [AuthController::class, 'logout']);
+    Route::post('/auth/refresh',         [AuthController::class, 'refresh']);
     Route::get('/auth/me',               [AuthController::class, 'me']);
     Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
     Route::post('/auth/upload-photo',    [AuthController::class, 'uploadProfilePhoto']);

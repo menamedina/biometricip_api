@@ -157,6 +157,9 @@
                                     <td>
                                         <div class="fw-semibold">{{ $d->name }}</div>
                                         <small class="text-muted">{{ $d->email }}</small>
+                                        @if($d->empresa_nombre)
+                                            <br><small class="text-secondary">{{ $d->empresa_nombre }}</small>
+                                        @endif
                                     </td>
                                     <td>
                                         @if($d->device_type === 'android')

@@ -43,6 +43,7 @@ class User extends Authenticatable
         'otp_expires_at',
         'tratamiento_datos',
         'tratamiento_datos_at',
+        'dias_tratamiento_dato',
         'exportar_empleados',
         'importar_empleados',
         'crear_empleado',
@@ -64,8 +65,9 @@ class User extends Authenticatable
             'admin_tenant'      => 'boolean',
             'empresa_id'        => 'integer',
             'face_descriptor'   => 'array',
-            'tratamiento_datos' => 'boolean',
+            'tratamiento_datos'    => 'boolean',
             'tratamiento_datos_at' => 'datetime',
+            'dias_tratamiento_dato' => 'integer',
         ];
     }
 

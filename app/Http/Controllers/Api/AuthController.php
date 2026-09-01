@@ -54,11 +54,18 @@ class AuthController extends Controller
             }
 
             // Validar tratamiento de datos
-            if (!$user->tratamiento_datos) {
-                // Primera vez: requiere aceptación
+            $dias = $user->dias_tratamiento_dato ?? 365;
+            $expirado = $user->tratamiento_datos
+                && $user->tratamiento_datos_at
+                && (int) $user->tratamiento_datos_at->addDays($dias)->diffInDays(now()) > 0
+                && $user->tratamiento_datos_at->addDays($dias)->isPast();
+
+            if (!$user->tratamiento_datos || $expirado) {
                 if (!$request->tratamiento_datos) {
                     return response()->json([
-                        'message' => 'Debes aceptar la política de tratamiento de datos.',
+                        'message'              => $expirado
+                            ? 'Tu aceptación del tratamiento de datos expiró hace ' . (int) $user->tratamiento_datos_at->addDays($dias)->diffInDays(now()) . ' día(s). Debes aceptarla nuevamente.'
+                            : 'Debes aceptar la política de tratamiento de datos.',
                         'requires_tratamiento' => true,
                     ], 422);
                 }
@@ -67,7 +74,7 @@ class AuthController extends Controller
                     'tratamiento_datos_at' => now(),
                 ]);
             } else {
-                // Ya aceptó antes: actualizar fecha
+                // Vigente: actualizar fecha de último acceso
                 $user->update(['tratamiento_datos_at' => now()]);
             }
 
@@ -106,6 +113,15 @@ class AuthController extends Controller
         return response()->json([
             'user' => $this->userData($request->user()),
         ]);
+    }
+
+    public function refresh(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $user->currentAccessToken()->delete();
+        $token = $user->createToken('mobile-token')->plainTextToken;
+
+        return response()->json(['token' => $token]);
     }
 
     public function logout(Request $request): JsonResponse
@@ -351,9 +367,11 @@ class AuthController extends Controller
             'horario'         => $horarioData,
             'telefono'        => $user->telefono,
             'foto_url'        => $user->foto_url,
-            'is_active'       => $user->is_active,
-            'empleador'       => $empleadorNombre,
-            'lider'           => $liderNombre,
+            'is_active'              => $user->is_active,
+            'empleador'              => $empleadorNombre,
+            'lider'                  => $liderNombre,
+            'tratamiento_datos_at'   => $user->tratamiento_datos_at?->format('Y-m-d H:i:s'),
+            'dias_tratamiento_dato'  => $user->dias_tratamiento_dato ?? 365,
         ];
     }
 }
