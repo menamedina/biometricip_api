@@ -29,9 +29,9 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-body p-2">
-                    <div class="row g-2 mb-3">
+                    <div class="row g-2 mb-2">
                         <div class="col-md-3">
-                            <input type="text" class="form-control form-control-sm" id="filterSearch" placeholder="Buscar..." oninput="loadEmpleados()">
+                            <input type="text" class="form-control form-control-sm" id="filterSearch" placeholder="Buscar..." oninput="debounceSearch()">
                         </div>
                         @if(auth()->user()->admin_tenant)
                         <div class="col-md-2">
@@ -50,7 +50,17 @@
                                 <option value="">Todas las sedes</option>
                             </select>
                         </div>
+                        <div class="col-md-auto">
+                            <select class="form-select form-select-sm" id="filterEstado" onchange="loadEmpleados()">
+                                <option value="">Todos los estados</option>
+                                <option value="1">Activo</option>
+                                <option value="0">Inactivo</option>
+                            </select>
+                        </div>
                         <div class="col-md-auto ms-auto d-flex align-items-center gap-2">
+                            <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#filtrosExtra" title="Más filtros">
+                                <i class="fa-solid fa-sliders"></i>
+                            </button>
                             <label class="form-label mb-0 text-muted small text-nowrap">Mostrar</label>
                             <select class="form-select form-select-sm" id="perPageSelect" style="width:75px" onchange="loadEmpleados()">
                                 <option value="10">10</option>
@@ -59,6 +69,30 @@
                                 <option value="100">100</option>
                             </select>
                             <span class="text-muted small text-nowrap">registros</span>
+                        </div>
+                    </div>
+                    <div class="collapse" id="filtrosExtra">
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-3">
+                                <select class="form-select form-select-sm" id="filterCargo" onchange="loadEmpleados()">
+                                    <option value="">Todos los cargos</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select form-select-sm" id="filterHorario" onchange="loadEmpleados()">
+                                    <option value="">Todos los horarios</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select form-select-sm" id="filterEmpleador" onchange="loadEmpleados()">
+                                    <option value="">Todos los empleadores</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select form-select-sm" id="filterLider" onchange="loadEmpleados()">
+                                    <option value="">Todos los líderes</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -487,6 +521,11 @@ async function cargarLideres(empresaId = null, selectedId = null) {
     lideres.forEach(l => {
         sel.innerHTML += `<option value="${l.id}" ${l.id == selectedId ? 'selected' : ''}>${l.name}${l.codigo_empleado ? ' ('+l.codigo_empleado+')' : ''}</option>`;
     });
+    const filterLider = document.getElementById('filterLider');
+    if (filterLider) {
+        filterLider.innerHTML = '<option value="">Todos los líderes</option>';
+        lideres.forEach(l => { filterLider.innerHTML += `<option value="${l.id}">${l.name}</option>`; });
+    }
 }
 
 function poblarCatalogos(data, soloModal = false) {
@@ -518,9 +557,18 @@ function poblarCatalogos(data, soloModal = false) {
 
     if (!soloModal) {
         renderSedeOptions(sedes, []);
-        const filterDepto = document.getElementById('filterDepto');
-        filterDepto.innerHTML = '<option value="">Todos los deptos.</option>';
-        deptos.forEach(d => filterDepto.innerHTML += `<option value="${d.id}">${d.nombre}</option>`);
+        const filterDepto     = document.getElementById('filterDepto');
+        const filterCargo     = document.getElementById('filterCargo');
+        const filterHorario   = document.getElementById('filterHorario');
+        const filterEmpleador = document.getElementById('filterEmpleador');
+        filterDepto.innerHTML     = '<option value="">Todos los deptos.</option>';
+        filterCargo.innerHTML     = '<option value="">Todos los cargos</option>';
+        filterHorario.innerHTML   = '<option value="">Todos los horarios</option>';
+        filterEmpleador.innerHTML = '<option value="">Todos los empleadores</option>';
+        deptos.forEach(d      => filterDepto.innerHTML     += `<option value="${d.id}">${d.nombre}</option>`);
+        cargos.forEach(c      => filterCargo.innerHTML     += `<option value="${c.id}">${c.nombre}</option>`);
+        horarios.forEach(h    => filterHorario.innerHTML   += `<option value="${h.id}">${h.nombre}</option>`);
+        empleadores.forEach(e => filterEmpleador.innerHTML += `<option value="${e.id}">${e.nombre}</option>`);
     }
 }
 
@@ -571,16 +619,26 @@ async function loadSedesParaEmpresa(empresaId, selectedIds = []) {
 
 async function loadEmpleados(page = 1) {
     currentPage = page;
-    const search    = document.getElementById('filterSearch').value;
-    const deptoId   = document.getElementById('filterDepto').value;
-    const sedeId    = document.getElementById('filterSede').value;
-    const empresaId = isAdminTenant ? document.getElementById('filterEmpresa').value : '';
+    const search      = document.getElementById('filterSearch').value;
+    const deptoId     = document.getElementById('filterDepto').value;
+    const sedeId      = document.getElementById('filterSede').value;
+    const estado      = document.getElementById('filterEstado').value;
+    const cargoId     = document.getElementById('filterCargo')?.value || '';
+    const horarioId   = document.getElementById('filterHorario')?.value || '';
+    const empleadorId = document.getElementById('filterEmpleador')?.value || '';
+    const liderId     = document.getElementById('filterLider')?.value || '';
+    const empresaId   = isAdminTenant ? document.getElementById('filterEmpresa').value : '';
     const perPage = document.getElementById('perPageSelect').value;
     let url = `/admin/empleados/list?page=${page}&per_page=${perPage}&sort=${sortBy}&dir=${sortDir}`;
-    if (search)    url += `&search=${encodeURIComponent(search)}`;
-    if (deptoId)   url += `&departamento_id=${deptoId}`;
-    if (sedeId)    url += `&sede_id=${sedeId}`;
-    if (empresaId) url += `&empresa_id=${empresaId}`;
+    if (search)      url += `&search=${encodeURIComponent(search)}`;
+    if (deptoId)     url += `&departamento_id=${deptoId}`;
+    if (cargoId)     url += `&cargo_id=${cargoId}`;
+    if (sedeId)      url += `&sede_id=${sedeId}`;
+    if (estado)      url += `&is_active=${estado}`;
+    if (horarioId)   url += `&horario_id=${horarioId}`;
+    if (empleadorId) url += `&empleador_id=${empleadorId}`;
+    if (liderId)     url += `&lider_id=${liderId}`;
+    if (empresaId)   url += `&empresa_id=${empresaId}`;
 
     try {
         const res = await fetch(url);
@@ -1171,6 +1229,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── Visibilidad de columnas (empleados) ─────────────────────────────────────
+var _searchTimer = null;
+function debounceSearch() { clearTimeout(_searchTimer); _searchTimer = setTimeout(() => loadEmpleados(1), 350); }
+
 var COL_VIS_KEY_EMP = 'empleados_col_vis';
 var COL_VIS_DEFS_EMP = [
     { cls: 'col-emp-codigo',       label: 'Código',               default: true,  adminOnly: false },

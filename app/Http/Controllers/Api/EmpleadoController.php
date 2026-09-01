@@ -42,12 +42,31 @@ class EmpleadoController extends Controller
                     ->orWhere('email', 'like', "%{$search}%")
                     ->orWhere('codigo_empleado', 'like', "%{$search}%")
                     ->orWhere('cedula', 'like', "%{$search}%")
+                    ->orWhere('telefono', 'like', "%{$search}%")
+                    ->orWhere('centro_costo', 'like', "%{$search}%")
+                    ->orWhere('ruta', 'like', "%{$search}%")
                     ->orWhereIn('cargo_id', $cargoIds);
             });
         }
 
         if ($request->filled('departamento_id')) {
             $query->where('departamento_id', $request->departamento_id);
+        }
+
+        if ($request->filled('cargo_id')) {
+            $query->where('cargo_id', $request->cargo_id);
+        }
+
+        if ($request->filled('horario_id')) {
+            $query->where('horario_id', $request->horario_id);
+        }
+
+        if ($request->filled('empleador_id')) {
+            $query->where('empleador_id', $request->empleador_id);
+        }
+
+        if ($request->filled('lider_id')) {
+            $query->where('lider_id', $request->lider_id);
         }
 
         if ($request->filled('is_active')) {
