@@ -42,7 +42,10 @@ class AdminController extends Controller
 
         $empleados = $isAdminTenant
             ? collect()
-            : User::where('is_active', true)->orderBy('name')->get(['id', 'name', 'email']);
+            : User::where('is_active', true)
+                  ->where('empresa_id', auth()->user()->empresa_id)
+                  ->orderBy('name')
+                  ->get(['id', 'name', 'email']);
 
         // Dispositivos con token FCM registrado + último acceso Sanctum
         $dispositivosQuery = DB::table('device_tokens')
