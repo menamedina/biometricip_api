@@ -98,16 +98,20 @@ class AdminController extends Controller
 
     public function notificacionesEmpleados(Request $request): JsonResponse
     {
-        $empresaId = (int) $request->input('empresa_id');
-        if ($empresaId) {
+        $isAdminTenant = auth()->user()->admin_tenant;
+        $empresaId     = (int) $request->input('empresa_id');
+
+        if ($isAdminTenant && $empresaId) {
             TenantHelper::switchTenant($empresaId);
         }
 
-        $empleados = User::where('is_active', true)
-            ->orderBy('name')
-            ->get(['id', 'name', 'email']);
+        $query = User::where('is_active', true)->orderBy('name');
 
-        return response()->json($empleados);
+        if (! $isAdminTenant) {
+            $query->where('empresa_id', auth()->user()->empresa_id);
+        }
+
+        return response()->json($query->get(['id', 'name', 'email']));
     }
 
     public function sedesIndex(): View
