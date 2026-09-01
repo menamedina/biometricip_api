@@ -596,42 +596,62 @@ async function recargarHistorial() {
         const res  = await fetch('/admin/notificaciones/historial', { headers: { 'Accept': 'application/json' } });
         const data = await res.json();
 
-        const dt = $('#historialTable').DataTable();
-        dt.clear();
+        // Destruir DataTable antes de modificar el DOM
+        if ($.fn.DataTable.isDataTable('#historialTable')) {
+            $('#historialTable').DataTable().destroy();
+        }
 
-        data.forEach(h => {
-            let badge = '';
-            if (h.tipo_destinatario === 'all')      badge = '<span class="badge bg-primary">Todos</span>';
-            else if (h.tipo_destinatario === 'lider') badge = '<span class="badge bg-info text-dark">Por líder</span>';
-            else badge = `<span class="badge bg-secondary">Seleccionados (${h.total_user_ids})</span>`;
+        const tbody = document.querySelector('#historialTable tbody');
+        if (!tbody) return;
 
-            const btnDest = h.tipo_destinatario !== 'all'
-                ? `<button class="btn btn-sm btn-outline-primary" onclick="verDestinatarios(${h.id}, '${h.titulo.replace(/'/g,"\\'")}')"><i class="ti ti-users"></i></button>`
-                : '<span class="text-muted small">—</span>';
+        if (!data.length) {
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-3">No se han enviado notificaciones aún</td></tr>';
+        } else {
+            tbody.innerHTML = data.map(h => {
+                let badge = '';
+                if (h.tipo_destinatario === 'all')        badge = '<span class="badge bg-primary">Todos</span>';
+                else if (h.tipo_destinatario === 'lider') badge = '<span class="badge bg-info text-dark">Por líder</span>';
+                else badge = `<span class="badge bg-secondary">Seleccionados (${h.total_user_ids})</span>`;
 
-            const fallidos = h.total_fallidos > 0
-                ? `<span class="text-danger fw-semibold">${h.total_fallidos}</span>`
-                : '<span class="text-muted">0</span>';
+                const btnDest = h.tipo_destinatario !== 'all'
+                    ? `<button class="btn btn-sm btn-outline-primary" onclick="verDestinatarios(${h.id}, '${h.titulo.replace(/'/g, "\\'")}')"><i class="ti ti-users"></i></button>`
+                    : '<span class="text-muted small">—</span>';
 
-            dt.row.add([
-                `<span data-order="${h.created_at_ts}"><small>${h.created_at_fmt}</small><br><small class="text-muted">${h.created_at_human}</small></span>`,
-                `<small class="fw-semibold">${h.enviado_por_nombre}</small>`,
-                `<span class="fw-semibold">${h.titulo}</span>`,
-                `<small class="text-muted">${h.mensaje_corto}</small>`,
-                badge,
-                h.total_enviados,
-                `<span class="text-success fw-semibold">${h.total_exitosos}</span>`,
-                fallidos,
-                btnDest,
-            ]);
+                const fallidos = h.total_fallidos > 0
+                    ? `<span class="text-danger fw-semibold">${h.total_fallidos}</span>`
+                    : '<span class="text-muted">0</span>';
+
+                return `<tr>
+                    <td data-order="${h.created_at_ts}">
+                        <small>${h.created_at_fmt}</small><br>
+                        <small class="text-muted">${h.created_at_human}</small>
+                    </td>
+                    <td><small class="fw-semibold">${h.enviado_por_nombre}</small></td>
+                    <td class="fw-semibold">${h.titulo}</td>
+                    <td><small class="text-muted">${h.mensaje_corto}</small></td>
+                    <td>${badge}</td>
+                    <td class="text-center">${h.total_enviados}</td>
+                    <td class="text-center"><span class="text-success fw-semibold">${h.total_exitosos}</span></td>
+                    <td class="text-center">${fallidos}</td>
+                    <td class="text-center">${btnDest}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        // Re-inicializar DataTable
+        $('#historialTable').DataTable({
+            language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
+            pageLength: 10,
+            order: [[0, 'desc']],
+            columnDefs: [{ orderable: false, targets: [3, 8] }],
+            dom: "<'row mb-2'<'col-sm-6'l><'col-sm-6'f>>" +
+                 "<'row'<'col-12'tr>>" +
+                 "<'row mt-2'<'col-sm-5'i><'col-sm-7'p>>",
         });
 
-        dt.draw();
+        const badge = document.getElementById('historialCount');
+        if (badge) badge.textContent = `${data.length} registro(s)`;
 
-        // Actualizar badge contador
-        document.getElementById('historialCount')?.textContent && (
-            document.getElementById('historialCount').textContent = `${data.length} registro(s)`
-        );
     } catch (e) {
         console.error('Error al recargar historial', e);
     }

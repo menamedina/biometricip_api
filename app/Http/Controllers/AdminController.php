@@ -102,7 +102,21 @@ class AdminController extends Controller
             ->orderByDesc('device_tokens.updated_at')
             ->get();
 
-        $historial = PushHistorial::select('tbl_push_historial.*', 'users.name as enviado_por_nombre')
+        $historial = PushHistorial::select(
+                'tbl_push_historial.id',
+                'tbl_push_historial.empresa_id',
+                'tbl_push_historial.enviado_por',
+                'tbl_push_historial.titulo',
+                'tbl_push_historial.mensaje',
+                'tbl_push_historial.tipo_destinatario',
+                'tbl_push_historial.lider_id',
+                'tbl_push_historial.user_ids',
+                'tbl_push_historial.total_enviados',
+                'tbl_push_historial.total_exitosos',
+                'tbl_push_historial.total_fallidos',
+                'tbl_push_historial.created_at',
+                'users.name as enviado_por_nombre'
+            )
             ->join('users', 'users.id', '=', 'tbl_push_historial.enviado_por')
             ->when(! $isAdminTenant, fn ($q) => $q->where('tbl_push_historial.empresa_id', Auth::user()->empresa_id))
             ->orderByDesc('tbl_push_historial.created_at')
@@ -116,7 +130,18 @@ class AdminController extends Controller
     {
         $isAdminTenant = Auth::user()->admin_tenant;
 
-        $historial = PushHistorial::select('tbl_push_historial.*', 'users.name as enviado_por_nombre')
+        $historial = PushHistorial::select(
+                'tbl_push_historial.id',
+                'tbl_push_historial.titulo',
+                'tbl_push_historial.mensaje',
+                'tbl_push_historial.tipo_destinatario',
+                'tbl_push_historial.user_ids',
+                'tbl_push_historial.total_enviados',
+                'tbl_push_historial.total_exitosos',
+                'tbl_push_historial.total_fallidos',
+                'tbl_push_historial.created_at',
+                'users.name as enviado_por_nombre'
+            )
             ->join('users', 'users.id', '=', 'tbl_push_historial.enviado_por')
             ->when(! $isAdminTenant, fn ($q) => $q->where('tbl_push_historial.empresa_id', Auth::user()->empresa_id))
             ->orderByDesc('tbl_push_historial.created_at')
