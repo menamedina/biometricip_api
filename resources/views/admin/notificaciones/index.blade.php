@@ -137,6 +137,74 @@
         </div>
     </div>
 
+    {{-- Historial de notificaciones enviadas --}}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0"><i class="ti ti-history me-1"></i> Historial de notificaciones</h5>
+                    <span class="badge bg-secondary">{{ $historial->count() }} registro(s)</span>
+                </div>
+                <div class="card-body">
+                    @if($historial->count() > 0)
+                    <div class="table-responsive">
+                        <table id="historialTable" class="table table-hover mb-0 w-100">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Título</th>
+                                    <th>Mensaje</th>
+                                    <th>Destinatarios</th>
+                                    <th class="text-center">Enviados</th>
+                                    <th class="text-center">Exitosos</th>
+                                    <th class="text-center">Fallidos</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($historial as $h)
+                                <tr>
+                                    <td data-order="{{ $h->created_at->timestamp }}">
+                                        <small>{{ $h->created_at->format('d/m/Y H:i') }}</small>
+                                        <br><small class="text-muted">{{ $h->created_at->diffForHumans() }}</small>
+                                    </td>
+                                    <td class="fw-semibold">{{ $h->titulo }}</td>
+                                    <td><small class="text-muted">{{ Str::limit($h->mensaje, 80) }}</small></td>
+                                    <td>
+                                        @if($h->tipo_destinatario === 'all')
+                                            <span class="badge bg-primary">Todos</span>
+                                        @elseif($h->tipo_destinatario === 'lider')
+                                            <span class="badge bg-info text-dark">Por líder</span>
+                                        @else
+                                            <span class="badge bg-secondary">Seleccionados ({{ count($h->user_ids ?? []) }})</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">{{ $h->total_enviados }}</td>
+                                    <td class="text-center">
+                                        <span class="text-success fw-semibold">{{ $h->total_exitosos }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        @if($h->total_fallidos > 0)
+                                            <span class="text-danger fw-semibold">{{ $h->total_fallidos }}</span>
+                                        @else
+                                            <span class="text-muted">0</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    @else
+                    <div class="py-4 text-center text-muted">
+                        <i class="ti ti-bell-off" style="font-size:32px;"></i>
+                        <p class="mt-2 mb-0">No se han enviado notificaciones aún</p>
+                    </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- Dispositivos registrados --}}
     <div class="row mt-4">
         <div class="col-12">
@@ -463,6 +531,18 @@ async function sendNotification() {
 // DataTable dispositivos
 const isAdminTenantBlade = {{ auth()->user()->admin_tenant ? 'true' : 'false' }};
 $(document).ready(function () {
+    if ($('#historialTable').length) {
+        $('#historialTable').DataTable({
+            language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
+            pageLength: 10,
+            order: [[0, 'desc']],
+            columnDefs: [{ orderable: false, targets: [2] }],
+            dom: "<'row mb-2'<'col-sm-6'l><'col-sm-6'f>>" +
+                 "<'row'<'col-12'tr>>" +
+                 "<'row mt-2'<'col-sm-5'i><'col-sm-7'p>>",
+        });
+    }
+
     if ($('#dispositivosTable').length) {
         const columnDefs = [{ orderable: false, targets: isAdminTenantBlade ? 7 : 6 }];
 

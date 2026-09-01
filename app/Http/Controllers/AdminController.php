@@ -11,6 +11,7 @@ use App\Imports\CargosImport;
 use App\Imports\DepartamentosImport;
 use App\Imports\EmpleadosImport;
 use App\Models\Cargo;
+use App\Models\PushHistorial;
 use App\Models\Departamento;
 use App\Models\Empleador;
 use App\Models\Empresa;
@@ -100,7 +101,13 @@ class AdminController extends Controller
             ->orderByDesc('device_tokens.updated_at')
             ->get();
 
-        return view('admin.notificaciones.index', compact('empleados', 'empresas', 'dispositivos', 'lideres'));
+        $historial = PushHistorial::with([])
+            ->when(! $isAdminTenant, fn ($q) => $q->where('empresa_id', Auth::user()->empresa_id))
+            ->orderByDesc('created_at')
+            ->limit(100)
+            ->get();
+
+        return view('admin.notificaciones.index', compact('empleados', 'empresas', 'dispositivos', 'lideres', 'historial'));
     }
 
     public function deleteDeviceToken(int $id): JsonResponse
