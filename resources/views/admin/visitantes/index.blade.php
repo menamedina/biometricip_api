@@ -501,7 +501,6 @@ function cargarTabla() {
                             var icono = row.ultima_induccion_vencida ? 'ti-alert-triangle' : 'ti-circle-check';
                             return '<div>' +
                                 '<small class="d-block fw-semibold">' + data + '</small>' +
-                                '<small class="' + color + '"><i class="ti ' + icono + ' me-1"></i>' + row.ultima_induccion_hace + '</small>' +
                                 '</div>';
                         }
                     },
