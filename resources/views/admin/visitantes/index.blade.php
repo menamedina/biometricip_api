@@ -289,6 +289,34 @@
         </div>
     </div>
 </div>
+
+{{-- Botón flotante para visibilidad de columnas --}}
+<div id="colVisBtn" title="Mostrar / ocultar columnas"
+     style="position:fixed;bottom:28px;right:28px;z-index:1055;cursor:pointer;
+            width:48px;height:48px;border-radius:50%;background:#1ab394;
+            display:flex;align-items:center;justify-content:center;
+            box-shadow:0 4px 14px rgba(0,0,0,.25);transition:background .2s;"
+     onmouseenter="this.style.background='#17a07d'" onmouseleave="this.style.background='#1ab394'"
+     onclick="toggleColVisPanel()">
+    <i class="ti ti-settings text-white" style="font-size:22px;"></i>
+</div>
+
+<div id="colVisPanel"
+     style="display:none;position:fixed;bottom:86px;right:28px;z-index:1056;
+            background:#fff;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.18);
+            min-width:220px;padding:14px 16px;">
+    <div class="d-flex align-items-center justify-content-between mb-2">
+        <span class="fw-semibold small">Columnas visibles</span>
+        <button class="btn btn-link btn-sm p-0 text-muted" onclick="toggleColVisPanel()">
+            <i class="ti ti-x"></i>
+        </button>
+    </div>
+    <div id="colVisChecks"></div>
+    <div class="mt-2 pt-2 border-top d-flex gap-2">
+        <button class="btn btn-sm btn-outline-secondary flex-fill" onclick="colVisTodos(true)">Todos</button>
+        <button class="btn btn-sm btn-outline-secondary flex-fill" onclick="colVisTodos(false)">Ninguno</button>
+    </div>
+</div>
 @endsection
 
 @push('styles')
@@ -420,7 +448,7 @@ function cargarTabla() {
                         title: 'EPS / ARL',
                         data: 'eps',
                         render: function(data, type, row) {
-                            return '<small>' + (row.eps || '—') + ' / ' + (row.arl || '—') + '</small>';
+                            return '<small>' + (row.eps || '—') + '<br>' + (row.arl || '—') + '</small>';
                         }
                     },
                     {
@@ -446,16 +474,22 @@ function cargarTabla() {
                         title: 'Entrada',
                         data: 'hora_entrada',
                         render: function(data) {
-                            return '<small>' + formatDT(data) + '</small>';
+                            if (!data) return '—';
+                            var d = new Date(data);
+                            var fecha = String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+                            var hora  = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+                            return '<small>' + fecha + '<br><span class="text-muted">Hora: ' + hora + '</span></small>';
                         }
                     },
                     {
                         title: 'Salida',
                         data: 'hora_salida',
                         render: function(data) {
-                            return data
-                                ? '<small>' + formatDT(data) + '</small>'
-                                : '<span class="badge bg-warning text-dark">En sede</span>';
+                            if (!data) return '<span class="badge bg-warning text-dark">En sede</span>';
+                            var d = new Date(data);
+                            var fecha = String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+                            var hora  = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+                            return '<small>' + fecha + '<br><span class="text-muted">Hora: ' + hora + '</span></small>';
                         }
                     },
                     {
@@ -497,11 +531,11 @@ function cargarTabla() {
                         orderable: false,
                         render: function(data, type, row) {
                             if (!data) return '<span class="text-muted small">Sin registro</span>';
-                            var color = row.ultima_induccion_vencida ? 'text-danger' : 'text-success';
-                            var icono = row.ultima_induccion_vencida ? 'ti-alert-triangle' : 'ti-circle-check';
-                            return '<div>' +
-                                '<small class="d-block fw-semibold">' + data + '</small>' +
-                                '</div>';
+                            var partes = String(data).split(' ');
+                            var fecha = partes[0] || data;
+                            var hora  = partes[1] || '';
+                            return '<small class="fw-semibold">' + fecha + '</small>' +
+                                (hora ? '<br><span class="text-muted small">Hora: ' + hora + '</span>' : '');
                         }
                     },
                     {
@@ -905,6 +939,109 @@ $(document).ready(function() {
         this.value = this.value.toUpperCase();
         this.setSelectionRange(pos, pos);
     });
+    // Cerrar panel al hacer click fuera
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('#colVisPanel, #colVisBtn').length) {
+            $('#colVisPanel').hide();
+        }
+    });
 });
+
+// ── Visibilidad de columnas ──────────────────────────────────────────────────
+var COL_VIS_KEY = 'visitantes_col_vis';
+
+var COL_VIS_DEFS = [
+    { idx: 0,  label: 'Cédula',          default: true  },
+    { idx: 1,  label: 'Nombre',          default: true  },
+    { idx: 2,  label: 'Empresa',         default: true  },
+    { idx: 3,  label: 'Teléfono',        default: false },
+    { idx: 4,  label: 'EPS / ARL',       default: false },
+    { idx: 5,  label: 'Placa',           default: false },
+    { idx: 6,  label: 'Visita a',        default: true  },
+    { idx: 7,  label: 'Sede',            default: true  },
+    { idx: 8,  label: 'Entrada',         default: true  },
+    { idx: 9,  label: 'Salida',          default: true  },
+    { idx: 10, label: 'Tiempo en sede',  default: true  },
+    { idx: 11, label: 'Inducción',       default: true  },
+    { idx: 12, label: 'Última inducción',default: false },
+    { idx: 13, label: 'Observación',     default: true  },
+    { idx: 14, label: 'Foto',            default: true  },
+    { idx: 15, label: 'Acciones',        default: true  },
+];
+
+function colVisGetState() {
+    try {
+        var stored = localStorage.getItem(COL_VIS_KEY);
+        if (stored) return JSON.parse(stored);
+    } catch(e) {}
+    // Estado por defecto
+    var state = {};
+    COL_VIS_DEFS.forEach(function(c) { state[c.idx] = c.default; });
+    return state;
+}
+
+function colVisSaveState(state) {
+    localStorage.setItem(COL_VIS_KEY, JSON.stringify(state));
+}
+
+function colVisApply(state) {
+    if (!tabla) return;
+    COL_VIS_DEFS.forEach(function(c) {
+        tabla.column(c.idx).visible(!!state[c.idx], false);
+    });
+    tabla.columns.adjust().draw(false);
+}
+
+function colVisBuildPanel() {
+    var state = colVisGetState();
+    var container = document.getElementById('colVisChecks');
+    container.innerHTML = '';
+    COL_VIS_DEFS.forEach(function(c) {
+        var checked = state[c.idx] ? 'checked' : '';
+        var div = document.createElement('div');
+        div.className = 'form-check form-switch mb-1';
+        div.innerHTML =
+            '<input class="form-check-input" type="checkbox" id="colvis_' + c.idx + '" ' + checked + ' onchange="colVisToggle(' + c.idx + ', this.checked)">' +
+            '<label class="form-check-label small" for="colvis_' + c.idx + '">' + c.label + '</label>';
+        container.appendChild(div);
+    });
+}
+
+function colVisToggle(idx, visible) {
+    var state = colVisGetState();
+    state[idx] = visible;
+    colVisSaveState(state);
+    colVisApply(state);
+}
+
+function colVisTodos(visible) {
+    var state = colVisGetState();
+    COL_VIS_DEFS.forEach(function(c) { state[c.idx] = visible; });
+    colVisSaveState(state);
+    colVisApply(state);
+    // Actualizar checkboxes sin cerrar el panel
+    COL_VIS_DEFS.forEach(function(c) {
+        var el = document.getElementById('colvis_' + c.idx);
+        if (el) el.checked = visible;
+    });
+}
+
+function toggleColVisPanel() {
+    var panel = document.getElementById('colVisPanel');
+    if (panel.style.display === 'none') {
+        colVisBuildPanel();
+        panel.style.display = 'block';
+    } else {
+        panel.style.display = 'none';
+    }
+}
+
+// Aplicar visibilidad guardada una vez la tabla esté lista
+var _colVisInterval = setInterval(function() {
+    if (tabla) {
+        colVisApply(colVisGetState());
+        clearInterval(_colVisInterval);
+    }
+}, 200);
 </script>
 @endpush
