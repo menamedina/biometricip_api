@@ -244,6 +244,7 @@ div.dataTables_wrapper div.dataTables_info { font-size: .8rem; color: #6c757d; }
 @endpush
 
 @push('scripts')
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script>
@@ -434,9 +435,12 @@ $(document).ready(function () {
             pageLength: 10,
             order: [[isAdminTenantBlade ? 5 : 4, 'desc']],
             columnDefs: columnDefs,
-            dom: "<'row'<'col-sm-6'l><'col-sm-6'f>>" +
+            searching: true,
+            paging: true,
+            info: true,
+            dom: "<'row mb-2'<'col-sm-6'l><'col-sm-6'f>>" +
                  "<'row'<'col-12'tr>>" +
-                 "<'row'<'col-sm-5'i><'col-sm-7'p>>",
+                 "<'row mt-2'<'col-sm-5'i><'col-sm-7'p>>",
         });
     }
 });
