@@ -45,14 +45,19 @@ class AdminController extends Controller
             : User::where('is_active', true)->orderBy('name')->get(['id', 'name', 'email']);
 
         // Dispositivos con token FCM registrado + último acceso Sanctum
-        $dispositivos = DB::table('device_tokens')
+        $dispositivosQuery = DB::table('device_tokens')
             ->join('users', 'device_tokens.user_id', '=', 'users.id')
             ->leftJoin('tbl_empresas', 'users.empresa_id', '=', 'tbl_empresas.id')
             ->leftJoin('personal_access_tokens', function ($join) {
                 $join->on('personal_access_tokens.tokenable_id', '=', 'users.id')
                      ->where('personal_access_tokens.tokenable_type', '=', 'App\\Models\\User');
-            })
-            ->select(
+            });
+
+        if (! $isAdminTenant) {
+            $dispositivosQuery->where('users.empresa_id', auth()->user()->empresa_id);
+        }
+
+        $dispositivos = $dispositivosQuery->select(
                 'device_tokens.id',
                 'users.name',
                 'users.email',
