@@ -66,18 +66,18 @@
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th class="sortable" data-col="codigo_empleado">Código</th>
-                                <th class="sortable" data-col="name">Nombre</th>
-                                <th class="sortable" data-col="cedula">Cédula</th>
-                                <th class="sortable" data-col="email">Email</th>
+                                <th class="sortable col-emp-codigo" data-col="codigo_empleado">Código</th>
+                                <th class="sortable col-emp-nombre" data-col="name">Nombre</th>
+                                <th class="sortable col-emp-cedula" data-col="cedula">Cédula</th>
+                                <th class="sortable col-emp-email" data-col="email">Email</th>
                                 @if(auth()->user()->admin_tenant)
-                                <th>Empresa</th>
+                                <th class="col-emp-empresa">Empresa</th>
                                 @endif
-                                <th class="sortable" data-col="role">Rol</th>
-                                <th>Cargo / Departamento</th>
-                                <th>Sede</th>
-                                <th class="sortable" data-col="is_active">Estado</th>
-                                <th>Rostros</th>
+                                <th class="sortable col-emp-rol" data-col="role">Rol</th>
+                                <th class="col-emp-cargo">Cargo / Departamento</th>
+                                <th class="col-emp-sede">Sede</th>
+                                <th class="sortable col-emp-estado" data-col="is_active">Estado</th>
+                                <th class="col-emp-rostros">Rostros</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -92,6 +92,34 @@
                 </div>
             </div>
         </div>
+    </div>
+</div>
+
+{{-- Botón flotante para visibilidad de columnas --}}
+<div id="colVisBtnEmp" title="Mostrar / ocultar columnas"
+     style="position:fixed;bottom:70px;right:28px;z-index:1055;cursor:pointer;
+            width:48px;height:48px;border-radius:50%;background:#1ab394;
+            display:flex;align-items:center;justify-content:center;
+            box-shadow:0 4px 14px rgba(0,0,0,.25);transition:background .2s;"
+     onmouseenter="this.style.background='#17a07d'" onmouseleave="this.style.background='#1ab394'"
+     onclick="toggleColVisPanelEmp()">
+    <i class="ti ti-settings text-white" style="font-size:22px;"></i>
+</div>
+
+<div id="colVisPanelEmp"
+     style="display:none;position:fixed;bottom:128px;right:28px;z-index:1056;
+            background:#fff;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.18);
+            min-width:220px;padding:14px 16px;">
+    <div class="d-flex align-items-center justify-content-between mb-2">
+        <span class="fw-semibold small">Columnas visibles</span>
+        <button class="btn btn-link btn-sm p-0 text-muted" onclick="toggleColVisPanelEmp()">
+            <i class="ti ti-x"></i>
+        </button>
+    </div>
+    <div id="colVisChecksEmp"></div>
+    <div class="mt-2 pt-2 border-top d-flex gap-2">
+        <button class="btn btn-sm btn-outline-secondary flex-fill" onclick="colVisEmpTodos(true)">Todos</button>
+        <button class="btn btn-sm btn-outline-secondary flex-fill" onclick="colVisEmpTodos(false)">Ninguno</button>
     </div>
 </div>
 
@@ -560,19 +588,19 @@ async function loadEmpleados(page = 1) {
                         : '<span class="badge bg-secondary">Empleado</span>';
                 return `
                 <tr>
-                    <td><span class="badge bg-primary">${e.codigo_empleado || '—'}</span></td>
-                    <td><strong>${e.name || 'N/A'}</strong></td>
-                    <td>${e.cedula || '—'}</td>
-                    <td>${e.email || 'N/A'}</td>
-                    ${isAdminTenant ? `<td><span class="badge bg-light text-dark border">${empresaMap[e.empresa_id] || '—'}</span></td>` : ''}
-                    <td>${rolBadge}</td>
-                    <td>
+                    <td class="col-emp-codigo"><span class="badge bg-primary">${e.codigo_empleado || '—'}</span></td>
+                    <td class="col-emp-nombre"><strong>${e.name || 'N/A'}</strong></td>
+                    <td class="col-emp-cedula">${e.cedula || '—'}</td>
+                    <td class="col-emp-email">${e.email || 'N/A'}</td>
+                    ${isAdminTenant ? `<td class="col-emp-empresa"><span class="badge bg-light text-dark border">${empresaMap[e.empresa_id] || '—'}</span></td>` : ''}
+                    <td class="col-emp-rol">${rolBadge}</td>
+                    <td class="col-emp-cargo">
                         <div>${e.cargo_nombre || (e.cargo_id ? cargoMap[e.cargo_id] : null) || '—'}</div>
                         <small class="text-muted">${e.departamento_nombre || (e.departamento_id ? deptoMap[e.departamento_id] : null) || ''}</small>
                     </td>
-                    <td>${(e.sede_nombres && e.sede_nombres.length) ? e.sede_nombres.map(n => `<span class="badge bg-info text-dark me-1">${n}</span>`).join('') : (e.sede_ids && e.sede_ids.length) ? e.sede_ids.map(id => `<span class="badge bg-info text-dark me-1">${sedeMap[id] || id}</span>`).join('') : '—'}</td>
-                    <td><span class="badge ${e.is_active ? 'bg-success' : 'bg-danger'}">${e.is_active ? 'Activo' : 'Inactivo'}</span></td>
-                    <td>
+                    <td class="col-emp-sede">${(e.sede_nombres && e.sede_nombres.length) ? e.sede_nombres.map(n => `<span class="badge bg-info text-dark me-1">${n}</span>`).join('') : (e.sede_ids && e.sede_ids.length) ? e.sede_ids.map(id => `<span class="badge bg-info text-dark me-1">${sedeMap[id] || id}</span>`).join('') : '—'}</td>
+                    <td class="col-emp-estado"><span class="badge ${e.is_active ? 'bg-success' : 'bg-danger'}">${e.is_active ? 'Activo' : 'Inactivo'}</span></td>
+                    <td class="col-emp-rostros">
                         <button class="btn btn-sm ${e.has_face_descriptor ? 'btn-success' : 'btn-outline-secondary'}" onclick="verRostros(${e.id}, '${(e.name||'').replace(/'/g,'')}')">
                             <i class="fa-solid fa-face-smile"></i>
                             <span class="ms-1">${e.has_face_descriptor ? '✓' : '—'}</span>
@@ -590,6 +618,7 @@ async function loadEmpleados(page = 1) {
         }
         document.getElementById('empleadosInfo').textContent = `${data.total || 0} usuarios`;
         renderPagination(data);
+        colVisEmpApply(colVisEmpGetState());
     } catch(e) { console.error(e); }
 }
 
@@ -1115,6 +1144,94 @@ document.addEventListener('DOMContentLoaded', () => {
     updateSortIcons();
     initCatalogos();
     loadEmpleados();
+    colVisEmpApply(colVisEmpGetState());
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#colVisPanelEmp, #colVisBtnEmp')) {
+            document.getElementById('colVisPanelEmp').style.display = 'none';
+        }
+    });
 });
+
+// ── Visibilidad de columnas (empleados) ─────────────────────────────────────
+var COL_VIS_KEY_EMP = 'empleados_col_vis';
+var COL_VIS_DEFS_EMP = [
+    { cls: 'col-emp-codigo',  label: 'Código',               default: true,  adminOnly: false },
+    { cls: 'col-emp-nombre',  label: 'Nombre',               default: true,  adminOnly: false },
+    { cls: 'col-emp-cedula',  label: 'Cédula',               default: true,  adminOnly: false },
+    { cls: 'col-emp-email',   label: 'Email',                default: true,  adminOnly: false },
+    { cls: 'col-emp-empresa', label: 'Empresa',              default: true,  adminOnly: true  },
+    { cls: 'col-emp-rol',     label: 'Rol',                  default: true,  adminOnly: false },
+    { cls: 'col-emp-cargo',   label: 'Cargo / Departamento', default: true,  adminOnly: false },
+    { cls: 'col-emp-sede',    label: 'Sede',                 default: true,  adminOnly: false },
+    { cls: 'col-emp-estado',  label: 'Estado',               default: true,  adminOnly: false },
+    { cls: 'col-emp-rostros', label: 'Rostros',              default: false, adminOnly: false },
+];
+
+function colVisEmpGetState() {
+    try {
+        var stored = localStorage.getItem(COL_VIS_KEY_EMP);
+        if (stored) return JSON.parse(stored);
+    } catch(e) {}
+    var state = {};
+    COL_VIS_DEFS_EMP.forEach(function(c) { state[c.cls] = c.default; });
+    return state;
+}
+
+function colVisEmpSaveState(state) {
+    localStorage.setItem(COL_VIS_KEY_EMP, JSON.stringify(state));
+}
+
+function colVisEmpApply(state) {
+    COL_VIS_DEFS_EMP.forEach(function(c) {
+        var visible = !!state[c.cls];
+        document.querySelectorAll('.' + c.cls).forEach(function(el) {
+            el.style.display = visible ? '' : 'none';
+        });
+    });
+}
+
+function colVisEmpBuildPanel() {
+    var state = colVisEmpGetState();
+    var container = document.getElementById('colVisChecksEmp');
+    container.innerHTML = '';
+    COL_VIS_DEFS_EMP.forEach(function(c) {
+        if (c.adminOnly && !isAdminTenant) return;
+        var checked = state[c.cls] ? 'checked' : '';
+        var div = document.createElement('div');
+        div.className = 'form-check form-switch mb-1';
+        div.innerHTML =
+            '<input class="form-check-input" type="checkbox" id="colvisEmp_' + c.cls + '" ' + checked + ' onchange="colVisEmpToggle(\'' + c.cls + '\', this.checked)">' +
+            '<label class="form-check-label small" for="colvisEmp_' + c.cls + '">' + c.label + '</label>';
+        container.appendChild(div);
+    });
+}
+
+function colVisEmpToggle(cls, visible) {
+    var state = colVisEmpGetState();
+    state[cls] = visible;
+    colVisEmpSaveState(state);
+    colVisEmpApply(state);
+}
+
+function colVisEmpTodos(visible) {
+    var state = colVisEmpGetState();
+    COL_VIS_DEFS_EMP.forEach(function(c) { state[c.cls] = visible; });
+    colVisEmpSaveState(state);
+    colVisEmpApply(state);
+    COL_VIS_DEFS_EMP.forEach(function(c) {
+        var el = document.getElementById('colvisEmp_' + c.cls);
+        if (el) el.checked = visible;
+    });
+}
+
+function toggleColVisPanelEmp() {
+    var panel = document.getElementById('colVisPanelEmp');
+    if (panel.style.display === 'none') {
+        colVisEmpBuildPanel();
+        panel.style.display = 'block';
+    } else {
+        panel.style.display = 'none';
+    }
+}
 </script>
 @endpush
