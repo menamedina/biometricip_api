@@ -128,39 +128,44 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0"><i class="ti ti-device-mobile-check me-1"></i> Dispositivos con Token FCM</h5>
-                    <span class="badge bg-primary">{{ $dispositivos->count() }} dispositivo(s)</span>
+                    <span class="badge bg-primary" id="dispositivosCount">{{ $dispositivos->count() }} dispositivo(s)</span>
                 </div>
-                <div class="card-body p-0">
+                <div class="card-body">
                     @if($dispositivos->count() > 0)
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
+                        <table id="dispositivosTable" class="table table-hover mb-0 w-100">
                             <thead class="table-light">
                                 <tr>
                                     <th>Empleado</th>
+                                    @if(auth()->user()->admin_tenant)
+                                    <th>Empresa</th>
+                                    @endif
                                     <th>Dispositivo</th>
                                     <th>Token FCM</th>
                                     <th>Registrado</th>
                                     <th>Último acceso</th>
                                     <th>Estado</th>
-                                    <th class="text-center">Acciones</th>
+                                    <th class="text-center no-sort">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($dispositivos as $d)
                                 @php
-                                    $lastAccess = $d->last_access ? \Carbon\Carbon::parse($d->last_access) : null;
+                                    $lastAccess   = $d->last_access ? \Carbon\Carbon::parse($d->last_access) : null;
                                     $tokenUpdated = \Carbon\Carbon::parse($d->token_updated_at);
-                                    $inactive = !$d->token_active;
-                                    $stale = $lastAccess ? $lastAccess->diffInDays(now()) > 30 : $tokenUpdated->diffInDays(now()) > 30;
+                                    $inactive     = !$d->token_active;
+                                    $stale        = $lastAccess ? $lastAccess->diffInDays(now()) > 30 : $tokenUpdated->diffInDays(now()) > 30;
                                 @endphp
                                 <tr id="token-row-{{ $d->id }}" class="{{ $inactive ? 'table-danger' : ($stale ? 'table-warning' : '') }}">
                                     <td>
                                         <div class="fw-semibold">{{ $d->name }}</div>
                                         <small class="text-muted">{{ $d->email }}</small>
-                                        @if($d->empresa_nombre)
-                                            <br><small class="text-secondary">{{ $d->empresa_nombre }}</small>
-                                        @endif
                                     </td>
+                                    @if(auth()->user()->admin_tenant)
+                                    <td>
+                                        <small class="text-secondary">{{ $d->empresa_nombre ?? '—' }}</small>
+                                    </td>
+                                    @endif
                                     <td>
                                         @if($d->device_type === 'android')
                                             <i class="fa-brands fa-android text-success me-1"></i>
@@ -179,10 +184,10 @@
                                             {{ $d->token_active ? 'Activo' : 'Inactivo' }}
                                         </span>
                                     </td>
-                                    <td>
+                                    <td data-order="{{ \Carbon\Carbon::parse($d->token_registered_at)->timestamp }}">
                                         <small>{{ \Carbon\Carbon::parse($d->token_registered_at)->format('d/m/Y H:i') }}</small>
                                     </td>
-                                    <td>
+                                    <td data-order="{{ $lastAccess ? $lastAccess->timestamp : 0 }}">
                                         @if($lastAccess)
                                             <small class="{{ $stale ? 'text-warning fw-semibold' : '' }}">
                                                 {{ $lastAccess->format('d/m/Y H:i') }}
@@ -202,7 +207,7 @@
                                         @endif
                                     </td>
                                     <td class="text-center">
-                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteToken({{ $d->id }}, '{{ $d->name }}')" title="Eliminar token">
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteToken({{ $d->id }}, '{{ addslashes($d->name) }}')" title="Eliminar token">
                                             <i class="ti ti-trash"></i>
                                         </button>
                                     </td>
@@ -212,7 +217,7 @@
                         </table>
                     </div>
                     @else
-                    <div class="p-4 text-center text-muted">
+                    <div class="py-4 text-center text-muted">
                         <i class="ti ti-device-mobile-off" style="font-size: 32px;"></i>
                         <p class="mt-2 mb-0">No hay dispositivos con token FCM registrado</p>
                     </div>
@@ -224,7 +229,23 @@
 </div>
 @endsection
 
+@push('styles')
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
+<style>
+div.dataTables_wrapper div.dataTables_length,
+div.dataTables_wrapper div.dataTables_filter { margin-bottom: 8px; }
+div.dataTables_wrapper div.dataTables_info,
+div.dataTables_wrapper div.dataTables_paginate { margin-top: 8px; }
+div.dataTables_wrapper div.dataTables_length label,
+div.dataTables_wrapper div.dataTables_filter label { font-size: .875rem; color: #6c757d; }
+div.dataTables_wrapper div.dataTables_filter input:focus { border-color: #4F46E5; box-shadow: 0 0 0 .2rem rgba(79,70,229,.15); }
+div.dataTables_wrapper div.dataTables_info { font-size: .8rem; color: #6c757d; }
+</style>
+@endpush
+
 @push('scripts')
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script>
 const csrfToken = '{{ csrf_token() }}';
 const isAdminTenant = {{ auth()->user()->admin_tenant ? 'true' : 'false' }};
@@ -401,6 +422,24 @@ async function sendNotification() {
         btn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Enviar Notificación';
     }
 }
+
+// DataTable dispositivos
+const isAdminTenantBlade = {{ auth()->user()->admin_tenant ? 'true' : 'false' }};
+$(document).ready(function () {
+    if ($('#dispositivosTable').length) {
+        const columnDefs = [{ orderable: false, targets: isAdminTenantBlade ? 7 : 6 }];
+
+        $('#dispositivosTable').DataTable({
+            language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
+            pageLength: 10,
+            order: [[isAdminTenantBlade ? 5 : 4, 'desc']],
+            columnDefs: columnDefs,
+            dom: "<'row'<'col-sm-6'l><'col-sm-6'f>>" +
+                 "<'row'<'col-12'tr>>" +
+                 "<'row'<'col-sm-5'i><'col-sm-7'p>>",
+        });
+    }
+});
 
 async function deleteToken(id, name) {
     const result = await Swal.fire({
