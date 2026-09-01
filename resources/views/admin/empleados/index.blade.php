@@ -70,12 +70,18 @@
                                 <th class="sortable col-emp-nombre" data-col="name">Nombre</th>
                                 <th class="sortable col-emp-cedula" data-col="cedula">Cédula</th>
                                 <th class="sortable col-emp-email" data-col="email">Email</th>
+                                <th class="col-emp-telefono">Teléfono</th>
                                 @if(auth()->user()->admin_tenant)
                                 <th class="col-emp-empresa">Empresa</th>
                                 @endif
                                 <th class="sortable col-emp-rol" data-col="role">Rol</th>
                                 <th class="col-emp-cargo">Cargo / Departamento</th>
                                 <th class="col-emp-sede">Sede</th>
+                                <th class="col-emp-horario">Horario</th>
+                                <th class="col-emp-empleador">Empleador</th>
+                                <th class="col-emp-lider">Líder</th>
+                                <th class="col-emp-centro-costo">Centro de costo</th>
+                                <th class="col-emp-ruta">Ruta</th>
                                 <th class="sortable col-emp-estado" data-col="is_active">Estado</th>
                                 <th class="col-emp-rostros">Rostros</th>
                                 <th>Acciones</th>
@@ -381,10 +387,13 @@ let currentPage = 1;
 let sortBy  = 'name';
 let sortDir = 'asc';
 
-let deptoMap   = {};
-let cargoMap   = {};
-let sedeMap    = {};
-let empresaMap = {};
+let deptoMap      = {};
+let cargoMap      = {};
+let sedeMap       = {};
+let empresaMap    = {};
+let horarioMap    = {};
+let empleadorMap  = {};
+let liderMap      = {};
 let currentEmpleadoId = null;
 
 async function fetchConteoUsuarios(empresaId) {
@@ -471,6 +480,7 @@ async function cargarLideres(empresaId = null, selectedId = null) {
     const res = await fetch(url);
     if (!res.ok) return;
     const lideres = (await res.json()).data || [];
+    liderMap = Object.fromEntries(lideres.map(l => [l.id, l.name]));
     const sel = document.getElementById('empLider');
     sel.innerHTML = '<option value="">— Sin líder —</option>';
     lideres.forEach(l => {
@@ -485,9 +495,11 @@ function poblarCatalogos(data, soloModal = false) {
     const sedes       = data.sedes         || [];
     const empleadores = data.empleadores   || [];
 
-    deptoMap = Object.fromEntries(deptos.map(d => [d.id, d.nombre]));
-    cargoMap = Object.fromEntries(cargos.map(c => [c.id, c.nombre]));
-    sedeMap  = Object.fromEntries(sedes.map(s => [s.id, s.nombre]));
+    deptoMap     = Object.fromEntries(deptos.map(d => [d.id, d.nombre]));
+    cargoMap     = Object.fromEntries(cargos.map(c => [c.id, c.nombre]));
+    sedeMap      = Object.fromEntries(sedes.map(s => [s.id, s.nombre]));
+    horarioMap   = Object.fromEntries(horarios.map(h => [h.id, h.nombre]));
+    empleadorMap = Object.fromEntries(empleadores.map(e => [e.id, e.nombre]));
 
     const selDepto     = document.getElementById('empDepartamento');
     const selCargo     = document.getElementById('empCargo');
@@ -592,6 +604,7 @@ async function loadEmpleados(page = 1) {
                     <td class="col-emp-nombre"><strong>${e.name || 'N/A'}</strong></td>
                     <td class="col-emp-cedula">${e.cedula || '—'}</td>
                     <td class="col-emp-email">${e.email || 'N/A'}</td>
+                    <td class="col-emp-telefono">${e.telefono || '—'}</td>
                     ${isAdminTenant ? `<td class="col-emp-empresa"><span class="badge bg-light text-dark border">${empresaMap[e.empresa_id] || '—'}</span></td>` : ''}
                     <td class="col-emp-rol">${rolBadge}</td>
                     <td class="col-emp-cargo">
@@ -599,6 +612,11 @@ async function loadEmpleados(page = 1) {
                         <small class="text-muted">${e.departamento_nombre || (e.departamento_id ? deptoMap[e.departamento_id] : null) || ''}</small>
                     </td>
                     <td class="col-emp-sede">${(e.sede_nombres && e.sede_nombres.length) ? e.sede_nombres.map(n => `<span class="badge bg-info text-dark me-1">${n}</span>`).join('') : (e.sede_ids && e.sede_ids.length) ? e.sede_ids.map(id => `<span class="badge bg-info text-dark me-1">${sedeMap[id] || id}</span>`).join('') : '—'}</td>
+                    <td class="col-emp-horario">${e.horario_id ? (horarioMap[e.horario_id] || e.horario_id) : '—'}</td>
+                    <td class="col-emp-empleador">${e.empleador_id ? (empleadorMap[e.empleador_id] || '—') : '—'}</td>
+                    <td class="col-emp-lider">${e.lider_id ? (liderMap[e.lider_id] || '—') : '—'}</td>
+                    <td class="col-emp-centro-costo">${e.centro_costo || '—'}</td>
+                    <td class="col-emp-ruta">${e.ruta || '—'}</td>
                     <td class="col-emp-estado"><span class="badge ${e.is_active ? 'bg-success' : 'bg-danger'}">${e.is_active ? 'Activo' : 'Inactivo'}</span></td>
                     <td class="col-emp-rostros">
                         <button class="btn btn-sm ${e.has_face_descriptor ? 'btn-success' : 'btn-outline-secondary'}" onclick="verRostros(${e.id}, '${(e.name||'').replace(/'/g,'')}')">
@@ -1155,16 +1173,22 @@ document.addEventListener('DOMContentLoaded', () => {
 // ── Visibilidad de columnas (empleados) ─────────────────────────────────────
 var COL_VIS_KEY_EMP = 'empleados_col_vis';
 var COL_VIS_DEFS_EMP = [
-    { cls: 'col-emp-codigo',  label: 'Código',               default: true,  adminOnly: false },
-    { cls: 'col-emp-nombre',  label: 'Nombre',               default: true,  adminOnly: false },
-    { cls: 'col-emp-cedula',  label: 'Cédula',               default: true,  adminOnly: false },
-    { cls: 'col-emp-email',   label: 'Email',                default: true,  adminOnly: false },
-    { cls: 'col-emp-empresa', label: 'Empresa',              default: true,  adminOnly: true  },
-    { cls: 'col-emp-rol',     label: 'Rol',                  default: true,  adminOnly: false },
-    { cls: 'col-emp-cargo',   label: 'Cargo / Departamento', default: true,  adminOnly: false },
-    { cls: 'col-emp-sede',    label: 'Sede',                 default: true,  adminOnly: false },
-    { cls: 'col-emp-estado',  label: 'Estado',               default: true,  adminOnly: false },
-    { cls: 'col-emp-rostros', label: 'Rostros',              default: false, adminOnly: false },
+    { cls: 'col-emp-codigo',       label: 'Código',               default: true,  adminOnly: false },
+    { cls: 'col-emp-nombre',       label: 'Nombre',               default: true,  adminOnly: false },
+    { cls: 'col-emp-cedula',       label: 'Cédula',               default: true,  adminOnly: false },
+    { cls: 'col-emp-email',        label: 'Email',                default: true,  adminOnly: false },
+    { cls: 'col-emp-telefono',     label: 'Teléfono',             default: false, adminOnly: false },
+    { cls: 'col-emp-empresa',      label: 'Empresa',              default: true,  adminOnly: true  },
+    { cls: 'col-emp-rol',          label: 'Rol',                  default: true,  adminOnly: false },
+    { cls: 'col-emp-cargo',        label: 'Cargo / Departamento', default: true,  adminOnly: false },
+    { cls: 'col-emp-sede',         label: 'Sede',                 default: true,  adminOnly: false },
+    { cls: 'col-emp-horario',      label: 'Horario',              default: false, adminOnly: false },
+    { cls: 'col-emp-empleador',    label: 'Empleador',            default: false, adminOnly: false },
+    { cls: 'col-emp-lider',        label: 'Líder',                default: false, adminOnly: false },
+    { cls: 'col-emp-centro-costo', label: 'Centro de costo',      default: false, adminOnly: false },
+    { cls: 'col-emp-ruta',         label: 'Ruta',                 default: false, adminOnly: false },
+    { cls: 'col-emp-estado',       label: 'Estado',               default: true,  adminOnly: false },
+    { cls: 'col-emp-rostros',      label: 'Rostros',              default: false, adminOnly: false },
 ];
 
 function colVisEmpGetState() {
