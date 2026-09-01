@@ -112,6 +112,34 @@ class AdminController extends Controller
         return view('admin.notificaciones.index', compact('empleados', 'empresas', 'dispositivos', 'lideres', 'historial'));
     }
 
+    public function notificacionesHistorial(): JsonResponse
+    {
+        $isAdminTenant = Auth::user()->admin_tenant;
+
+        $historial = PushHistorial::select('tbl_push_historial.*', 'users.name as enviado_por_nombre')
+            ->join('users', 'users.id', '=', 'tbl_push_historial.enviado_por')
+            ->when(! $isAdminTenant, fn ($q) => $q->where('tbl_push_historial.empresa_id', Auth::user()->empresa_id))
+            ->orderByDesc('tbl_push_historial.created_at')
+            ->limit(100)
+            ->get()
+            ->map(fn ($h) => [
+                'id'                => $h->id,
+                'created_at_ts'     => $h->created_at->timestamp,
+                'created_at_fmt'    => $h->created_at->format('d/m/Y H:i'),
+                'created_at_human'  => $h->created_at->diffForHumans(),
+                'enviado_por_nombre'=> $h->enviado_por_nombre,
+                'titulo'            => $h->titulo,
+                'mensaje_corto'     => \Str::limit($h->mensaje, 80),
+                'tipo_destinatario' => $h->tipo_destinatario,
+                'total_user_ids'    => count($h->user_ids ?? []),
+                'total_enviados'    => $h->total_enviados,
+                'total_exitosos'    => $h->total_exitosos,
+                'total_fallidos'    => $h->total_fallidos,
+            ]);
+
+        return response()->json($historial);
+    }
+
     public function notificacionesDestinatarios(int $id): JsonResponse
     {
         $destinatarios = PushHistorialDetalle::select(

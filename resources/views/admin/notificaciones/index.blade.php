@@ -143,7 +143,7 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0"><i class="ti ti-history me-1"></i> Historial de notificaciones</h5>
-                    <span class="badge bg-secondary">{{ $historial->count() }} registro(s)</span>
+                    <span class="badge bg-secondary" id="historialCount">{{ $historial->count() }} registro(s)</span>
                 </div>
                 <div class="card-body">
                     @if($historial->count() > 0)
@@ -546,6 +546,7 @@ async function sendNotification() {
             document.getElementById('previewTitle').textContent = 'Título de la notificación';
             document.getElementById('previewBody').textContent = 'Mensaje de la notificación';
             document.getElementById('charCount').textContent = '0';
+            recargarHistorial();
         } else {
             Swal.fire('Error', data.message || 'Error al enviar la notificación.', 'error');
         }
@@ -589,6 +590,52 @@ $(document).ready(function () {
         });
     }
 });
+
+async function recargarHistorial() {
+    try {
+        const res  = await fetch('/admin/notificaciones/historial', { headers: { 'Accept': 'application/json' } });
+        const data = await res.json();
+
+        const dt = $('#historialTable').DataTable();
+        dt.clear();
+
+        data.forEach(h => {
+            let badge = '';
+            if (h.tipo_destinatario === 'all')      badge = '<span class="badge bg-primary">Todos</span>';
+            else if (h.tipo_destinatario === 'lider') badge = '<span class="badge bg-info text-dark">Por líder</span>';
+            else badge = `<span class="badge bg-secondary">Seleccionados (${h.total_user_ids})</span>`;
+
+            const btnDest = h.tipo_destinatario !== 'all'
+                ? `<button class="btn btn-sm btn-outline-primary" onclick="verDestinatarios(${h.id}, '${h.titulo.replace(/'/g,"\\'")}')"><i class="ti ti-users"></i></button>`
+                : '<span class="text-muted small">—</span>';
+
+            const fallidos = h.total_fallidos > 0
+                ? `<span class="text-danger fw-semibold">${h.total_fallidos}</span>`
+                : '<span class="text-muted">0</span>';
+
+            dt.row.add([
+                `<span data-order="${h.created_at_ts}"><small>${h.created_at_fmt}</small><br><small class="text-muted">${h.created_at_human}</small></span>`,
+                `<small class="fw-semibold">${h.enviado_por_nombre}</small>`,
+                `<span class="fw-semibold">${h.titulo}</span>`,
+                `<small class="text-muted">${h.mensaje_corto}</small>`,
+                badge,
+                h.total_enviados,
+                `<span class="text-success fw-semibold">${h.total_exitosos}</span>`,
+                fallidos,
+                btnDest,
+            ]);
+        });
+
+        dt.draw();
+
+        // Actualizar badge contador
+        document.getElementById('historialCount')?.textContent && (
+            document.getElementById('historialCount').textContent = `${data.length} registro(s)`
+        );
+    } catch (e) {
+        console.error('Error al recargar historial', e);
+    }
+}
 
 async function verDestinatarios(id, titulo) {
     document.getElementById('modalNotifTitulo').textContent = titulo;
