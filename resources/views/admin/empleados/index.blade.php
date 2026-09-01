@@ -436,7 +436,7 @@ function resetForm() {
     }
 }
 
-function initCatalogos() {
+async function initCatalogos() {
     if (isAdminTenant) {
         @foreach($empresas as $emp)
         empresaMap[{{ $emp->id }}] = '{{ addslashes($emp->nombre) }}';
@@ -454,6 +454,7 @@ function initCatalogos() {
         sedes:         @json($sedes),
         empleadores:   @json($empleadores),
     });
+    await cargarLideres();
 }
 
 async function loadCatalogosParaEmpresa(empresaId) {
@@ -1160,8 +1161,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     updateSortIcons();
-    initCatalogos();
-    loadEmpleados();
+    initCatalogos().then(() => loadEmpleados());
     colVisEmpApply(colVisEmpGetState());
     document.addEventListener('click', function(e) {
         if (!e.target.closest('#colVisPanelEmp, #colVisBtnEmp')) {
