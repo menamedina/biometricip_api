@@ -582,6 +582,7 @@ class EmpleadoController extends Controller
         return response()->json([
             'tiene_imagen'     => (bool) $imagen,
             'imagen_thumbnail' => $imagen?->imagen_thumbnail,
+            'imagen_base64'    => $imagen?->imagen_base64,
         ]);
     }
 

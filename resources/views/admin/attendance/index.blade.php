@@ -197,7 +197,7 @@ async function loadRecords(page = 1) {
                     <td class="col-att-empleado">
                         <div class="d-flex align-items-center gap-2">
                             ${r.foto_perfil_thumbnail
-                                ? `<img src="${r.foto_perfil_thumbnail}" onclick="verFotoPerfil('${(r.user?.name||'').replace(/'/g,'')}','${r.foto_perfil_thumbnail}')" style="width:32px;height:32px;object-fit:cover;border-radius:50%;border:2px solid #1ab394;flex-shrink:0;cursor:pointer;" title="Ver foto de perfil" alt="">`
+                                ? `<img src="${r.foto_perfil_thumbnail}" onclick="verFotoPerfil('${(r.user?.name||'').replace(/'/g,'')}','${r.foto_perfil_thumbnail}',${r.user_id})" style="width:32px;height:32px;object-fit:cover;border-radius:50%;border:2px solid #1ab394;flex-shrink:0;cursor:pointer;" title="Ver foto de perfil" alt="">`
                                 : `<span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#e9ecef;color:#adb5bd;font-size:15px;flex-shrink:0;"><i class="fa-solid fa-user"></i></span>`
                             }
                             <div>
@@ -391,10 +391,16 @@ function toggleColVisPanelAtt() {
     }
 }
 
-function verFotoPerfil(nombre, thumbnail) {
+async function verFotoPerfil(nombre, thumbnail, userId) {
+    const img = document.getElementById('modalFotoPerfilImg');
     document.getElementById('modalFotoPerfilNombre').textContent = nombre;
-    document.getElementById('modalFotoPerfilImg').src = thumbnail;
+    img.src = thumbnail; // muestra thumbnail mientras carga la completa
     new bootstrap.Modal(document.getElementById('modalFotoPerfil')).show();
+    try {
+        const res  = await fetch(`/admin/empleados/${userId}/imagen-perfil`);
+        const data = await res.json();
+        if (data.imagen_base64) img.src = data.imagen_base64;
+    } catch(e) {}
 }
 </script>
 @endpush
