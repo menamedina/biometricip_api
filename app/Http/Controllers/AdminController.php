@@ -635,7 +635,12 @@ class AdminController extends Controller
                     'Placa'         => $v->placa,
                     'Entrada'       => $entrada->format('d/m/Y H:i'),
                     'Salida'        => $salida?->format('d/m/Y H:i') ?? 'En sede',
-                    'Tiempo en sede'=> $h > 0 ? "{$h}h {$m}m" : "{$m}m",
+                    'Tiempo en sede'  => $h > 0 ? "{$h}h {$m}m" : "{$m}m",
+                    'Observación'     => $v->observacion,
+                    'Inducción'       => $v->induccion_requerida ? 'Sí' : 'No',
+                    'Fecha Inducción' => $v->getRawOriginal('induccion_fecha')
+                        ? \Carbon\Carbon::parse($v->getRawOriginal('induccion_fecha'), $tz)->format('d/m/Y H:i')
+                        : '',
                 ];
             });
 

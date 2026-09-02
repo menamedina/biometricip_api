@@ -39,7 +39,7 @@ class SimpleCollectionExport implements FromArray, WithHeadings, WithStyles, Wit
         return [
             AfterSheet::class => function (AfterSheet $event) {
                 $ws = $event->sheet->getDelegate();
-                foreach (range('A', 'L') as $col) {
+                foreach (range('A', 'O') as $col) {
                     $ws->getColumnDimension($col)->setAutoSize(true);
                 }
                 $ws->freezePane('A2');
