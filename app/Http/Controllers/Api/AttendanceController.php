@@ -11,6 +11,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class AttendanceController extends Controller
@@ -130,18 +131,13 @@ class AttendanceController extends Controller
             }
             $qrValidado = false;
         } elseif ($request->metodo === 'foto') {
-            // Buscar la sede activa más cercana a las coordenadas del usuario
-            $sedes = Sede::where('is_active', true)->get();
-            $menorDistancia = PHP_INT_MAX;
-            foreach ($sedes as $s) {
-                $d = $this->calcularDistancia((float) $request->lat, (float) $request->lng, (float) $s->lat, (float) $s->lng);
-                if ($d < $menorDistancia) {
-                    $menorDistancia = $d;
-                    $sede = $s;
-                }
+            // Usar la sede enviada por la app (seleccionada por el usuario)
+            if (!$request->filled('sede_id')) {
+                return response()->json(['message' => 'Sede no especificada.'], 422);
             }
+            $sede = Sede::where('id', $request->sede_id)->where('is_active', true)->first();
             if (!$sede) {
-                return response()->json(['message' => 'No hay sedes activas registradas.'], 422);
+                return response()->json(['message' => 'Sede no encontrada o inactiva.'], 422);
             }
             $qrValidado = false;
         } else {
@@ -643,7 +639,7 @@ class AttendanceController extends Controller
         if ($request->has('sede_id'))        $data['sede_id']     = $request->sede_id;
         if ($request->has('observacion'))    $data['observacion'] = $request->observacion;
 
-        \DB::connection('tenant')->statement('SET @audit_user_id = ?', [$request->user()->id]);
+        DB::connection('tenant')->statement('SET @audit_user_id = ?', [$request->user()->id]);
         $record->update($data);
 
         return response()->json([
@@ -666,8 +662,8 @@ class AttendanceController extends Controller
         $horario = $empleado->horario_id ? Horario::find($empleado->horario_id) : null;
 
         $record = null;
-        \DB::connection('tenant')->transaction(function () use ($request, $empleado, $horario, &$record) {
-            \DB::connection('tenant')->statement('SET @audit_user_id = ?', [$request->user()->id]);
+        DB::connection('tenant')->transaction(function () use ($request, $empleado, $horario, &$record) {
+            DB::connection('tenant')->statement('SET @audit_user_id = ?', [$request->user()->id]);
             $record = AttendanceRecord::create([
                 'user_id'               => $empleado->id,
                 'sede_id'               => $request->sede_id,

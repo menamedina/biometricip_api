@@ -356,8 +356,8 @@ class EmpleadoController extends Controller
         }
         unset($data['sede_ids']);
 
-        \DB::transaction(function () use ($empleado, $data) {
-            \DB::statement('SET @audit_user_id = ?', [auth()->id()]);
+        DB::transaction(function () use ($empleado, $data) {
+            DB::statement('SET @audit_user_id = ?', [auth()->id()]);
             $empleado->update($data);
         });
 
@@ -400,8 +400,8 @@ class EmpleadoController extends Controller
         }
 
         $empleado = $query->firstOrFail();
-        \DB::transaction(function () use ($empleado) {
-            \DB::statement('SET @audit_user_id = ?', [auth()->id()]);
+        DB::transaction(function () use ($empleado) {
+            DB::statement('SET @audit_user_id = ?', [auth()->id()]);
             $empleado->update(['is_active' => false]);
         });
 
