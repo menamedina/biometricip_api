@@ -77,7 +77,7 @@ class EmpleadoController extends Controller
             $query->whereHas('userSedes', fn($q) => $q->where('sede_id', $request->sede_id));
         }
 
-        $allowed = ['name','email','cedula','codigo_empleado','role','departamento_id','cargo_id','is_active','created_at'];
+        $allowed = ['name','email','cedula','codigo_empleado','role','departamento_id','cargo_id','horario_id','empleador_id','lider_id','telefono','centro_costo','ruta','is_active','created_at'];
         $sortCol = in_array($request->sort, $allowed) ? $request->sort : 'name';
         $sortDir = $request->dir === 'desc' ? 'desc' : 'asc';
 

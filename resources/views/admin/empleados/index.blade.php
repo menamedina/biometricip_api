@@ -104,18 +104,18 @@
                                 <th class="sortable col-emp-nombre" data-col="name">Nombre</th>
                                 <th class="sortable col-emp-cedula" data-col="cedula">Cédula</th>
                                 <th class="sortable col-emp-email" data-col="email">Email</th>
-                                <th class="col-emp-telefono">Teléfono</th>
+                                <th class="sortable col-emp-telefono" data-col="telefono">Teléfono</th>
                                 @if(auth()->user()->admin_tenant)
                                 <th class="col-emp-empresa">Empresa</th>
                                 @endif
                                 <th class="sortable col-emp-rol" data-col="role">Rol</th>
-                                <th class="col-emp-cargo">Cargo / Departamento</th>
+                                <th class="sortable col-emp-cargo" data-col="cargo_id">Cargo / Departamento</th>
                                 <th class="col-emp-sede">Sede</th>
-                                <th class="col-emp-horario">Horario</th>
-                                <th class="col-emp-empleador">Empleador</th>
-                                <th class="col-emp-lider">Líder</th>
-                                <th class="col-emp-centro-costo">Centro de costo</th>
-                                <th class="col-emp-ruta">Ruta</th>
+                                <th class="sortable col-emp-horario" data-col="horario_id">Horario</th>
+                                <th class="sortable col-emp-empleador" data-col="empleador_id">Empleador</th>
+                                <th class="sortable col-emp-lider" data-col="lider_id">Líder</th>
+                                <th class="sortable col-emp-centro-costo" data-col="centro_costo">Centro de costo</th>
+                                <th class="sortable col-emp-ruta" data-col="ruta">Ruta</th>
                                 <th class="sortable col-emp-estado" data-col="is_active">Estado</th>
                                 <th class="col-emp-rostros">Rostros</th>
                                 <th>Acciones</th>
