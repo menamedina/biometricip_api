@@ -109,7 +109,13 @@ class EmpleadoController extends Controller
             try { \App\Helpers\TenantHelper::switchTenant((int) session('empresa_id')); } catch (\Throwable) {}
         }
 
-        $empleados->getCollection()->transform(function ($user) use ($nombresPorEmpresa) {
+        // Thumbnails de foto de perfil (1 sola consulta para toda la página)
+        $userIds    = $empleados->pluck('id')->all();
+        $thumbnails = UserImagen::whereIn('user_id', $userIds)
+            ->get(['user_id', 'imagen_thumbnail'])
+            ->keyBy('user_id');
+
+        $empleados->getCollection()->transform(function ($user) use ($nombresPorEmpresa, $thumbnails) {
             $data  = $user->toArray();
             $data['sede_ids']            = $user->userSedes->pluck('sede_id')->values()->all();
             $data['encrypted_id']        = Crypt::encryptString((string) $user->id);
@@ -117,6 +123,7 @@ class EmpleadoController extends Controller
             $data['cargo_nombre']        = $maps['cargos']->get($user->cargo_id);
             $data['departamento_nombre'] = $maps['deptos']->get($user->departamento_id);
             $data['sede_nombres']        = collect($data['sede_ids'])->map(fn($id) => $maps['sedes']->get($id))->filter()->values()->all();
+            $data['foto_perfil_thumbnail'] = $thumbnails->get($user->id)?->imagen_thumbnail;
             return $data;
         });
 

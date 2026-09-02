@@ -418,6 +418,21 @@
         </div>
     </div>
 </div>
+{{-- Modal previsualización foto de perfil --}}
+<div class="modal fade" id="modalFotoPerfilEmp" tabindex="-1">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title mb-0" id="modalFotoPerfilEmpNombre"></h6>
+                <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-2 text-center">
+                <img id="modalFotoPerfilEmpImg" src="" alt="Foto de perfil"
+                     style="width:100%;max-width:260px;border-radius:12px;object-fit:cover;">
+            </div>
+        </div>
+    </div>
+</div>
 {{-- Modal Log Empleado --}}
 <div class="modal fade" id="modalLogEmpleado" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
@@ -712,7 +727,15 @@ async function loadEmpleados(page = 1) {
                 return `
                 <tr>
                     <td class="col-emp-codigo"><span class="badge bg-primary">${e.codigo_empleado || '—'}</span></td>
-                    <td class="col-emp-nombre"><strong>${e.name || 'N/A'}</strong></td>
+                    <td class="col-emp-nombre">
+                        <div class="d-flex align-items-center gap-2">
+                            ${e.foto_perfil_thumbnail
+                                ? `<img src="${e.foto_perfil_thumbnail}" onclick="verFotoPerfilEmp('${(e.name||'').replace(/'/g,'')}',${e.id})" style="width:32px;height:32px;object-fit:cover;border-radius:50%;border:2px solid #1ab394;flex-shrink:0;cursor:pointer;" title="Ver foto" alt="">`
+                                : `<span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#e9ecef;color:#adb5bd;font-size:15px;flex-shrink:0;"><i class="fa-solid fa-user"></i></span>`
+                            }
+                            <strong>${e.name || 'N/A'}</strong>
+                        </div>
+                    </td>
                     <td class="col-emp-cedula">${e.cedula || '—'}</td>
                     <td class="col-emp-email">${e.email || 'N/A'}</td>
                     <td class="col-emp-telefono">${e.telefono || '—'}</td>
@@ -1364,6 +1387,19 @@ function colVisEmpTodos(visible) {
         var el = document.getElementById('colvisEmp_' + c.cls);
         if (el) el.checked = visible;
     });
+}
+
+async function verFotoPerfilEmp(nombre, userId) {
+    const img = document.getElementById('modalFotoPerfilEmpImg');
+    document.getElementById('modalFotoPerfilEmpNombre').textContent = nombre;
+    img.src = '';
+    new bootstrap.Modal(document.getElementById('modalFotoPerfilEmp')).show();
+    try {
+        const res  = await fetch(`/admin/empleados/${userId}/imagen-perfil`);
+        const data = await res.json();
+        if (data.imagen_base64) img.src = data.imagen_base64;
+        else if (data.imagen_thumbnail) img.src = data.imagen_thumbnail;
+    } catch(e) {}
 }
 
 function toggleColVisPanelEmp() {
