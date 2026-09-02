@@ -601,6 +601,16 @@ class AdminController extends Controller
         if ($request->filled('sede_id'))  $query->where('sede_id', $request->sede_id);
         if ($request->filled('desde'))    $query->whereDate('hora_entrada', '>=', $request->desde);
         if ($request->filled('hasta'))    $query->whereDate('hora_entrada', '<=', $request->hasta);
+
+        // DEBUG TEMPORAL — eliminar después
+        \Log::info('[visitantesList] params', [
+            'desde'   => $request->desde,
+            'hasta'   => $request->hasta,
+            'sede_id' => $request->sede_id,
+            'db'      => DB::connection('tenant')->getDatabaseName(),
+            'sql'     => $query->toSql(),
+            'bindings'=> $query->getBindings(),
+        ]);
         if ($request->filled('search')) {
             $s = $request->search;
             $query->where(fn ($q) => $q->where('cedula', 'like', "%{$s}%")->orWhere('nombre', 'like', "%{$s}%"));
