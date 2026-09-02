@@ -26,8 +26,11 @@
 
     {{-- Filtros --}}
     <div class="card mb-3">
-        <div class="card-body p-3">
-            <div class="row g-2 align-items-end">
+        <div class="card-body p-2">
+            <div class="row g-2 mb-2 align-items-end">
+                <div class="col-md-3">
+                    <input type="text" class="form-control form-control-sm" id="filterSearch" placeholder="Buscar...">
+                </div>
                 <div class="col-md-2">
                     <label class="form-label form-label-sm mb-1">Desde</label>
                     <input type="date" id="dateFrom" class="form-control form-control-sm">
@@ -36,22 +39,27 @@
                     <label class="form-label form-label-sm mb-1">Hasta</label>
                     <input type="date" id="dateTo" class="form-control form-control-sm">
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label form-label-sm mb-1">Empleado</label>
-                    <select id="filterEmpleado" class="form-select form-select-sm">
-                        <option value="">Todos</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label form-label-sm mb-1">Departamento</label>
-                    <select id="filterDepto" class="form-select form-select-sm">
-                        <option value="">Todos</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <button class="btn btn-primary btn-sm w-100" onclick="cargarResumen()">
+                <div class="col-md-auto d-flex align-items-end gap-2">
+                    <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#filtrosExtraRes" title="Más filtros">
+                        <i class="fa-solid fa-sliders"></i>
+                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="cargarResumen()">
                         <i class="fa-solid fa-search me-1"></i> Buscar
                     </button>
+                </div>
+            </div>
+            <div class="collapse" id="filtrosExtraRes">
+                <div class="row g-2 mb-2">
+                    <div class="col-md-3">
+                        <select id="filterEmpleado" class="form-select form-select-sm">
+                            <option value="">Todos los empleados</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select id="filterDepto" class="form-select form-select-sm">
+                            <option value="">Todos los departamentos</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
@@ -63,20 +71,20 @@
             <table class="table table-hover table-sm mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>Empleado</th>
-                        <th>Código</th>
-                        <th>Departamento</th>
-                        <th>Fecha</th>
-                        <th>Entrada 1</th>
-                        <th>Salida 1</th>
-                        <th>Entrada 2</th>
-                        <th>Salida 2</th>
-                        <th>Entrada 3</th>
-                        <th>Salida 3</th>
-                        <th>Entrada 4</th>
-                        <th>Salida 4</th>
-                        <th class="text-end">Total Horas</th>
-                        <th class="text-center">Acciones</th>
+                        <th class="col-res-empleado">Empleado</th>
+                        <th class="col-res-codigo">Código</th>
+                        <th class="col-res-depto">Departamento</th>
+                        <th class="col-res-fecha">Fecha</th>
+                        <th class="col-res-e1">Entrada 1</th>
+                        <th class="col-res-s1">Salida 1</th>
+                        <th class="col-res-e2">Entrada 2</th>
+                        <th class="col-res-s2">Salida 2</th>
+                        <th class="col-res-e3">Entrada 3</th>
+                        <th class="col-res-s3">Salida 3</th>
+                        <th class="col-res-e4">Entrada 4</th>
+                        <th class="col-res-s4">Salida 4</th>
+                        <th class="col-res-total text-end">Total Horas</th>
+                        <th class="col-res-acciones text-center">Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="resumenTbody">
@@ -200,6 +208,33 @@
         </div>
     </div>
 </div>
+{{-- Botón flotante visibilidad de columnas --}}
+<div id="colVisBtnRes" title="Mostrar / ocultar columnas"
+     style="position:fixed;bottom:70px;right:28px;z-index:1055;cursor:pointer;
+            width:48px;height:48px;border-radius:50%;background:#1ab394;
+            display:flex;align-items:center;justify-content:center;
+            box-shadow:0 4px 14px rgba(0,0,0,.25);transition:background .2s;"
+     onmouseenter="this.style.background='#17a07d'" onmouseleave="this.style.background='#1ab394'"
+     onclick="toggleColVisPanelRes()">
+    <i class="ti ti-settings text-white" style="font-size:22px;"></i>
+</div>
+
+<div id="colVisPanelRes"
+     style="display:none;position:fixed;bottom:128px;right:28px;z-index:1056;
+            background:#fff;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.18);
+            min-width:220px;padding:14px 16px;">
+    <div class="d-flex align-items-center justify-content-between mb-2">
+        <span class="fw-semibold small">Columnas visibles</span>
+        <button class="btn btn-link btn-sm p-0 text-muted" onclick="toggleColVisPanelRes()">
+            <i class="ti ti-x"></i>
+        </button>
+    </div>
+    <div id="colVisChecksRes"></div>
+    <div class="mt-2 pt-2 border-top d-flex gap-2">
+        <button class="btn btn-sm btn-outline-secondary flex-fill" onclick="colVisResTodos(true)">Todos</button>
+        <button class="btn btn-sm btn-outline-secondary flex-fill" onclick="colVisResTodos(false)">Ninguno</button>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -225,6 +260,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     cargarFiltros();
     cargarResumen();
+    colVisResApply(colVisResGetState());
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#colVisPanelRes, #colVisBtnRes')) {
+            document.getElementById('colVisPanelRes').style.display = 'none';
+        }
+    });
 });
 
 function inicioSemana() {
@@ -293,6 +334,15 @@ async function cargarResumen() {
 
         if (deptoId) {
             registros = registros.filter(r => r.user?.departamento_id == deptoId);
+        }
+
+        const search = document.getElementById('filterSearch').value.trim().toLowerCase();
+        if (search) {
+            registros = registros.filter(r =>
+                (r.user?.name || '').toLowerCase().includes(search) ||
+                (r.user?.cedula || '').toLowerCase().includes(search) ||
+                (r.user?.codigo_empleado || '').toLowerCase().includes(search)
+            );
         }
 
         allRegistros = registros;
@@ -395,18 +445,20 @@ async function cargarResumen() {
             // Botón para agregar registro en ese día para ese usuario (solo admin/supervisor)
             const btnAdd = isEmpleado ? '' : `<button class="btn btn-outline-primary btn-sm py-0 px-1" onclick="abrirModalManualPre(${g.user?.id}, '${g.fecha}')" title="Agregar registro"><i class="fa-solid fa-plus fa-xs"></i></button>`;
 
+            const colCls = ['col-res-e1','col-res-s1','col-res-e2','col-res-s2','col-res-e3','col-res-s3','col-res-e4','col-res-s4'];
             filas += `<tr>
-                <td>${g.user?.name ?? 'N/A'}</td>
-                <td><span class="badge bg-primary">${g.user?.codigo_empleado ?? '—'}</span></td>
-                <td><small class="text-muted">${deptoNombre}</small></td>
-                <td>${fechaFmt}</td>
-                ${celdas.map(c => `<td>${c}</td>`).join('')}
-                <td class="text-end">${totalStr}</td>
-                <td class="text-center">${btnAdd}</td>
+                <td class="col-res-empleado">${g.user?.name ?? 'N/A'}</td>
+                <td class="col-res-codigo"><span class="badge bg-primary">${g.user?.codigo_empleado ?? '—'}</span></td>
+                <td class="col-res-depto"><small class="text-muted">${deptoNombre}</small></td>
+                <td class="col-res-fecha">${fechaFmt}</td>
+                ${celdas.map((c, i) => `<td class="${colCls[i]}">${c}</td>`).join('')}
+                <td class="col-res-total text-end">${totalStr}</td>
+                <td class="col-res-acciones text-center">${btnAdd}</td>
             </tr>`;
         });
 
         tbody.innerHTML = filas;
+        colVisResApply(colVisResGetState());
 
         const th = Math.floor(totalMinGlobal / 60);
         const tm = totalMinGlobal % 60;
@@ -592,6 +644,91 @@ async function guardarManual() {
         cargarResumen();
     } catch(e) {
         alert('Error al crear registro: ' + e.message);
+    }
+}
+
+// ── Visibilidad de columnas (resumen) ─────────────────────────────────────────
+var COL_VIS_KEY_RES = 'resumen_col_vis';
+var COL_VIS_DEFS_RES = [
+    { cls: 'col-res-empleado',  label: 'Empleado',    default: true  },
+    { cls: 'col-res-codigo',    label: 'Código',       default: true  },
+    { cls: 'col-res-depto',     label: 'Departamento', default: false },
+    { cls: 'col-res-fecha',     label: 'Fecha',        default: true  },
+    { cls: 'col-res-e1',        label: 'Entrada 1',    default: true  },
+    { cls: 'col-res-s1',        label: 'Salida 1',     default: true  },
+    { cls: 'col-res-e2',        label: 'Entrada 2',    default: true  },
+    { cls: 'col-res-s2',        label: 'Salida 2',     default: true  },
+    { cls: 'col-res-e3',        label: 'Entrada 3',    default: false },
+    { cls: 'col-res-s3',        label: 'Salida 3',     default: false },
+    { cls: 'col-res-e4',        label: 'Entrada 4',    default: false },
+    { cls: 'col-res-s4',        label: 'Salida 4',     default: false },
+    { cls: 'col-res-total',     label: 'Total Horas',  default: true  },
+    { cls: 'col-res-acciones',  label: 'Acciones',     default: true  },
+];
+
+function colVisResGetState() {
+    try {
+        var stored = localStorage.getItem(COL_VIS_KEY_RES);
+        if (stored) return JSON.parse(stored);
+    } catch(e) {}
+    var state = {};
+    COL_VIS_DEFS_RES.forEach(function(c) { state[c.cls] = c.default; });
+    return state;
+}
+
+function colVisResSaveState(state) {
+    localStorage.setItem(COL_VIS_KEY_RES, JSON.stringify(state));
+}
+
+function colVisResApply(state) {
+    COL_VIS_DEFS_RES.forEach(function(c) {
+        var visible = !!state[c.cls];
+        document.querySelectorAll('.' + c.cls).forEach(function(el) {
+            el.style.display = visible ? '' : 'none';
+        });
+    });
+}
+
+function colVisResBuildPanel() {
+    var state = colVisResGetState();
+    var container = document.getElementById('colVisChecksRes');
+    container.innerHTML = '';
+    COL_VIS_DEFS_RES.forEach(function(c) {
+        var checked = state[c.cls] ? 'checked' : '';
+        var div = document.createElement('div');
+        div.className = 'form-check form-switch mb-1';
+        div.innerHTML =
+            '<input class="form-check-input" type="checkbox" id="colvisRes_' + c.cls + '" ' + checked + ' onchange="colVisResToggle(\'' + c.cls + '\', this.checked)">' +
+            '<label class="form-check-label small" for="colvisRes_' + c.cls + '">' + c.label + '</label>';
+        container.appendChild(div);
+    });
+}
+
+function colVisResToggle(cls, visible) {
+    var state = colVisResGetState();
+    state[cls] = visible;
+    colVisResSaveState(state);
+    colVisResApply(state);
+}
+
+function colVisResTodos(visible) {
+    var state = colVisResGetState();
+    COL_VIS_DEFS_RES.forEach(function(c) { state[c.cls] = visible; });
+    colVisResSaveState(state);
+    colVisResApply(state);
+    COL_VIS_DEFS_RES.forEach(function(c) {
+        var el = document.getElementById('colvisRes_' + c.cls);
+        if (el) el.checked = visible;
+    });
+}
+
+function toggleColVisPanelRes() {
+    var panel = document.getElementById('colVisPanelRes');
+    if (panel.style.display === 'none') {
+        colVisResBuildPanel();
+        panel.style.display = 'block';
+    } else {
+        panel.style.display = 'none';
     }
 }
 
