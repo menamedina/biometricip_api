@@ -225,6 +225,7 @@ async function loadRecords(page = 1) {
         document.getElementById('recordsInfo').textContent = `${data.total || 0} registros`;
         renderRecordsPagination(data);
         document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
+        colVisAttApply(colVisAttGetState());
     } catch(e) { console.error(e); }
 }
 
