@@ -178,6 +178,25 @@
                 </div>
                 <form id="empleadoForm">
                     <input type="hidden" id="empleadoId">
+                    {{-- Foto de perfil (solo visible al editar) --}}
+                    <div id="empFotoPerfilRow" class="d-none mb-3 d-flex align-items-center gap-3">
+                        <div id="empFotoAvatar" style="width:72px;height:72px;border-radius:50%;background:#e9ecef;display:flex;align-items:center;justify-content:center;color:#adb5bd;font-size:32px;flex-shrink:0;">
+                            <i class="fa-solid fa-user"></i>
+                        </div>
+                        <img id="empFotoImg" src="" alt="Foto" style="display:none;width:72px;height:72px;object-fit:cover;border-radius:50%;border:3px solid #1ab394;flex-shrink:0;">
+                        <div class="d-flex flex-column gap-1">
+                            <label class="form-label mb-0 small fw-semibold">Foto de perfil</label>
+                            <div class="d-flex align-items-center gap-1">
+                                <input type="file" id="empFotoInput" accept="image/*" class="form-control form-control-sm" style="max-width:220px" onchange="empPrevisualizarFoto(this)">
+                                <button type="button" id="empBtnEliminarFoto" class="btn btn-sm btn-outline-danger" onclick="empEliminarFoto()" title="Eliminar foto">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                                <button type="button" id="empBtnGuardarFoto" class="btn btn-sm btn-success d-none" onclick="empGuardarFoto()">
+                                    <i class="fa-solid fa-floppy-disk me-1"></i> Guardar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                     <div class="row">
                         @if(auth()->user()->admin_tenant)
                         <div class="col-md-12 mb-3">
@@ -370,6 +389,35 @@
         </div>
     </div>
 </div>
+{{-- Modal Foto de Perfil --}}
+<div class="modal fade" id="fotoPerfilModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa-solid fa-camera me-2 text-success"></i>Foto de perfil — <span id="fotoPerfilNombre"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div id="fotoPerfilPreview" class="mb-3">
+                    <span id="fotoPerfilAvatar" style="display:inline-flex;align-items:center;justify-content:center;width:120px;height:120px;border-radius:50%;background:#e9ecef;color:#adb5bd;font-size:48px;">
+                        <i class="fa-solid fa-user"></i>
+                    </span>
+                    <img id="fotoPerfilImg" src="" alt="Foto" style="display:none;width:120px;height:120px;object-fit:cover;border-radius:50%;border:3px solid #1ab394;">
+                </div>
+                <input type="file" id="fotoPerfilInput" accept="image/*" class="form-control form-control-sm mb-2" onchange="previsualizarFoto(this)">
+                <button id="btnEliminarFoto" class="btn btn-sm btn-outline-danger mt-1 d-none" onclick="eliminarFotoPerfil()">
+                    <i class="fa-solid fa-trash me-1"></i> Eliminar foto
+                </button>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success btn-sm" id="btnGuardarFoto" onclick="guardarFotoPerfil()" disabled>
+                    <i class="fa-solid fa-floppy-disk me-1"></i> Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {{-- Modal Log Empleado --}}
 <div class="modal fade" id="modalLogEmpleado" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
@@ -429,6 +477,9 @@ let horarioMap    = {};
 let empleadorMap  = {};
 let liderMap      = {};
 let currentEmpleadoId = null;
+let fotoPerfilMap     = {};   // { userId: thumbnail_base64 }
+let fotoPerfilUserId  = null;
+let fotoPerfilBase64  = null;
 
 async function fetchConteoUsuarios(empresaId) {
     const badge = document.getElementById('conteoUsuariosBadge');
@@ -459,6 +510,7 @@ function resetForm() {
     document.getElementById('empEditarEmpleado').checked = false;
     document.getElementById('empleadoModalTitle').textContent = 'Nuevo Usuario';
     document.getElementById('conteoUsuariosBadge').classList.add('d-none');
+    document.getElementById('empFotoPerfilRow').classList.add('d-none');
     document.getElementById('empTratamientoInfo').classList.add('d-none');
     document.querySelectorAll('.emp-sede-check').forEach(cb => cb.checked = false);
     if (isAdminTenant) {
@@ -686,6 +738,7 @@ async function loadEmpleados(page = 1) {
                     <td>
                         <div class="d-flex flex-nowrap gap-1">
                             <button class="btn btn-sm btn-outline-primary" onclick="this.disabled=true;editEmpleado(${e.id}, '${e.encrypted_id}').finally(()=>this.disabled=false)" ${canEditEmpleado ? '' : 'disabled'}><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn btn-sm btn-outline-success" onclick="abrirFotoPerfil(${e.id}, '${(e.name||'').replace(/'/g,'')}')" title="Foto de perfil"><i class="fa-solid fa-camera"></i></button>
                             <button class="btn btn-sm btn-outline-secondary" onclick="verLogEmpleado(${e.id})" title="Ver historial de cambios"><i class="fa-solid fa-clock-rotate-left"></i></button>
                             <button class="btn btn-sm btn-outline-danger" onclick="deleteEmpleado('${e.encrypted_id}')" ${isSupervisor ? 'disabled' : ''}><i class="fa-solid fa-trash"></i></button>
                         </div>
@@ -833,6 +886,10 @@ async function editEmpleado(id, encryptedId) {
         tratWrap.classList.remove('d-none');
 
         fetchConteoUsuarios(e.empresa_id || {{ auth()->user()->empresa_id ?? 'null' }});
+
+        // Mostrar sección de foto de perfil y cargarla
+        empCargarFotoPerfil(e.id);
+
         loader.classList.add('d-none');
         form.classList.remove('d-none');
     } catch(e) {
@@ -1316,6 +1373,222 @@ function toggleColVisPanelEmp() {
         panel.style.display = 'block';
     } else {
         panel.style.display = 'none';
+    }
+}
+
+// ── Foto de perfil (modal edición) ───────────────────────────────────────────
+
+let empFotoUsuarioId  = null;
+let empFotoBase64New  = null;
+
+async function empCargarFotoPerfil(userId) {
+    empFotoUsuarioId = userId;
+    empFotoBase64New = null;
+    const row     = document.getElementById('empFotoPerfilRow');
+    const avatar  = document.getElementById('empFotoAvatar');
+    const img     = document.getElementById('empFotoImg');
+    const btnDel  = document.getElementById('empBtnEliminarFoto');
+    const btnSave = document.getElementById('empBtnGuardarFoto');
+    const input   = document.getElementById('empFotoInput');
+
+    row.classList.remove('d-none');
+    img.style.display    = 'none';
+    avatar.style.display = 'flex';
+    btnSave.classList.add('d-none');
+    input.value = '';
+
+    try {
+        const res  = await fetch(`/admin/empleados/${userId}/imagen-perfil`);
+        const data = await res.json();
+        if (data.tiene_imagen && data.imagen_thumbnail) {
+            img.src              = data.imagen_thumbnail;
+            img.style.display    = 'block';
+            avatar.style.display = 'none';
+        }
+    } catch(e) {}
+}
+
+function empPrevisualizarFoto(input) {
+    if (!input.files || !input.files[0]) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        empFotoBase64New = e.target.result;
+        const img    = document.getElementById('empFotoImg');
+        const avatar = document.getElementById('empFotoAvatar');
+        img.src              = empFotoBase64New;
+        img.style.display    = 'block';
+        avatar.style.display = 'none';
+        document.getElementById('empBtnGuardarFoto').classList.remove('d-none');
+    };
+    reader.readAsDataURL(input.files[0]);
+}
+
+async function empGuardarFoto() {
+    if (!empFotoBase64New || !empFotoUsuarioId) return;
+    const btn = document.getElementById('empBtnGuardarFoto');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>';
+    try {
+        const res = await fetch(`/admin/empleados/${empFotoUsuarioId}/imagen-perfil`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+            body: JSON.stringify({ imagen_base64: empFotoBase64New }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+            empFotoBase64New = null;
+            btn.classList.add('d-none');
+            Swal.fire({ icon: 'success', title: 'Guardado', text: 'Foto de perfil actualizada.', timer: 1400, showConfirmButton: false });
+        } else {
+            Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'No se pudo guardar.' });
+        }
+    } catch(e) {
+        Swal.fire({ icon: 'error', title: 'Error', text: e.message });
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk me-1"></i> Guardar foto';
+    }
+}
+
+async function empEliminarFoto() {
+    const result = await Swal.fire({
+        title: '¿Eliminar foto de perfil?', icon: 'warning',
+        showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar',
+    });
+    if (!result.isConfirmed) return;
+    try {
+        const res = await fetch(`/admin/empleados/${empFotoUsuarioId}/imagen-perfil`, {
+            method: 'DELETE',
+            headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+        });
+        if (res.ok) {
+            document.getElementById('empFotoImg').style.display    = 'none';
+            document.getElementById('empFotoAvatar').style.display = 'flex';
+            document.getElementById('empBtnGuardarFoto').classList.add('d-none');
+            document.getElementById('empFotoInput').value = '';
+            empFotoBase64New = null;
+            Swal.fire({ icon: 'success', title: 'Eliminada', timer: 1400, showConfirmButton: false });
+        }
+    } catch(e) {}
+}
+
+// ── Foto de perfil (modal independiente) ─────────────────────────────────────
+
+async function cargarFotoPerfilBatch(userIds) {
+    await Promise.all(userIds.map(async id => {
+        try {
+            const res = await fetch(`/admin/empleados/${id}/imagen-perfil`);
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.tiene_imagen && data.imagen_thumbnail) {
+                fotoPerfilMap[id] = data.imagen_thumbnail;
+            } else {
+                delete fotoPerfilMap[id];
+            }
+        } catch(e) {}
+    }));
+}
+
+async function abrirFotoPerfil(userId, nombre) {
+    fotoPerfilUserId = userId;
+    fotoPerfilBase64 = null;
+    document.getElementById('fotoPerfilNombre').textContent = nombre;
+    document.getElementById('fotoPerfilInput').value = '';
+    document.getElementById('btnGuardarFoto').disabled = true;
+
+    const img    = document.getElementById('fotoPerfilImg');
+    const avatar = document.getElementById('fotoPerfilAvatar');
+    const btnDel = document.getElementById('btnEliminarFoto');
+
+    img.style.display    = 'none';
+    avatar.style.display = 'inline-flex';
+    btnDel.classList.add('d-none');
+
+    new bootstrap.Modal(document.getElementById('fotoPerfilModal')).show();
+
+    try {
+        const res  = await fetch(`/admin/empleados/${userId}/imagen-perfil`);
+        const data = await res.json();
+        if (data.tiene_imagen && data.imagen_thumbnail) {
+            img.src              = data.imagen_thumbnail;
+            img.style.display    = 'inline-block';
+            avatar.style.display = 'none';
+            btnDel.classList.remove('d-none');
+        }
+    } catch(e) {}
+}
+
+function previsualizarFoto(input) {
+    if (!input.files || !input.files[0]) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        fotoPerfilBase64 = e.target.result;
+        const img    = document.getElementById('fotoPerfilImg');
+        const avatar = document.getElementById('fotoPerfilAvatar');
+        img.src              = fotoPerfilBase64;
+        img.style.display    = 'inline-block';
+        avatar.style.display = 'none';
+        document.getElementById('btnGuardarFoto').disabled = false;
+    };
+    reader.readAsDataURL(input.files[0]);
+}
+
+async function guardarFotoPerfil() {
+    if (!fotoPerfilBase64) return;
+    const btn = document.getElementById('btnGuardarFoto');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Guardando...';
+    try {
+        const res = await fetch(`/admin/empleados/${fotoPerfilUserId}/imagen-perfil`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+            body: JSON.stringify({ imagen_base64: fotoPerfilBase64 }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+            fotoPerfilMap[fotoPerfilUserId] = data.imagen_thumbnail;
+            bootstrap.Modal.getInstance(document.getElementById('fotoPerfilModal')).hide();
+            loadEmpleados(currentPage);
+            Swal.fire({ icon: 'success', title: 'Guardado', text: 'Foto de perfil actualizada.', timer: 1600, showConfirmButton: false });
+        } else {
+            Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'No se pudo guardar la foto.' });
+        }
+    } catch(e) {
+        Swal.fire({ icon: 'error', title: 'Error', text: e.message });
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk me-1"></i> Guardar';
+    }
+}
+
+async function eliminarFotoPerfil() {
+    const result = await Swal.fire({
+        title: '¿Eliminar foto de perfil?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+    });
+    if (!result.isConfirmed) return;
+    try {
+        const res = await fetch(`/admin/empleados/${fotoPerfilUserId}/imagen-perfil`, {
+            method: 'DELETE',
+            headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+        });
+        if (res.ok) {
+            delete fotoPerfilMap[fotoPerfilUserId];
+            bootstrap.Modal.getInstance(document.getElementById('fotoPerfilModal')).hide();
+            loadEmpleados(currentPage);
+            Swal.fire({ icon: 'success', title: 'Eliminada', text: 'Foto de perfil eliminada.', timer: 1600, showConfirmButton: false });
+        } else {
+            const data = await res.json();
+            Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'No se pudo eliminar.' });
+        }
+    } catch(e) {
+        Swal.fire({ icon: 'error', title: 'Error', text: e.message });
     }
 }
 </script>

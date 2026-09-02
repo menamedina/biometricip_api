@@ -11,6 +11,7 @@ use App\Models\Empleador;
 use App\Models\Empresa;
 use App\Models\ImagenRostro;
 use App\Models\User;
+use App\Models\UserImagen;
 use App\Models\UserSede;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -536,7 +537,7 @@ class EmpleadoController extends Controller
         User::where('id', $userId)->update(['face_descriptor' => json_encode($promedio)]);
     }
 
-    private function redimensionarRostro(string $base64Input): string
+    private function redimensionarImagen(string $base64Input, int $width, int $height): string
     {
         // Extraer datos del data URI (acepta data:image/...;base64,... o base64 puro)
         if (str_contains($base64Input, ',')) {
@@ -549,12 +550,11 @@ class EmpleadoController extends Controller
         $src   = @imagecreatefromstring($bytes);
 
         if (!$src) {
-            // Si GD no puede procesarla, retornar tal cual
             return $base64Input;
         }
 
-        $dst = imagecreatetruecolor(400, 400);
-        imagecopyresampled($dst, $src, 0, 0, 0, 0, 400, 400, imagesx($src), imagesy($src));
+        $dst = imagecreatetruecolor($width, $height);
+        imagecopyresampled($dst, $src, 0, 0, 0, 0, $width, $height, imagesx($src), imagesy($src));
 
         ob_start();
         imagejpeg($dst, null, 85);
@@ -564,6 +564,56 @@ class EmpleadoController extends Controller
         imagedestroy($dst);
 
         return 'data:image/jpeg;base64,' . base64_encode($jpegBytes);
+    }
+
+    private function redimensionarRostro(string $base64Input): string
+    {
+        return $this->redimensionarImagen($base64Input, 400, 400);
+    }
+
+    // ─── Foto de perfil ──────────────────────────────────────────────────────
+
+    public function getImagenPerfil(Request $request, int $id): JsonResponse
+    {
+        $this->resolveEmpleado($request, $id);
+
+        $imagen = UserImagen::where('user_id', $id)->first();
+
+        return response()->json([
+            'tiene_imagen'     => (bool) $imagen,
+            'imagen_thumbnail' => $imagen?->imagen_thumbnail,
+        ]);
+    }
+
+    public function storeImagenPerfil(Request $request, int $id): JsonResponse
+    {
+        $this->resolveEmpleado($request, $id);
+
+        $request->validate([
+            'imagen_base64' => 'required|string',
+        ]);
+
+        $imagenCompleta  = $this->redimensionarImagen($request->imagen_base64, 400, 400);
+        $imagenThumbnail = $this->redimensionarImagen($request->imagen_base64, 150, 150);
+
+        UserImagen::updateOrCreate(
+            ['user_id' => $id],
+            ['imagen_base64' => $imagenCompleta, 'imagen_thumbnail' => $imagenThumbnail]
+        );
+
+        return response()->json([
+            'message'          => 'Foto de perfil guardada correctamente.',
+            'imagen_thumbnail' => $imagenThumbnail,
+        ]);
+    }
+
+    public function destroyImagenPerfil(Request $request, int $id): JsonResponse
+    {
+        $this->resolveEmpleado($request, $id);
+
+        UserImagen::where('user_id', $id)->delete();
+
+        return response()->json(['message' => 'Foto de perfil eliminada.']);
     }
 
     private function generarCodigo(int $empresaId): string
