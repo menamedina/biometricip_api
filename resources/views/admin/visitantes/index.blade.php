@@ -397,14 +397,19 @@ function formatMins(mins) {
     return h > 0 ? h + 'h ' + m + 'm' : m + 'm';
 }
 
-function cargarTabla() {
+function cargarTabla(silent) {
     // Cancelar solicitud anterior si aún está en vuelo
     if (xhrTabla) { xhrTabla.abort(); xhrTabla = null; }
 
     var btn  = document.getElementById('btnFiltrar');
     var icon = document.getElementById('btnFiltrarIcon');
     var txt  = document.getElementById('btnFiltrarText');
-    if (btn) { btn.disabled = true; icon.className = 'spinner-border spinner-border-sm me-1'; txt.textContent = 'Filtrando...'; }
+    var btnReload = document.getElementById('btnReloadTabla');
+    if (silent) {
+        if (btnReload) { btnReload.disabled = true; btnReload.querySelector('i').className = 'spinner-border spinner-border-sm'; }
+    } else {
+        if (btn) { btn.disabled = true; icon.className = 'spinner-border spinner-border-sm me-1'; txt.textContent = 'Filtrando...'; }
+    }
 
     var params = new URLSearchParams({
         sede_id:  $('#filterSede').val(),
@@ -441,7 +446,7 @@ function cargarTabla() {
                     $('#visitantesTable_filter input').addClass('form-control form-control-sm d-inline-block w-auto');
                     // Botón reload antes del buscador
                     $('#visitantesTable_filter').prepend(
-                        '<button id="btnReloadTabla" class="btn btn-sm btn-outline-secondary me-2" onclick="cargarTabla()" title="Recargar tabla">' +
+                        '<button id="btnReloadTabla" class="btn btn-sm btn-outline-secondary me-2" onclick="cargarTabla(true)" title="Recargar tabla">' +
                         '<i class="ti ti-refresh"></i></button>'
                     );
                 },
@@ -611,10 +616,12 @@ function cargarTabla() {
         error: function(xhr) {
             if (xhr.statusText === 'abort') return; // solicitud cancelada intencionalmente
             if (btn) { btn.disabled = false; icon.className = 'ti ti-search me-1'; txt.textContent = 'Filtrar'; }
+            if (btnReload) { btnReload.disabled = false; btnReload.querySelector('i').className = 'ti ti-refresh'; }
         },
         complete: function() {
             xhrTabla = null;
             if (btn) { btn.disabled = false; icon.className = 'ti ti-search me-1'; txt.textContent = 'Filtrar'; }
+            if (btnReload) { btnReload.disabled = false; btnReload.querySelector('i').className = 'ti ti-refresh'; }
         }
     });
 }
