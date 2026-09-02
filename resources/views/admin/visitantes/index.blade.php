@@ -470,7 +470,8 @@ function cargarTabla() {
                     {
                         title: 'Sede',
                         data: 'sede',
-                        render: function(data) {
+                        render: function(data, type) {
+                            if (type === 'filter' || type === 'sort') return data ? data.nombre : '';
                             return data ? '<span class="badge bg-primary">' + data.nombre + '</span>' : '—';
                         }
                     },
