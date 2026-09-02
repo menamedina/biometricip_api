@@ -407,8 +407,7 @@ function cargarTabla() {
         desde:    $('#filterDesde').val(),
         hasta:    $('#filterHasta').val(),
         search:   $('#filterSearch').val(),
-        estado:   $('#filterEstado').val(),
-        per_page: 5000
+        estado:   $('#filterEstado').val()
     });
 
     $.getJSON('/admin/visitantes/list?' + params, function(json) {

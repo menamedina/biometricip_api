@@ -643,8 +643,8 @@ class AdminController extends Controller
             );
         }
 
-        $visitantes = $query->paginate(min((int) $request->input('per_page', 50), 5000));
-        $visitantes->getCollection()->transform(function ($v) {
+        $visitantes = $query->get();
+        $visitantes = $visitantes->map(function ($v) {
             $v->imagen_entrada = $v->imagenes->isNotEmpty();
             // DB guarda en hora Colombia (APP_TIMEZONE); comparar en la misma zona
             $entrada   = \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $v->getRawOriginal('hora_entrada'));
@@ -678,7 +678,7 @@ class AdminController extends Controller
             return $v;
         });
 
-        return response()->json($visitantes);
+        return response()->json(['data' => $visitantes->values()]);
     }
 
     public function visitantesStats(Request $request): JsonResponse
