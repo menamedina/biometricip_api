@@ -374,6 +374,7 @@ var sedesData = @json($sedes);
 var tabla = null;
 var visitantesData = [];
 var dataLoadedAt = null;
+var xhrTabla = null; // AJAX activo — se aborta antes de cada nueva solicitud
 
 function localDateStr() {
     var d = new Date();
@@ -397,6 +398,9 @@ function formatMins(mins) {
 }
 
 function cargarTabla() {
+    // Cancelar solicitud anterior si aún está en vuelo
+    if (xhrTabla) { xhrTabla.abort(); xhrTabla = null; }
+
     var btn  = document.getElementById('btnFiltrar');
     var icon = document.getElementById('btnFiltrarIcon');
     var txt  = document.getElementById('btnFiltrarText');
@@ -410,7 +414,7 @@ function cargarTabla() {
         estado:   $('#filterEstado').val()
     });
 
-    $.ajax({
+    xhrTabla = $.ajax({
         url: '/admin/visitantes/list?' + params,
         method: 'GET',
         cache: false,
@@ -599,10 +603,12 @@ function cargarTabla() {
             });
         }
         },
-        error: function() {
+        error: function(xhr) {
+            if (xhr.statusText === 'abort') return; // solicitud cancelada intencionalmente
             if (btn) { btn.disabled = false; icon.className = 'ti ti-search me-1'; txt.textContent = 'Filtrar'; }
         },
         complete: function() {
+            xhrTabla = null;
             if (btn) { btn.disabled = false; icon.className = 'ti ti-search me-1'; txt.textContent = 'Filtrar'; }
         }
     });
