@@ -644,7 +644,19 @@ class AdminController extends Controller
         }
 
         $visitantes = $query->get();
-        $visitantes = $visitantes->map(function ($v) {
+
+        // Batch: última inducción por (cedula, sede_id) — evita N+1 queries
+        $cedulas = $visitantes->pluck('cedula')->filter()->unique()->values();
+        $ultimasInducciones = $cedulas->isNotEmpty()
+            ? Visitante::select('cedula', 'sede_id', DB::raw('MAX(induccion_fecha) as ultima'))
+                ->whereIn('cedula', $cedulas)
+                ->whereNotNull('induccion_fecha')
+                ->groupBy('cedula', 'sede_id')
+                ->get()
+                ->keyBy(fn ($r) => $r->cedula . '_' . $r->sede_id)
+            : collect();
+
+        $visitantes = $visitantes->map(function ($v) use ($ultimasInducciones) {
             $v->imagen_entrada = $v->imagenes->isNotEmpty();
             // DB guarda en hora Colombia (APP_TIMEZONE); comparar en la misma zona
             $entrada   = \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $v->getRawOriginal('hora_entrada'));
@@ -654,12 +666,7 @@ class AdminController extends Controller
                 : \Carbon\Carbon::now();
             $v->minutos_en_sede = max(0, (int) $entrada->diffInMinutes($fin));
 
-            // Última inducción de esta cédula en esta sede
-            $ultimaInduccion = Visitante::where('cedula', $v->cedula)
-                ->where('sede_id', $v->sede_id)
-                ->whereNotNull('induccion_fecha')
-                ->orderBy('induccion_fecha', 'desc')
-                ->value('induccion_fecha');
+            $ultimaInduccion = $ultimasInducciones->get($v->cedula . '_' . $v->sede_id)?->ultima;
 
             if ($ultimaInduccion) {
                 $carbon = \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $ultimaInduccion);

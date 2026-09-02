@@ -410,7 +410,12 @@ function cargarTabla() {
         estado:   $('#filterEstado').val()
     });
 
-    $.getJSON('/admin/visitantes/list?' + params, function(json) {
+    $.ajax({
+        url: '/admin/visitantes/list?' + params,
+        method: 'GET',
+        cache: false,
+        dataType: 'json',
+        success: function(json) {
         var datos = json.data || [];
         visitantesData = datos;
         dataLoadedAt = new Date();
@@ -593,8 +598,13 @@ function cargarTabla() {
                 ]
             });
         }
-    }).always(function() {
-        if (btn) { btn.disabled = false; icon.className = 'ti ti-search me-1'; txt.textContent = 'Filtrar'; }
+        },
+        error: function() {
+            if (btn) { btn.disabled = false; icon.className = 'ti ti-search me-1'; txt.textContent = 'Filtrar'; }
+        },
+        complete: function() {
+            if (btn) { btn.disabled = false; icon.className = 'ti ti-search me-1'; txt.textContent = 'Filtrar'; }
+        }
     });
 }
 
@@ -602,8 +612,8 @@ function clearFilters() {
     $('#filterSede').val('');
     $('#filterSearch').val('');
     $('#filterEstado').val('');
-    $('#filterDesde').val(localDateStr());
-    $('#filterHasta').val(localDateStr());
+    $('#filterDesde').val('');
+    $('#filterHasta').val('');
     cargarTabla();
 }
 
