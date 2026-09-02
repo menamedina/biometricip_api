@@ -21,13 +21,11 @@
     <div class="row mb-3">
         <div class="col-12">
             <div class="card">
-                <div class="card-body p-3">
-                    <div class="row g-2 align-items-end">
+                <div class="card-body p-2">
+                    <div class="row g-2 mb-2 align-items-end">
                         <div class="col-md-3">
-                            <label class="form-label form-label-sm mb-1">Sede</label>
-                            <select class="form-select form-select-sm" id="filterSede">
-                                <option value="">Todas las sedes</option>
-                            </select>
+                            <input type="text" class="form-control form-control-sm" id="filterSearch" placeholder="Buscar..."
+                                onkeydown="if(event.key==='Enter') cargarTabla()">
                         </div>
                         <div class="col-md-2">
                             <label class="form-label form-label-sm mb-1">Desde</label>
@@ -37,29 +35,35 @@
                             <label class="form-label form-label-sm mb-1">Hasta</label>
                             <input type="date" class="form-control form-control-sm" id="filterHasta">
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label form-label-sm mb-1">Cédula / Nombre</label>
-                            <input type="text" class="form-control form-control-sm" id="filterSearch" placeholder="Buscar..."
-                                onkeydown="if(event.key==='Enter') cargarTabla()">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label form-label-sm mb-1">Estado</label>
-                            <select class="form-select form-select-sm" id="filterEstado">
-                                <option value="">Todos</option>
-                                <option value="en_sede">En sede</option>
-                                <option value="salieron">Con salida</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2 d-flex gap-2 flex-wrap">
-                            <button class="btn btn-sm btn-primary flex-fill mt-3" onclick="cargarTabla()">
+                        <div class="col-md-auto d-flex align-items-end gap-2">
+                            <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#filtrosExtraVis" title="Más filtros">
+                                <i class="fa-solid fa-sliders"></i>
+                            </button>
+                            <button class="btn btn-sm btn-primary" onclick="cargarTabla()">
                                 <i class="ti ti-search me-1"></i> Filtrar
                             </button>
-                            <button class="btn btn-sm btn-secondary flex-fill mt-3" onclick="clearFilters()">
+                            <button class="btn btn-sm btn-secondary" onclick="clearFilters()">
                                 <i class="ti ti-x me-1"></i> Limpiar
                             </button>
-                            <button class="btn btn-sm btn-success flex-fill mt-3" onclick="exportarExcel()">
+                            <button class="btn btn-sm btn-success" onclick="exportarExcel()">
                                 <i class="ti ti-file-spreadsheet me-1"></i> Exportar
                             </button>
+                        </div>
+                    </div>
+                    <div class="collapse" id="filtrosExtraVis">
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-3">
+                                <select class="form-select form-select-sm" id="filterSede">
+                                    <option value="">Todas las sedes</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select class="form-select form-select-sm" id="filterEstado">
+                                    <option value="">Todos los estados</option>
+                                    <option value="en_sede">En sede</option>
+                                    <option value="salieron">Con salida</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
