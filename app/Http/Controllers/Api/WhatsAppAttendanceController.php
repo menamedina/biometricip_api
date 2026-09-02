@@ -9,6 +9,7 @@ use App\Models\Empresa;
 use App\Models\Horario;
 use App\Models\Sede;
 use App\Models\User;
+use App\Models\UserSede;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -117,6 +118,19 @@ class WhatsAppAttendanceController extends Controller
                     $sede = $s;
                 }
             }
+        }
+
+        // Validar que el usuario tenga asignada esta sede
+        $tieneSede = UserSede::where('user_id', $user->id)
+            ->where('empresa_id', $empresa->id)
+            ->where('sede_id', $sede->id)
+            ->exists();
+
+        if (!$tieneSede) {
+            return response()->json([
+                'message' => 'No tienes permiso para registrar asistencia en esta sede.',
+                'sede'    => $sede->nombre,
+            ], 403);
         }
 
         $distancia = $this->calcularDistancia((float) $request->lat, (float) $request->lng, (float) $sede->lat, (float) $sede->lng);
