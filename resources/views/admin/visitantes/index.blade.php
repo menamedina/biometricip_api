@@ -39,8 +39,9 @@
                             <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#filtrosExtraVis" title="Más filtros">
                                 <i class="fa-solid fa-sliders"></i>
                             </button>
-                            <button class="btn btn-sm btn-primary" onclick="cargarTabla()">
-                                <i class="ti ti-search me-1"></i> Filtrar
+                            <button class="btn btn-sm btn-primary" id="btnFiltrar" onclick="cargarTabla()">
+                                <i class="ti ti-search me-1" id="btnFiltrarIcon"></i>
+                                <span id="btnFiltrarText">Filtrar</span>
                             </button>
                             <button class="btn btn-sm btn-secondary" onclick="clearFilters()">
                                 <i class="ti ti-x me-1"></i> Limpiar
@@ -396,6 +397,11 @@ function formatMins(mins) {
 }
 
 function cargarTabla() {
+    var btn  = document.getElementById('btnFiltrar');
+    var icon = document.getElementById('btnFiltrarIcon');
+    var txt  = document.getElementById('btnFiltrarText');
+    if (btn) { btn.disabled = true; icon.className = 'spinner-border spinner-border-sm me-1'; txt.textContent = 'Filtrando...'; }
+
     var params = new URLSearchParams({
         sede_id:  $('#filterSede').val(),
         desde:    $('#filterDesde').val(),
@@ -411,7 +417,7 @@ function cargarTabla() {
         dataLoadedAt = new Date();
 
         if ($.fn.DataTable.isDataTable('#visitantesTable')) {
-            tabla.clear().rows.add(datos).draw();
+            tabla.search('').clear().rows.add(datos).draw();
         } else {
             tabla = $('#visitantesTable').DataTable({
                 data: datos,
@@ -588,6 +594,8 @@ function cargarTabla() {
                 ]
             });
         }
+    }).always(function() {
+        if (btn) { btn.disabled = false; icon.className = 'ti ti-search me-1'; txt.textContent = 'Filtrar'; }
     });
 }
 
