@@ -761,7 +761,6 @@ async function loadEmpleados(page = 1) {
                     <td>
                         <div class="d-flex flex-nowrap gap-1">
                             <button class="btn btn-sm btn-outline-primary" onclick="this.disabled=true;editEmpleado(${e.id}, '${e.encrypted_id}').finally(()=>this.disabled=false)" ${canEditEmpleado ? '' : 'disabled'}><i class="fa-solid fa-pen"></i></button>
-                            <button class="btn btn-sm btn-outline-success" onclick="abrirFotoPerfil(${e.id}, '${(e.name||'').replace(/'/g,'')}')" title="Foto de perfil"><i class="fa-solid fa-camera"></i></button>
                             <button class="btn btn-sm btn-outline-secondary" onclick="verLogEmpleado(${e.id})" title="Ver historial de cambios"><i class="fa-solid fa-clock-rotate-left"></i></button>
                             <button class="btn btn-sm btn-outline-danger" onclick="deleteEmpleado('${e.encrypted_id}')" ${isSupervisor ? 'disabled' : ''}><i class="fa-solid fa-trash"></i></button>
                         </div>
