@@ -84,16 +84,16 @@
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th>Empleado</th>
-                                <th>Código</th>
-                                <th>Sede</th>
-                                <th>Tipo</th>
-                                <th>Fecha/Hora</th>
-                                <th>Método</th>
-                                <th>QR</th>
-                                <th>Geocerca</th>
-                                <th>Distancia</th>
-                                <th>Foto</th>
+                                <th class="col-att-empleado">Empleado</th>
+                                <th class="col-att-codigo">Código</th>
+                                <th class="col-att-sede">Sede</th>
+                                <th class="col-att-tipo">Tipo</th>
+                                <th class="col-att-fecha">Fecha/Hora</th>
+                                <th class="col-att-metodo">Método</th>
+                                <th class="col-att-qr">QR</th>
+                                <th class="col-att-geocerca">Geocerca</th>
+                                <th class="col-att-distancia">Distancia</th>
+                                <th class="col-att-foto">Foto</th>
                             </tr>
                         </thead>
                         <tbody id="recordsTbody">
@@ -107,6 +107,34 @@
                 </div>
             </div>
         </div>
+    </div>
+</div>
+
+{{-- Botón flotante visibilidad de columnas --}}
+<div id="colVisBtnAtt" title="Mostrar / ocultar columnas"
+     style="position:fixed;bottom:70px;right:28px;z-index:1055;cursor:pointer;
+            width:48px;height:48px;border-radius:50%;background:#1ab394;
+            display:flex;align-items:center;justify-content:center;
+            box-shadow:0 4px 14px rgba(0,0,0,.25);transition:background .2s;"
+     onmouseenter="this.style.background='#17a07d'" onmouseleave="this.style.background='#1ab394'"
+     onclick="toggleColVisPanelAtt()">
+    <i class="ti ti-settings text-white" style="font-size:22px;"></i>
+</div>
+
+<div id="colVisPanelAtt"
+     style="display:none;position:fixed;bottom:128px;right:28px;z-index:1056;
+            background:#fff;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.18);
+            min-width:220px;padding:14px 16px;">
+    <div class="d-flex align-items-center justify-content-between mb-2">
+        <span class="fw-semibold small">Columnas visibles</span>
+        <button class="btn btn-link btn-sm p-0 text-muted" onclick="toggleColVisPanelAtt()">
+            <i class="ti ti-x"></i>
+        </button>
+    </div>
+    <div id="colVisChecksAtt"></div>
+    <div class="mt-2 pt-2 border-top d-flex gap-2">
+        <button class="btn btn-sm btn-outline-secondary flex-fill" onclick="colVisAttTodos(true)">Todos</button>
+        <button class="btn btn-sm btn-outline-secondary flex-fill" onclick="colVisAttTodos(false)">Ninguno</button>
     </div>
 </div>
 @endsection
@@ -151,11 +179,10 @@ async function loadRecords(page = 1) {
                     : '<span class="text-muted">—</span>';
                 return `
                 <tr>
-                    <td>
+                    <td class="col-att-empleado">
                         ${(function() {
                             if (!r.horario) return '<i class="fa-solid fa-circle-question text-light me-1" data-bs-toggle="tooltip" title="Sin horario asignado"></i>';
                             const fecha = new Date(r.fecha_hora);
-                            // isoWeekday: Lun=1 ... Dom=7
                             const isoDay = fecha.getDay() === 0 ? 7 : fecha.getDay();
                             const dia = (r.horario.dias || []).find(d => d.dia_semana === isoDay);
                             const diaLabel = ['','Lun','Mar','Mié','Jue','Vie','Sáb','Dom'][isoDay] || '';
@@ -167,10 +194,10 @@ async function loadRecords(page = 1) {
                                         title="Horario: ${r.horario.nombre} | ${horaInfo}"></i>`;
                         })()}<strong>${r.user?.name || 'N/A'}</strong>
                     </td>
-                    <td><span class="badge bg-primary">${r.user?.codigo_empleado || '—'}</span></td>
-                    <td>${r.sede?.nombre || '—'}</td>
-                    <td><span class="badge ${r.tipo.includes('entrada') ? 'bg-success' : 'bg-danger'}">${r.tipo.replace(/_/g, ' ')}</span></td>
-                    <td>${(function() {
+                    <td class="col-att-codigo"><span class="badge bg-primary">${r.user?.codigo_empleado || '—'}</span></td>
+                    <td class="col-att-sede">${r.sede?.nombre || '—'}</td>
+                    <td class="col-att-tipo"><span class="badge ${r.tipo.includes('entrada') ? 'bg-success' : 'bg-danger'}">${r.tipo.replace(/_/g, ' ')}</span></td>
+                    <td class="col-att-fecha">${(function() {
                             const fechaStr = new Date(r.fecha_hora).toLocaleString('es-CO', {timeZone: 'America/Bogota'});
                             if (r.tipo !== 'entrada') return fechaStr;
                             if (!r.horario) return fechaStr;
@@ -187,11 +214,11 @@ async function loadRecords(page = 1) {
                                 : '<i class="fa-solid fa-circle-check text-success me-1" title="A tiempo"></i>';
                             return icono + fechaStr;
                         })()}</td>
-                    <td><span class="badge bg-info">${r.metodo}</span></td>
-                    <td><span class="badge ${r.qr_validado ? 'bg-success' : 'bg-danger'}">${r.qr_validado ? 'Sí' : 'No'}</span></td>
-                    <td><span class="badge ${r.geocerca_validada ? 'bg-success' : 'bg-danger'}">${r.geocerca_validada ? 'Sí' : 'No'}</span></td>
-                    <td>${r.distancia_oficina_mts ? r.distancia_oficina_mts + 'm' : '—'}</td>
-                    <td>${fotoHtml}</td>
+                    <td class="col-att-metodo"><span class="badge bg-info">${r.metodo}</span></td>
+                    <td class="col-att-qr"><span class="badge ${r.qr_validado ? 'bg-success' : 'bg-danger'}">${r.qr_validado ? 'Sí' : 'No'}</span></td>
+                    <td class="col-att-geocerca"><span class="badge ${r.geocerca_validada ? 'bg-success' : 'bg-danger'}">${r.geocerca_validada ? 'Sí' : 'No'}</span></td>
+                    <td class="col-att-distancia">${r.distancia_oficina_mts ? r.distancia_oficina_mts + 'm' : '—'}</td>
+                    <td class="col-att-foto">${fotoHtml}</td>
                 </tr>`;
             }).join('');
         }
@@ -251,6 +278,93 @@ document.addEventListener('DOMContentLoaded', () => {
         loadEmpleadosFilter();
     }
     loadRecords();
+    colVisAttApply(colVisAttGetState());
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#colVisPanelAtt, #colVisBtnAtt')) {
+            document.getElementById('colVisPanelAtt').style.display = 'none';
+        }
+    });
 });
+
+// ── Visibilidad de columnas (attendance) ─────────────────────────────────────
+var COL_VIS_KEY_ATT = 'attendance_col_vis';
+var COL_VIS_DEFS_ATT = [
+    { cls: 'col-att-empleado',  label: 'Empleado',   default: true  },
+    { cls: 'col-att-codigo',    label: 'Código',      default: true  },
+    { cls: 'col-att-sede',      label: 'Sede',        default: true  },
+    { cls: 'col-att-tipo',      label: 'Tipo',        default: true  },
+    { cls: 'col-att-fecha',     label: 'Fecha/Hora',  default: true  },
+    { cls: 'col-att-metodo',    label: 'Método',      default: true  },
+    { cls: 'col-att-qr',        label: 'QR',          default: false },
+    { cls: 'col-att-geocerca',  label: 'Geocerca',    default: false },
+    { cls: 'col-att-distancia', label: 'Distancia',   default: false },
+    { cls: 'col-att-foto',      label: 'Foto',        default: true  },
+];
+
+function colVisAttGetState() {
+    try {
+        var stored = localStorage.getItem(COL_VIS_KEY_ATT);
+        if (stored) return JSON.parse(stored);
+    } catch(e) {}
+    var state = {};
+    COL_VIS_DEFS_ATT.forEach(function(c) { state[c.cls] = c.default; });
+    return state;
+}
+
+function colVisAttSaveState(state) {
+    localStorage.setItem(COL_VIS_KEY_ATT, JSON.stringify(state));
+}
+
+function colVisAttApply(state) {
+    COL_VIS_DEFS_ATT.forEach(function(c) {
+        var visible = !!state[c.cls];
+        document.querySelectorAll('.' + c.cls).forEach(function(el) {
+            el.style.display = visible ? '' : 'none';
+        });
+    });
+}
+
+function colVisAttBuildPanel() {
+    var state = colVisAttGetState();
+    var container = document.getElementById('colVisChecksAtt');
+    container.innerHTML = '';
+    COL_VIS_DEFS_ATT.forEach(function(c) {
+        var checked = state[c.cls] ? 'checked' : '';
+        var div = document.createElement('div');
+        div.className = 'form-check form-switch mb-1';
+        div.innerHTML =
+            '<input class="form-check-input" type="checkbox" id="colvisAtt_' + c.cls + '" ' + checked + ' onchange="colVisAttToggle(\'' + c.cls + '\', this.checked)">' +
+            '<label class="form-check-label small" for="colvisAtt_' + c.cls + '">' + c.label + '</label>';
+        container.appendChild(div);
+    });
+}
+
+function colVisAttToggle(cls, visible) {
+    var state = colVisAttGetState();
+    state[cls] = visible;
+    colVisAttSaveState(state);
+    colVisAttApply(state);
+}
+
+function colVisAttTodos(visible) {
+    var state = colVisAttGetState();
+    COL_VIS_DEFS_ATT.forEach(function(c) { state[c.cls] = visible; });
+    colVisAttSaveState(state);
+    colVisAttApply(state);
+    COL_VIS_DEFS_ATT.forEach(function(c) {
+        var el = document.getElementById('colvisAtt_' + c.cls);
+        if (el) el.checked = visible;
+    });
+}
+
+function toggleColVisPanelAtt() {
+    var panel = document.getElementById('colVisPanelAtt');
+    if (panel.style.display === 'none') {
+        colVisAttBuildPanel();
+        panel.style.display = 'block';
+    } else {
+        panel.style.display = 'none';
+    }
+}
 </script>
 @endpush
