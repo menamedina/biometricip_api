@@ -45,8 +45,21 @@ class AttendanceController extends Controller
             $query->where('sede_id', $request->sede_id);
         }
 
+        if ($request->filled('metodo')) {
+            $query->where('metodo', $request->metodo);
+        }
+
         if ($request->filled('user_id')) {
             $query->where('user_id', $request->user_id);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->whereHas('user', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('cedula', 'like', "%{$search}%")
+                  ->orWhere('codigo_empleado', 'like', "%{$search}%");
+            });
         }
 
         if ($request->boolean('only_mine')) {

@@ -28,22 +28,9 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-body p-2">
-                    <div class="row g-2 mb-3 align-items-end">
-                        <div class="col-md-2">
-                            <label class="form-label small">Tipo</label>
-                            <select class="form-select form-select-sm" id="filterTipo">
-                                <option value="">Todos</option>
-                                <option value="entrada">Entrada</option>
-                                <option value="salida_almuerzo">Salida Almuerzo</option>
-                                <option value="regreso_almuerzo">Regreso Almuerzo</option>
-                                <option value="salida">Salida</option>
-                            </select>
-                        </div>
+                    <div class="row g-2 mb-2 align-items-end">
                         <div class="col-md-3">
-                            <label class="form-label small">Empleado</label>
-                            <select class="form-select form-select-sm" id="filterEmpleado">
-                                <option value="">Todos</option>
-                            </select>
+                            <input type="text" class="form-control form-control-sm" id="filterSearch" placeholder="Buscar...">
                         </div>
                         <div class="col-md-2">
                             <label class="form-label small">Desde</label>
@@ -54,8 +41,42 @@
                             <input type="date" class="form-control form-control-sm" id="reportTo" value="{{ date('Y-m-d') }}">
                         </div>
                         <div class="col-md-auto d-flex align-items-end gap-2">
+                            <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#filtrosExtraAtt" title="Más filtros">
+                                <i class="fa-solid fa-sliders"></i>
+                            </button>
                             <button class="btn btn-sm btn-primary" onclick="loadRecords()"><i class="fa-solid fa-filter me-1"></i> Filtrar</button>
                             <button class="btn btn-sm btn-success" onclick="exportCSV()"><i class="fa-solid fa-file-csv me-1"></i> Exportar CSV</button>
+                        </div>
+                    </div>
+                    <div class="collapse" id="filtrosExtraAtt">
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-2">
+                                <select class="form-select form-select-sm" id="filterTipo">
+                                    <option value="">Todos los tipos</option>
+                                    <option value="entrada">Entrada</option>
+                                    <option value="salida_almuerzo">Salida Almuerzo</option>
+                                    <option value="regreso_almuerzo">Regreso Almuerzo</option>
+                                    <option value="salida">Salida</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select class="form-select form-select-sm" id="filterMetodo">
+                                    <option value="">Todos los métodos</option>
+                                    <option value="qr">QR</option>
+                                    <option value="biometrico">Biométrico</option>
+                                    <option value="reconocimiento_facial">Reconocimiento facial</option>
+                                    <option value="foto">Foto</option>
+                                    <option value="qr_web">QR Web</option>
+                                    <option value="manual">Manual</option>
+                                    <option value="dispositivo">Dispositivo</option>
+                                    <option value="whatsapp">WhatsApp</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select form-select-sm" id="filterEmpleado">
+                                    <option value="">Todos los empleados</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -100,15 +121,19 @@ let recordsPage  = 1;
 
 async function loadRecords(page = 1) {
     recordsPage = page;
-    const from  = document.getElementById('reportFrom').value;
-    const to    = document.getElementById('reportTo').value;
-    const tipo  = document.getElementById('filterTipo').value;
-    const empId = isEmpleado ? myUserId : document.getElementById('filterEmpleado').value;
+    const from   = document.getElementById('reportFrom').value;
+    const to     = document.getElementById('reportTo').value;
+    const tipo   = document.getElementById('filterTipo').value;
+    const metodo = document.getElementById('filterMetodo').value;
+    const search = document.getElementById('filterSearch').value;
+    const empId  = isEmpleado ? myUserId : document.getElementById('filterEmpleado').value;
     let url = `/admin/attendance/records?page=${page}&per_page=20`;
-    if (from)  url += `&date_from=${from}`;
-    if (to)    url += `&date_to=${to}`;
-    if (tipo)  url += `&tipo=${tipo}`;
-    if (empId) url += `&user_id=${empId}`;
+    if (from)   url += `&date_from=${from}`;
+    if (to)     url += `&date_to=${to}`;
+    if (tipo)   url += `&tipo=${tipo}`;
+    if (metodo) url += `&metodo=${metodo}`;
+    if (empId)  url += `&user_id=${empId}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
 
     try {
         const res = await fetch(url, { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
