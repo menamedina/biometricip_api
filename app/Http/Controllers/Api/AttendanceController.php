@@ -8,6 +8,7 @@ use App\Models\AttendanceRecord;
 use App\Models\Horario;
 use App\Models\Sede;
 use App\Models\User;
+use App\Models\UserImagen;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -68,6 +69,17 @@ class AttendanceController extends Controller
         }
 
         $records = $query->orderBy('fecha_hora', 'desc')->paginate($request->per_page ?? 50);
+
+        // Adjuntar thumbnail de foto de perfil (1 sola consulta para toda la página)
+        $userIds    = $records->pluck('user_id')->filter()->unique()->values()->all();
+        $thumbnails = UserImagen::whereIn('user_id', $userIds)
+            ->get(['user_id', 'imagen_thumbnail'])
+            ->keyBy('user_id');
+
+        $records->getCollection()->transform(function ($record) use ($thumbnails) {
+            $record->foto_perfil_thumbnail = $thumbnails->get($record->user_id)?->imagen_thumbnail;
+            return $record;
+        });
 
         return response()->json($records);
     }

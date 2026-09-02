@@ -137,6 +137,21 @@
         <button class="btn btn-sm btn-outline-secondary flex-fill" onclick="colVisAttTodos(false)">Ninguno</button>
     </div>
 </div>
+{{-- Modal previsualización foto de perfil --}}
+<div class="modal fade" id="modalFotoPerfil" tabindex="-1">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title mb-0" id="modalFotoPerfilNombre"></h6>
+                <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-2 text-center">
+                <img id="modalFotoPerfilImg" src="" alt="Foto de perfil"
+                     style="width:100%;max-width:260px;border-radius:12px;object-fit:cover;">
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -180,19 +195,27 @@ async function loadRecords(page = 1) {
                 return `
                 <tr>
                     <td class="col-att-empleado">
-                        ${(function() {
-                            if (!r.horario) return '<i class="fa-solid fa-circle-question text-light me-1" data-bs-toggle="tooltip" title="Sin horario asignado"></i>';
-                            const fecha = new Date(r.fecha_hora);
-                            const isoDay = fecha.getDay() === 0 ? 7 : fecha.getDay();
-                            const dia = (r.horario.dias || []).find(d => d.dia_semana === isoDay);
-                            const diaLabel = ['','Lun','Mar','Mié','Jue','Vie','Sáb','Dom'][isoDay] || '';
-                            const horaInfo = dia
-                                ? `${diaLabel}: ${dia.hora_entrada?.slice(0,5)}–${dia.hora_salida?.slice(0,5)}${dia.retardo_min ? ' | Retardo: ' + dia.retardo_min + ' min' : ''}`
-                                : `${diaLabel}: día no laboral`;
-                            return `<i class="fa-solid fa-circle-question text-muted me-1" style="cursor:default;"
-                                        data-bs-toggle="tooltip"
-                                        title="Horario: ${r.horario.nombre} | ${horaInfo}"></i>`;
-                        })()}<strong>${r.user?.name || 'N/A'}</strong>
+                        <div class="d-flex align-items-center gap-2">
+                            ${r.foto_perfil_thumbnail
+                                ? `<img src="${r.foto_perfil_thumbnail}" onclick="verFotoPerfil('${(r.user?.name||'').replace(/'/g,'')}','${r.foto_perfil_thumbnail}')" style="width:32px;height:32px;object-fit:cover;border-radius:50%;border:2px solid #1ab394;flex-shrink:0;cursor:pointer;" title="Ver foto de perfil" alt="">`
+                                : `<span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#e9ecef;color:#adb5bd;font-size:15px;flex-shrink:0;"><i class="fa-solid fa-user"></i></span>`
+                            }
+                            <div>
+                                ${(function() {
+                                    if (!r.horario) return '<i class="fa-solid fa-circle-question text-light me-1" data-bs-toggle="tooltip" title="Sin horario asignado"></i>';
+                                    const fecha = new Date(r.fecha_hora);
+                                    const isoDay = fecha.getDay() === 0 ? 7 : fecha.getDay();
+                                    const dia = (r.horario.dias || []).find(d => d.dia_semana === isoDay);
+                                    const diaLabel = ['','Lun','Mar','Mié','Jue','Vie','Sáb','Dom'][isoDay] || '';
+                                    const horaInfo = dia
+                                        ? `${diaLabel}: ${dia.hora_entrada?.slice(0,5)}–${dia.hora_salida?.slice(0,5)}${dia.retardo_min ? ' | Retardo: ' + dia.retardo_min + ' min' : ''}`
+                                        : `${diaLabel}: día no laboral`;
+                                    return `<i class="fa-solid fa-circle-question text-muted me-1" style="cursor:default;"
+                                                data-bs-toggle="tooltip"
+                                                title="Horario: ${r.horario.nombre} | ${horaInfo}"></i>`;
+                                })()}<strong>${r.user?.name || 'N/A'}</strong>
+                            </div>
+                        </div>
                     </td>
                     <td class="col-att-codigo"><span class="badge bg-primary">${r.user?.codigo_empleado || '—'}</span></td>
                     <td class="col-att-sede">${r.sede?.nombre || '—'}</td>
@@ -366,6 +389,12 @@ function toggleColVisPanelAtt() {
     } else {
         panel.style.display = 'none';
     }
+}
+
+function verFotoPerfil(nombre, thumbnail) {
+    document.getElementById('modalFotoPerfilNombre').textContent = nombre;
+    document.getElementById('modalFotoPerfilImg').src = thumbnail;
+    new bootstrap.Modal(document.getElementById('modalFotoPerfil')).show();
 }
 </script>
 @endpush
