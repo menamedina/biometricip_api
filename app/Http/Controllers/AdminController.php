@@ -595,22 +595,14 @@ class AdminController extends Controller
 
     public function visitantesList(Request $request)
     {
-        $query = Visitante::with(['sede', 'imagenes' => fn ($q) => $q->where('tipo', 'entrada')])
+        $query = Visitante::with(['sede'])
+            ->withCount(['imagenes as imagen_entrada' => fn ($q) => $q->where('tipo', 'entrada')])
             ->orderBy('hora_entrada', 'desc');
 
         if ($request->filled('sede_id'))  $query->where('sede_id', $request->sede_id);
         if ($request->filled('desde'))    $query->whereDate('hora_entrada', '>=', $request->desde);
         if ($request->filled('hasta'))    $query->whereDate('hora_entrada', '<=', $request->hasta);
 
-        // DEBUG TEMPORAL — eliminar después
-        \Log::info('[visitantesList] params', [
-            'desde'   => $request->desde,
-            'hasta'   => $request->hasta,
-            'sede_id' => $request->sede_id,
-            'db'      => DB::connection('tenant')->getDatabaseName(),
-            'sql'     => $query->toSql(),
-            'bindings'=> $query->getBindings(),
-        ]);
         if ($request->filled('search')) {
             $s = $request->search;
             $query->where(fn ($q) => $q->where('cedula', 'like', "%{$s}%")->orWhere('nombre', 'like', "%{$s}%"));
@@ -667,7 +659,7 @@ class AdminController extends Controller
             : collect();
 
         $visitantes = $visitantes->map(function ($v) use ($ultimasInducciones) {
-            $v->imagen_entrada = $v->imagenes->isNotEmpty();
+            $v->imagen_entrada = $v->imagen_entrada > 0;
             // DB guarda en hora Colombia (APP_TIMEZONE); comparar en la misma zona
             $entrada   = \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $v->getRawOriginal('hora_entrada'));
             $salidaRaw = $v->getRawOriginal('hora_salida');
@@ -691,7 +683,6 @@ class AdminController extends Controller
                 $v->ultima_induccion_vencida = null;
             }
 
-            unset($v->imagenes);
             return $v;
         });
 

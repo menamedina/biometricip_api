@@ -415,7 +415,6 @@ function cargarTabla() {
     });
 
     console.log('[Visitantes] Filtrar → ' + params.toString());
-    alert('DESDE: ' + $('#filterDesde').val() + '\nHASTA: ' + $('#filterHasta').val());
 
     xhrTabla = $.ajax({
         url: '/admin/visitantes/list?' + params,
