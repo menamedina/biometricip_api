@@ -439,6 +439,11 @@ function cargarTabla() {
                 initComplete: function() {
                     $('#visitantesTable_length select').addClass('form-select form-select-sm d-inline-block w-auto');
                     $('#visitantesTable_filter input').addClass('form-control form-control-sm d-inline-block w-auto');
+                    // Botón reload antes del buscador
+                    $('#visitantesTable_filter').prepend(
+                        '<button id="btnReloadTabla" class="btn btn-sm btn-outline-secondary me-2" onclick="cargarTabla()" title="Recargar tabla">' +
+                        '<i class="ti ti-refresh"></i></button>'
+                    );
                 },
                 columns: [
                     {
