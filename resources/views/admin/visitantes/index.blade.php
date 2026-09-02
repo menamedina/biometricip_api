@@ -414,6 +414,8 @@ function cargarTabla() {
         estado:   $('#filterEstado').val()
     });
 
+    console.log('[Visitantes] Filtrar → ' + params.toString());
+
     xhrTabla = $.ajax({
         url: '/admin/visitantes/list?' + params,
         method: 'GET',
