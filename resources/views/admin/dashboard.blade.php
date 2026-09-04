@@ -303,8 +303,10 @@ async function loadDashboard() {
                 const fecha = dt.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' });
                 const hora  = dt.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
                 const thumb = r.foto_perfil_thumbnail;
+                const nombreEsc = name.replace(/'/g, "\\'");
+                const userId = r.user?.id;
                 const avatarHtml = thumb
-                    ? `<img src="${thumb}" style="width:32px;height:32px;object-fit:cover;border-radius:50%;border:2px solid #1ab394;flex-shrink:0;cursor:pointer;" alt="" onclick="showPhotoModal('${thumb}','${name}')" title="Ver foto">`
+                    ? `<img src="${thumb}" onclick="verFotoPerfil('${nombreEsc}','${thumb}',${userId})" style="width:32px;height:32px;object-fit:cover;border-radius:50%;border:2px solid #1ab394;flex-shrink:0;cursor:pointer;" title="Ver foto de perfil" alt="">`
                     : `<span style="width:32px;height:32px;border-radius:50%;background:#e9ecef;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fa-solid fa-user text-muted" style="font-size:14px;"></i></span>`;
                 return `<tr>
                     <td class="ps-3">
@@ -355,25 +357,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 30000);
 });
 
-function showPhotoModal(src, name) {
-    document.getElementById('photoModalImg').src = src;
-    document.getElementById('photoModalLabel').textContent = name;
-    new bootstrap.Modal(document.getElementById('photoModal')).show();
+// ── Foto de perfil ────────────────────────────────────────────────────────────
+async function verFotoPerfil(nombre, thumbnail, userId) {
+    const img = document.getElementById('modalFotoPerfilImg');
+    document.getElementById('modalFotoPerfilNombre').textContent = nombre;
+    img.src = thumbnail;
+    new bootstrap.Modal(document.getElementById('modalFotoPerfil')).show();
+    try {
+        const res  = await fetch(`/admin/empleados/${userId}/imagen-perfil`);
+        const data = await res.json();
+        if (data.imagen_base64) img.src = data.imagen_base64;
+    } catch(e) {}
 }
 </script>
 @endpush
 
-<!-- Modal foto empleado -->
-<div class="modal fade" id="photoModal" tabindex="-1" aria-labelledby="photoModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header border-0 pb-0">
-                <h6 class="modal-title fw-semibold" id="photoModalLabel"></h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+{{-- Modal previsualización foto de perfil --}}
+<div class="modal fade" id="modalFotoPerfil" tabindex="-1">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title mb-0" id="modalFotoPerfilNombre"></h6>
+                <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body text-center pt-2">
-                <img id="photoModalImg" src="" alt="Foto empleado"
-                     style="width:100%;max-width:220px;height:220px;object-fit:cover;border-radius:12px;border:3px solid #1ab394;">
+            <div class="modal-body p-2 text-center">
+                <img id="modalFotoPerfilImg" src="" alt="Foto de perfil"
+                     style="width:100%;max-width:260px;border-radius:12px;object-fit:cover;">
             </div>
         </div>
     </div>
