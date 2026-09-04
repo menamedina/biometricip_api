@@ -85,7 +85,15 @@
                     <li class="nav-item dropdown pe-3">
                         <a class="nav-link dropdown-toggle arrow-none nav-user px-3" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="false" aria-expanded="false">
                             <span class="account-user-avatar">
-                                <span class="avatar-title bg-primary rounded-circle fw-bold">{{ substr(auth()->user()->name ?? 'A', 0, 2) }}</span>
+                                @php
+                                    $navThumbnail = \App\Models\UserImagen::where('user_id', auth()->id())->value('imagen_thumbnail');
+                                @endphp
+                                @if($navThumbnail)
+                                    <img src="{{ $navThumbnail }}" alt="{{ auth()->user()->name }}"
+                                         style="width:32px;height:32px;object-fit:cover;border-radius:50%;border:2px solid #1ab394;">
+                                @else
+                                    <span class="avatar-title bg-primary rounded-circle fw-bold">{{ substr(auth()->user()->name ?? 'A', 0, 2) }}</span>
+                                @endif
                             </span>
                             <span class="d-lg-block d-none">
                                 <span class="account-user-name">{{ auth()->user()->name ?? 'Admin' }}</span>
