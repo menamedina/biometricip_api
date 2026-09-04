@@ -46,6 +46,9 @@
                     <button class="btn btn-primary btn-sm" onclick="cargarResumen()">
                         <i class="fa-solid fa-search me-1"></i> Buscar
                     </button>
+                    <button class="btn btn-secondary btn-sm" onclick="limpiarFiltros()">
+                        <i class="fa-solid fa-xmark me-1"></i> Limpiar
+                    </button>
                 </div>
             </div>
             <div class="collapse" id="filtrosExtraRes">
@@ -827,6 +830,17 @@ async function verFotoPerfil(nombre, thumbnail, userId) {
         const data = await res.json();
         if (data.imagen_base64) img.src = data.imagen_base64;
     } catch(e) {}
+}
+
+// ── Limpiar filtros ───────────────────────────────────────────────────────────
+function limpiarFiltros() {
+    const hoy = new Date().toISOString().slice(0, 10);
+    document.getElementById('filterSearch').value   = '';
+    document.getElementById('dateFrom').value       = hoy;
+    document.getElementById('dateTo').value         = hoy;
+    document.getElementById('filterEmpleado').value = '';
+    document.getElementById('filterDepto').value    = '';
+    cargarResumen();
 }
 
 // ── Exportar CSV ──────────────────────────────────────────────────────────────
