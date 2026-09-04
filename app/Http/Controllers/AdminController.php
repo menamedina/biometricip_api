@@ -370,6 +370,17 @@ class AdminController extends Controller
 
         $records = $query->get();
 
+        // Adjuntar thumbnail de foto de perfil (1 sola consulta)
+        $userIds    = $records->pluck('user_id')->filter()->unique()->values()->all();
+        $thumbnails = \App\Models\UserImagen::whereIn('user_id', $userIds)
+            ->get(['user_id', 'imagen_thumbnail'])
+            ->keyBy('user_id');
+
+        $records->transform(function ($record) use ($thumbnails) {
+            $record->foto_perfil_thumbnail = $thumbnails->get($record->user_id)?->imagen_thumbnail;
+            return $record;
+        });
+
         return response()->json(['data' => $records]);
     }
 

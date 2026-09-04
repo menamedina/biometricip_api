@@ -208,6 +208,22 @@
         </div>
     </div>
 </div>
+{{-- Modal previsualización foto de perfil --}}
+<div class="modal fade" id="modalFotoPerfil" tabindex="-1">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title mb-0" id="modalFotoPerfilNombre"></h6>
+                <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-2 text-center">
+                <img id="modalFotoPerfilImg" src="" alt="Foto de perfil"
+                     style="width:100%;max-width:260px;border-radius:12px;object-fit:cover;">
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- Botón flotante visibilidad de columnas --}}
 <div id="colVisBtnRes" title="Mostrar / ocultar columnas"
      style="position:fixed;bottom:70px;right:28px;z-index:1055;cursor:pointer;
@@ -364,7 +380,7 @@ async function cargarResumen() {
         registros.forEach(r => {
             const fecha = r.fecha_hora.slice(0, 10);
             const key   = `${r.user_id}_${fecha}`;
-            if (!grupos[key]) grupos[key] = { user: r.user, fecha, registros: [] };
+            if (!grupos[key]) grupos[key] = { user: r.user, fecha, thumbnail: r.foto_perfil_thumbnail, registros: [] };
             grupos[key].registros.push(r);
         });
 
@@ -451,8 +467,13 @@ async function cargarResumen() {
             const btnAdd = isEmpleado ? '' : `<button class="btn btn-outline-primary btn-sm py-0 px-1" onclick="abrirModalManualPre(${g.user?.id}, '${g.fecha}')" title="Agregar registro"><i class="fa-solid fa-plus fa-xs"></i></button>`;
 
             const colCls = ['col-res-e1','col-res-s1','col-res-e2','col-res-s2','col-res-e3','col-res-s3','col-res-e4','col-res-s4'];
+            const nombreEsc = (g.user?.name ?? '').replace(/'/g, "\\'");
+            const avatarHtml = g.thumbnail
+                ? `<img src="${g.thumbnail}" onclick="verFotoPerfil('${nombreEsc}','${g.thumbnail}',${g.user?.id})" style="width:32px;height:32px;object-fit:cover;border-radius:50%;border:2px solid #1ab394;flex-shrink:0;cursor:pointer;" title="Ver foto de perfil" alt="">`
+                : `<span style="width:32px;height:32px;border-radius:50%;background:#e9ecef;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fa-solid fa-user text-muted" style="font-size:14px;"></i></span>`;
+
             filas += `<tr>
-                <td class="col-res-empleado">${g.user?.name ?? 'N/A'}</td>
+                <td class="col-res-empleado"><div class="d-flex align-items-center gap-2">${avatarHtml}<span>${g.user?.name ?? 'N/A'}</span></div></td>
                 <td class="col-res-codigo"><span class="badge bg-primary">${g.user?.codigo_empleado ?? '—'}</span></td>
                 <td class="col-res-depto"><small class="text-muted">${deptoNombre}</small></td>
                 <td class="col-res-fecha">${fechaFmt}</td>
@@ -735,6 +756,19 @@ function toggleColVisPanelRes() {
     } else {
         panel.style.display = 'none';
     }
+}
+
+// ── Foto de perfil ────────────────────────────────────────────────────────────
+async function verFotoPerfil(nombre, thumbnail, userId) {
+    const img = document.getElementById('modalFotoPerfilImg');
+    document.getElementById('modalFotoPerfilNombre').textContent = nombre;
+    img.src = thumbnail;
+    new bootstrap.Modal(document.getElementById('modalFotoPerfil')).show();
+    try {
+        const res  = await fetch(`/admin/empleados/${userId}/imagen-perfil`);
+        const data = await res.json();
+        if (data.imagen_base64) img.src = data.imagen_base64;
+    } catch(e) {}
 }
 
 // ── Exportar CSV ──────────────────────────────────────────────────────────────
