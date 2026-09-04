@@ -304,7 +304,7 @@ async function loadDashboard() {
                 const hora  = dt.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
                 const thumb = r.foto_perfil_thumbnail;
                 const avatarHtml = thumb
-                    ? `<img src="${thumb}" style="width:32px;height:32px;object-fit:cover;border-radius:50%;border:2px solid #1ab394;flex-shrink:0;" alt="">`
+                    ? `<img src="${thumb}" style="width:32px;height:32px;object-fit:cover;border-radius:50%;border:2px solid #1ab394;flex-shrink:0;cursor:pointer;" alt="" onclick="showPhotoModal('${thumb}','${name}')" title="Ver foto">`
                     : `<span style="width:32px;height:32px;border-radius:50%;background:#e9ecef;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fa-solid fa-user text-muted" style="font-size:14px;"></i></span>`;
                 return `<tr>
                     <td class="ps-3">
