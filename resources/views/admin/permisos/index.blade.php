@@ -15,35 +15,49 @@
         </div>
     </div>
 
+    {{-- Filtros --}}
     <div class="card mb-3">
-        <div class="card-body p-3">
-            <div class="row g-2">
+        <div class="card-body p-2">
+            <div class="row g-2 align-items-end">
                 <div class="col-md-2">
-                    <input type="date" id="filterFrom" class="form-control form-control-sm" onchange="loadPermisos()">
+                    <label class="form-label form-label-sm mb-1">Desde</label>
+                    <input type="date" id="filterFrom" class="form-control form-control-sm">
                 </div>
                 <div class="col-md-2">
-                    <input type="date" id="filterTo" class="form-control form-control-sm" onchange="loadPermisos()">
+                    <label class="form-label form-label-sm mb-1">Hasta</label>
+                    <input type="date" id="filterTo" class="form-control form-control-sm">
                 </div>
                 <div class="col-md-3">
-                    <select id="filterEmpleado" class="form-select form-select-sm" onchange="loadPermisos()">
+                    <label class="form-label form-label-sm mb-1">Empleado</label>
+                    <select id="filterEmpleado" class="form-select form-select-sm">
                         <option value="">Todos los empleados</option>
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <select id="filterEstado" class="form-select form-select-sm" onchange="loadPermisos()">
+                    <label class="form-label form-label-sm mb-1">Estado</label>
+                    <select id="filterEstado" class="form-select form-select-sm">
                         <option value="">Todos los estados</option>
                         <option value="pendiente">Pendiente</option>
                         <option value="aprobado">Aprobado</option>
                         <option value="rechazado">Rechazado</option>
                     </select>
                 </div>
+                <div class="col-md-auto d-flex align-items-end gap-2">
+                    <button class="btn btn-sm btn-primary" onclick="loadPermisos()">
+                        <i class="fa-solid fa-search me-1"></i> Filtrar
+                    </button>
+                    <button class="btn btn-sm btn-secondary" onclick="limpiarFiltros()">
+                        <i class="fa-solid fa-xmark me-1"></i> Limpiar
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
+    {{-- Tabla --}}
     <div class="card">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0 w-100" id="permisosTable">
                 <thead class="table-light">
                     <tr>
                         <th>Empleado</th>
@@ -56,12 +70,14 @@
                     </tr>
                 </thead>
                 <tbody id="permisosTbody">
-                    <tr><td colspan="7" class="text-center text-muted py-3">Cargando...</td></tr>
+                    <tr id="trLoadingPerm">
+                        <td colspan="7" class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status" style="width:2rem;height:2rem;"></div>
+                            <p class="text-muted mt-2 mb-0 small">Cargando permisos...</p>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
-        </div>
-        <div class="card-footer">
-            <div id="permisosPagination"></div>
         </div>
     </div>
 </div>
@@ -113,7 +129,40 @@
 </div>
 @endsection
 
+@push('styles')
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
+<style>
+div.dataTables_wrapper div.dataTables_length,
+div.dataTables_wrapper div.dataTables_filter {
+    padding: 12px 16px 0;
+}
+div.dataTables_wrapper div.dataTables_info,
+div.dataTables_wrapper div.dataTables_paginate {
+    padding: 10px 16px 12px;
+    border-top: 1px solid #e9ecef;
+}
+div.dataTables_wrapper div.dataTables_length label,
+div.dataTables_wrapper div.dataTables_filter label {
+    font-size: 13px;
+    color: #6c757d;
+    margin-bottom: 8px;
+}
+div.dataTables_wrapper div.dataTables_info {
+    font-size: 13px;
+    color: #6c757d;
+}
+#permisosTable th, #permisosTable td {
+    font-size: 13px;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+</style>
+@endpush
+
 @push('scripts')
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script>
 const csrfToken = '{{ csrf_token() }}';
 const tipoLabels = {
@@ -127,6 +176,7 @@ const estadoBadge = {
     aprobado:  'bg-success',
     rechazado: 'bg-danger',
 };
+var tablaPermisos = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     const hoy   = new Date().toISOString().slice(0,10);
@@ -141,7 +191,7 @@ async function loadEmpleados() {
     const res  = await fetch('/admin/empleados/list?per_page=500', { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
     const data = await res.json();
     const empleados = data.data || [];
-    const sel = document.getElementById('filterEmpleado');
+    const sel  = document.getElementById('filterEmpleado');
     const pSel = document.getElementById('pEmpleado');
     pSel.innerHTML = '<option value="">— Seleccionar —</option>';
     empleados.forEach(e => {
@@ -151,51 +201,127 @@ async function loadEmpleados() {
     });
 }
 
-async function loadPermisos(page = 1) {
-    const from    = document.getElementById('filterFrom').value;
-    const to      = document.getElementById('filterTo').value;
-    const userId  = document.getElementById('filterEmpleado').value;
-    const estado  = document.getElementById('filterEstado').value;
-    let url = `/admin/permisos/list?page=${page}&per_page=20`;
+async function loadPermisos() {
+    const from   = document.getElementById('filterFrom').value;
+    const to     = document.getElementById('filterTo').value;
+    const userId = document.getElementById('filterEmpleado').value;
+    const estado = document.getElementById('filterEstado').value;
+    let url = `/admin/permisos/list?per_page=1000`;
     if (from)   url += `&date_from=${from}`;
     if (to)     url += `&date_to=${to}`;
     if (userId) url += `&user_id=${userId}`;
     if (estado) url += `&estado=${estado}`;
 
-    const res  = await fetch(url, { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
-    const data = await res.json();
-    const tbody = document.getElementById('permisosTbody');
-    const items = data.data || [];
+    if (tablaPermisos) { tablaPermisos.processing(true); }
 
-    if (!items.length) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Sin permisos</td></tr>';
-        return;
-    }
-    tbody.innerHTML = items.map(p => `<tr>
-        <td><strong>${p.user?.name ?? 'N/A'}</strong><br><small class="text-muted">${p.user?.codigo_empleado ?? ''}</small></td>
-        <td>${p.fecha ? p.fecha.slice(0,10) : '—'}</td>
-        <td>${tipoLabels[p.tipo] ?? p.tipo}</td>
-        <td>${p.horas_permiso}h</td>
-        <td><small class="text-muted">${p.motivo || '—'}</small></td>
-        <td><span class="badge ${estadoBadge[p.estado] ?? 'bg-secondary'}">${p.estado}</span></td>
-        <td>
-            ${p.estado === 'pendiente' ? `
-            <button class="btn btn-sm btn-success me-1" onclick="aprobar(${p.id})" title="Aprobar"><i class="fa-solid fa-check"></i></button>
-            <button class="btn btn-sm btn-danger me-1" onclick="rechazar(${p.id})" title="Rechazar"><i class="fa-solid fa-xmark"></i></button>
-            ` : ''}
-            <button class="btn btn-sm btn-outline-danger" onclick="eliminar(${p.id})"><i class="fa-solid fa-trash"></i></button>
-        </td>
-    </tr>`).join('');
+    try {
+        const res  = await fetch(url, { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
+        const data = await res.json();
+        const items = data.data || [];
 
-    // Paginación
-    const nav = document.getElementById('permisosPagination');
-    if (data.last_page > 1) {
-        let html = '<nav><ul class="pagination pagination-sm mb-0">';
-        for (let i = 1; i <= data.last_page; i++) {
-            html += `<li class="page-item ${i === data.current_page ? 'active' : ''}"><a class="page-link" href="#" onclick="loadPermisos(${i});return false">${i}</a></li>`;
+        var trLoading = document.getElementById('trLoadingPerm');
+        if (trLoading) trLoading.remove();
+
+        if ($.fn.DataTable.isDataTable('#permisosTable')) {
+            tablaPermisos.processing(false);
+            tablaPermisos.clear().rows.add(items).draw();
+        } else {
+            tablaPermisos = $('#permisosTable').DataTable({
+                data: items,
+                processing: true,
+                order: [[1, 'desc']],
+                scrollX: true,
+                pageLength: 25,
+                lengthMenu: [10, 25, 50, 100],
+                language: {
+                    lengthMenu: 'Mostrar _MENU_ registros',
+                    zeroRecords: 'Sin permisos',
+                    info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+                    infoEmpty: 'Mostrando 0 registros',
+                    infoFiltered: '(filtrado de _MAX_ registros)',
+                    search: 'Buscar:',
+                    paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' },
+                    processing: 'Procesando...',
+                },
+                initComplete: function() {
+                    $('#permisosTable_length select').addClass('form-select form-select-sm d-inline-block w-auto');
+                    $('#permisosTable_filter input').addClass('form-control form-control-sm d-inline-block w-auto');
+                    $('#permisosTable_filter').prepend(
+                        '<button class="btn btn-sm btn-outline-secondary me-2" onclick="loadPermisos()" title="Recargar tabla"><i class="ti ti-refresh"></i></button>'
+                    );
+                },
+                columns: [
+                    {
+                        title: 'Empleado',
+                        data: 'user',
+                        render: function(data, type) {
+                            if (type !== 'display') return data ? data.name : '';
+                            return data
+                                ? '<strong>' + data.name + '</strong><br><small class="text-muted">' + (data.codigo_empleado || '') + '</small>'
+                                : 'N/A';
+                        }
+                    },
+                    {
+                        title: 'Fecha',
+                        data: 'fecha',
+                        render: function(data) { return data ? data.slice(0,10) : '—'; }
+                    },
+                    {
+                        title: 'Tipo',
+                        data: 'tipo',
+                        render: function(data) { return tipoLabels[data] ?? data; }
+                    },
+                    {
+                        title: 'Horas',
+                        data: 'horas_permiso',
+                        render: function(data) { return data + 'h'; }
+                    },
+                    {
+                        title: 'Motivo',
+                        data: 'motivo',
+                        render: function(data) {
+                            return '<small class="text-muted">' + (data || '—') + '</small>';
+                        }
+                    },
+                    {
+                        title: 'Estado',
+                        data: 'estado',
+                        render: function(data, type) {
+                            if (type !== 'display') return data;
+                            return '<span class="badge ' + (estadoBadge[data] ?? 'bg-secondary') + '">' + data + '</span>';
+                        }
+                    },
+                    {
+                        title: 'Acciones',
+                        data: 'id',
+                        orderable: false,
+                        render: function(data, type, row) {
+                            var btns = '';
+                            if (row.estado === 'pendiente') {
+                                btns += '<button class="btn btn-sm btn-success me-1" onclick="aprobar(' + data + ')" title="Aprobar"><i class="fa-solid fa-check"></i></button>';
+                                btns += '<button class="btn btn-sm btn-danger me-1" onclick="rechazar(' + data + ')" title="Rechazar"><i class="fa-solid fa-xmark"></i></button>';
+                            }
+                            btns += '<button class="btn btn-sm btn-outline-danger" onclick="eliminar(' + data + ')"><i class="fa-solid fa-trash"></i></button>';
+                            return btns;
+                        }
+                    }
+                ]
+            });
         }
-        nav.innerHTML = html + '</ul></nav>';
-    } else nav.innerHTML = '';
+    } catch(e) {
+        if (tablaPermisos) tablaPermisos.processing(false);
+        console.error(e);
+    }
+}
+
+function limpiarFiltros() {
+    const hoy = new Date().toISOString().slice(0,10);
+    const inicio = new Date(); inicio.setDate(1);
+    document.getElementById('filterFrom').value     = inicio.toISOString().slice(0,10);
+    document.getElementById('filterTo').value       = hoy;
+    document.getElementById('filterEmpleado').value = '';
+    document.getElementById('filterEstado').value   = '';
+    loadPermisos();
 }
 
 function openModal() {
@@ -203,7 +329,7 @@ function openModal() {
     document.getElementById('pEmpleado').value = '';
     document.getElementById('pFecha').value    = new Date().toISOString().slice(0,10);
     document.getElementById('pTipo').value     = 'salida_temprana';
-    document.getElementById('pHoras').value   = '';
+    document.getElementById('pHoras').value    = '';
     document.getElementById('pMotivo').value   = '';
     document.getElementById('modalTitle').textContent = 'Nuevo Permiso';
     document.getElementById('permisoError').style.display = 'none';

@@ -68,8 +68,8 @@
                         </div>
                     </form>
                 </div>
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0 w-100" id="deptosTable">
                         <thead class="table-light">
                             <tr>
                                 <th>Nombre</th>
@@ -163,8 +163,8 @@
                         </div>
                     </form>
                 </div>
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0 w-100" id="cargosTable">
                         <thead class="table-light">
                             <tr>
                                 <th>Nombre</th>
@@ -328,7 +328,32 @@
 @endsection
 
 @push('styles')
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
 <style>
+div.dataTables_wrapper div.dataTables_length,
+div.dataTables_wrapper div.dataTables_filter {
+    padding: 10px 14px 0;
+}
+div.dataTables_wrapper div.dataTables_info,
+div.dataTables_wrapper div.dataTables_paginate {
+    padding: 8px 14px 10px;
+    border-top: 1px solid #e9ecef;
+}
+div.dataTables_wrapper div.dataTables_length label,
+div.dataTables_wrapper div.dataTables_filter label {
+    font-size: 13px;
+    color: #6c757d;
+    margin-bottom: 6px;
+}
+div.dataTables_wrapper div.dataTables_info {
+    font-size: 13px;
+    color: #6c757d;
+}
+#deptosTable th, #deptosTable td,
+#cargosTable th, #cargosTable td {
+    font-size: 13px;
+    vertical-align: middle;
+}
 .ac-dropdown {
     position: absolute;
     top: 100%;
@@ -362,6 +387,9 @@
 @endpush
 
 @push('scripts')
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script>
 const deptoNames = @json($allDeptoNames);
 const cargoNames = @json($allCargoNames);
@@ -485,5 +513,40 @@ function openCargoModal(data = null) {
     }, { once: true });
     modal.show();
 }
+
+const dtLang = {
+    lengthMenu: 'Mostrar _MENU_ registros',
+    zeroRecords: 'Sin resultados',
+    info: 'Mostrando _START_ a _END_ de _TOTAL_',
+    infoEmpty: 'Sin registros',
+    infoFiltered: '(filtrado de _MAX_)',
+    search: 'Buscar:',
+    paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' },
+};
+
+$(document).ready(function() {
+    $('#deptosTable').DataTable({
+        language: dtLang,
+        pageLength: 10,
+        lengthMenu: [10, 25, 50],
+        order: [[0, 'asc']],
+        columnDefs: [{ orderable: false, targets: 3 }],
+        initComplete: function() {
+            $('#deptosTable_length select').addClass('form-select form-select-sm d-inline-block w-auto');
+            $('#deptosTable_filter input').addClass('form-control form-control-sm d-inline-block w-auto');
+        },
+    });
+    $('#cargosTable').DataTable({
+        language: dtLang,
+        pageLength: 10,
+        lengthMenu: [10, 25, 50],
+        order: [[0, 'asc']],
+        columnDefs: [{ orderable: false, targets: 3 }],
+        initComplete: function() {
+            $('#cargosTable_length select').addClass('form-select form-select-sm d-inline-block w-auto');
+            $('#cargosTable_filter input').addClass('form-control form-control-sm d-inline-block w-auto');
+        },
+    });
+});
 </script>
 @endpush

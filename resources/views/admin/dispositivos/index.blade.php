@@ -90,26 +90,29 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Nombre</th>
-                                    <th>IP</th>
-                                    <th>Modelo</th>
-                                    <th>Serial</th>
-                                    <th>Sede</th>
-                                    <th>Última Sync</th>
-                                    <th>Estado</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="devicesTbody">
-                                <tr><td colspan="8" class="text-center text-muted py-3">Cargando...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0 w-100" id="devicesTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nombre</th>
+                                <th>IP</th>
+                                <th>Modelo</th>
+                                <th>Serial</th>
+                                <th>Sede</th>
+                                <th>Última Sync</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="devicesTbody">
+                            <tr id="trLoadingDev">
+                                <td colspan="8" class="text-center py-5">
+                                    <div class="spinner-border text-primary" role="status" style="width:2rem;height:2rem;"></div>
+                                    <p class="text-muted mt-2 mb-0 small">Cargando dispositivos...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -282,7 +285,24 @@
 </div>
 @endsection
 
+@push('styles')
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
+<style>
+div.dataTables_wrapper div.dataTables_length,
+div.dataTables_wrapper div.dataTables_filter { padding: 12px 16px 0; }
+div.dataTables_wrapper div.dataTables_info,
+div.dataTables_wrapper div.dataTables_paginate { padding: 10px 16px 12px; border-top: 1px solid #e9ecef; }
+div.dataTables_wrapper div.dataTables_length label,
+div.dataTables_wrapper div.dataTables_filter label { font-size: 13px; color: #6c757d; margin-bottom: 8px; }
+div.dataTables_wrapper div.dataTables_info { font-size: 13px; color: #6c757d; }
+#devicesTable th, #devicesTable td { font-size: 13px; vertical-align: middle; white-space: nowrap; }
+</style>
+@endpush
+
 @push('scripts')
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script>
 const csrfToken = '{{ csrf_token() }}';
 let sedesCache = [];
@@ -300,65 +320,125 @@ async function loadSedes() {
 }
 
 // ── Cargar dispositivos ──────────────────────────────────────────────────────
+var tablaDevices = null;
+
 async function loadDevices() {
+    if (tablaDevices) tablaDevices.processing(true);
+
     try {
         const res = await fetch('/admin/dispositivos/list', { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
         const devices = await res.json();
-        const tbody = document.getElementById('devicesTbody');
 
         // Stats
-        document.getElementById('statTotal').textContent = devices.length;
+        document.getElementById('statTotal').textContent   = devices.length;
         document.getElementById('statActivos').textContent = devices.filter(d => d.is_active).length;
-
-        const lastSync = devices
-            .filter(d => d.ultima_sync)
-            .sort((a, b) => new Date(b.ultima_sync) - new Date(a.ultima_sync))[0];
+        const lastSync = devices.filter(d => d.ultima_sync).sort((a, b) => new Date(b.ultima_sync) - new Date(a.ultima_sync))[0];
         document.getElementById('statLastSync').textContent = lastSync
             ? new Date(lastSync.ultima_sync).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })
             : '--';
 
-        if (devices.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">Sin dispositivos registrados</td></tr>';
-            return;
-        }
+        var trLoading = document.getElementById('trLoadingDev');
+        if (trLoading) trLoading.remove();
 
-        tbody.innerHTML = devices.map(d => `
-            <tr>
-                <td><strong>${d.nombre}</strong></td>
-                <td><code>${d.ip}:${d.puerto}</code></td>
-                <td>${d.modelo || '—'}</td>
-                <td><small>${d.numero_serie || '—'}</small></td>
-                <td><span class="badge bg-primary">${d.sede?.nombre || '—'}</span></td>
-                <td>${d.ultima_sync ? new Date(d.ultima_sync).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' }) : '<span class="text-muted">Nunca</span>'}</td>
-                <td><span class="badge ${d.is_active ? 'bg-success' : 'bg-danger'}">${d.is_active ? 'Activo' : 'Inactivo'}</span></td>
-                <td>
-                    <div class="btn-group btn-group-sm">
-                        <button class="btn btn-outline-success" onclick="syncDevice(${d.id}, '${d.nombre}')" title="Sincronizar asistencias">
-                            <i class="fa-solid fa-rotate"></i> Sync
-                        </button>
-                        <button class="btn btn-outline-danger" onclick="clearDevice(${d.id}, '${d.nombre}')" title="Vaciar registros del biométrico">
-                            <i class="fa-solid fa-trash-can"></i> Vaciar
-                        </button>
-                        <button class="btn btn-outline-info" onclick="testDevice(${d.id})" title="Probar conexión">
-                            <i class="fa-solid fa-wifi"></i>
-                        </button>
-                        <button class="btn btn-outline-primary" onclick="showDeviceUsers(${d.id}, '${d.nombre}')" title="Ver usuarios">
-                            <i class="fa-solid fa-users"></i>
-                        </button>
-                        <button class="btn btn-outline-secondary" onclick="showSyncHistory(${d.id}, '${d.nombre}')" title="Historial sync">
-                            <i class="fa-solid fa-clock-rotate-left"></i>
-                        </button>
-                        <button class="btn btn-outline-warning" onclick='editDevice(${JSON.stringify(d).replace(/'/g, "&#39;")})' title="Editar">
-                            <i class="fa-solid fa-pen"></i>
-                        </button>
-                        <button class="btn btn-outline-danger" onclick="deleteDevice(${d.id})" title="Eliminar dispositivo">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        `).join('');
-    } catch(e) { console.error(e); }
+        if ($.fn.DataTable.isDataTable('#devicesTable')) {
+            tablaDevices.processing(false);
+            tablaDevices.clear().rows.add(devices).draw();
+        } else {
+            tablaDevices = $('#devicesTable').DataTable({
+                data: devices,
+                processing: true,
+                order: [[0, 'asc']],
+                scrollX: true,
+                pageLength: 10,
+                lengthMenu: [10, 25, 50],
+                language: {
+                    lengthMenu: 'Mostrar _MENU_ registros',
+                    zeroRecords: 'Sin dispositivos registrados',
+                    info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+                    infoEmpty: 'Sin dispositivos',
+                    infoFiltered: '(filtrado de _MAX_)',
+                    search: 'Buscar:',
+                    paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' },
+                    processing: 'Procesando...',
+                },
+                initComplete: function() {
+                    $('#devicesTable_length select').addClass('form-select form-select-sm d-inline-block w-auto');
+                    $('#devicesTable_filter input').addClass('form-control form-control-sm d-inline-block w-auto');
+                    $('#devicesTable_filter').prepend(
+                        '<button class="btn btn-sm btn-outline-secondary me-2" onclick="loadDevices()" title="Recargar"><i class="ti ti-refresh"></i></button>'
+                    );
+                },
+                columns: [
+                    {
+                        title: 'Nombre',
+                        data: 'nombre',
+                        render: function(data) { return '<strong>' + data + '</strong>'; }
+                    },
+                    {
+                        title: 'IP',
+                        data: 'ip',
+                        render: function(data, type, row) {
+                            if (type !== 'display') return data;
+                            return '<code>' + data + ':' + row.puerto + '</code>';
+                        }
+                    },
+                    { title: 'Modelo',  data: 'modelo',       defaultContent: '—' },
+                    {
+                        title: 'Serial',
+                        data: 'numero_serie',
+                        render: function(data) { return data ? '<small>' + data + '</small>' : '—'; }
+                    },
+                    {
+                        title: 'Sede',
+                        data: 'sede',
+                        render: function(data, type) {
+                            if (type !== 'display') return data ? data.nombre : '';
+                            return data ? '<span class="badge bg-primary">' + data.nombre + '</span>' : '—';
+                        }
+                    },
+                    {
+                        title: 'Última Sync',
+                        data: 'ultima_sync',
+                        render: function(data, type) {
+                            if (type !== 'display') return data || '';
+                            return data
+                                ? new Date(data).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })
+                                : '<span class="text-muted">Nunca</span>';
+                        }
+                    },
+                    {
+                        title: 'Estado',
+                        data: 'is_active',
+                        render: function(data, type) {
+                            if (type !== 'display') return data ? 'Activo' : 'Inactivo';
+                            return '<span class="badge ' + (data ? 'bg-success' : 'bg-danger') + '">' + (data ? 'Activo' : 'Inactivo') + '</span>';
+                        }
+                    },
+                    {
+                        title: 'Acciones',
+                        data: 'id',
+                        orderable: false,
+                        render: function(data, type, row) {
+                            var nombre = row.nombre.replace(/'/g, "\\'");
+                            var rowJson = JSON.stringify(row).replace(/'/g, "&#39;");
+                            return '<div class="btn-group btn-group-sm">' +
+                                '<button class="btn btn-outline-success" onclick="syncDevice(' + data + ',\'' + nombre + '\')" title="Sincronizar"><i class="fa-solid fa-rotate"></i> Sync</button>' +
+                                '<button class="btn btn-outline-danger" onclick="clearDevice(' + data + ',\'' + nombre + '\')" title="Vaciar"><i class="fa-solid fa-trash-can"></i> Vaciar</button>' +
+                                '<button class="btn btn-outline-info" onclick="testDevice(' + data + ')" title="Probar conexión"><i class="fa-solid fa-wifi"></i></button>' +
+                                '<button class="btn btn-outline-primary" onclick="showDeviceUsers(' + data + ',\'' + nombre + '\')" title="Usuarios"><i class="fa-solid fa-users"></i></button>' +
+                                '<button class="btn btn-outline-secondary" onclick="showSyncHistory(' + data + ',\'' + nombre + '\')" title="Historial sync"><i class="fa-solid fa-clock-rotate-left"></i></button>' +
+                                '<button class="btn btn-outline-warning" onclick=\'editDevice(' + rowJson + ')\' title="Editar"><i class="fa-solid fa-pen"></i></button>' +
+                                '<button class="btn btn-outline-danger" onclick="deleteDevice(' + data + ')" title="Eliminar"><i class="fa-solid fa-trash"></i></button>' +
+                                '</div>';
+                        }
+                    }
+                ]
+            });
+        }
+    } catch(e) {
+        if (tablaDevices) tablaDevices.processing(false);
+        console.error(e);
+    }
 }
 
 // ── CRUD Dispositivo ─────────────────────────────────────────────────────────
