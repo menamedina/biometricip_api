@@ -360,7 +360,21 @@ div.dataTables_wrapper div.dataTables_info {
     vertical-align: middle;
     white-space: nowrap;
 }
-#visitantesTable td:nth-child(14) { white-space: normal; } /* Observación */
+#visitantesTable td:nth-child(14) {
+    white-space: normal;
+    max-width: 180px;
+    overflow: hidden;
+}
+#visitantesTable td:nth-child(14) small {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+    max-width: 160px;
+    word-break: break-word;
+}
 </style>
 @endpush
 
