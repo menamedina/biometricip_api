@@ -21,8 +21,7 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
+                        <table class="table table-hover mb-0 w-100" id="empleadoresTable">
                             <thead class="table-light">
                                 <tr>
                                     <th>#</th>
@@ -65,7 +64,6 @@
                                 @endforelse
                             </tbody>
                         </table>
-                    </div>
                 </div>
             </div>
         </div>
@@ -107,13 +105,65 @@
 </div>
 @endsection
 
+@push('styles')
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
+<style>
+div.dataTables_wrapper div.dataTables_length,
+div.dataTables_wrapper div.dataTables_filter {
+    padding: 12px 16px 0;
+}
+div.dataTables_wrapper div.dataTables_info,
+div.dataTables_wrapper div.dataTables_paginate {
+    padding: 10px 16px 12px;
+    border-top: 1px solid #e9ecef;
+}
+div.dataTables_wrapper div.dataTables_length label,
+div.dataTables_wrapper div.dataTables_filter label {
+    font-size: 13px;
+    color: #6c757d;
+    margin-bottom: 8px;
+}
+div.dataTables_wrapper div.dataTables_info {
+    font-size: 13px;
+    color: #6c757d;
+}
+#empleadoresTable th, #empleadoresTable td {
+    font-size: 13px;
+    vertical-align: middle;
+}
+</style>
+@endpush
+
 @push('scripts')
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script>
 const csrfToken = '{{ csrf_token() }}';
 let modalBS = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     modalBS = new bootstrap.Modal(document.getElementById('modalEmpleador'));
+
+    $('#empleadoresTable').DataTable({
+        order: [[0, 'asc']],
+        pageLength: 25,
+        lengthMenu: [10, 25, 50, 100],
+        language: {
+            lengthMenu: 'Mostrar _MENU_ registros',
+            zeroRecords: 'Sin empleadores',
+            info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+            infoEmpty: 'Mostrando 0 registros',
+            infoFiltered: '(filtrado de _MAX_ registros)',
+            search: 'Buscar:',
+            paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' },
+        },
+        initComplete: function() {
+            $('#empleadoresTable_length select').addClass('form-select form-select-sm d-inline-block w-auto');
+            $('#empleadoresTable_filter input').addClass('form-control form-control-sm d-inline-block w-auto');
+        },
+        columnDefs: [{ orderable: false, targets: 4 }],
+    });
 });
 
 function abrirModal(id = null, nombre = '', descripcion = '', activo = true) {

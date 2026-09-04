@@ -145,9 +145,8 @@
                     <h5 class="card-title mb-0"><i class="ti ti-history me-1"></i> Historial de notificaciones</h5>
                     <span class="badge bg-secondary" id="historialCount">{{ $historial->count() }} registro(s)</span>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-0">
                     @if($historial->count() > 0)
-                    <div class="table-responsive">
                         <table id="historialTable" class="table table-hover mb-0 w-100">
                             <thead class="table-light">
                                 <tr>
@@ -205,7 +204,6 @@
                                 @endforeach
                             </tbody>
                         </table>
-                    </div>
                     @else
                     <div class="py-4 text-center text-muted">
                         <i class="ti ti-bell-off" style="font-size:32px;"></i>
@@ -225,9 +223,8 @@
                     <h5 class="card-title mb-0"><i class="ti ti-device-mobile-check me-1"></i> Dispositivos con Token FCM</h5>
                     <span class="badge bg-primary" id="dispositivosCount">{{ $dispositivos->count() }} dispositivo(s)</span>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-0">
                     @if($dispositivos->count() > 0)
-                    <div class="table-responsive">
                         <table id="dispositivosTable" class="table table-hover mb-0 w-100">
                             <thead class="table-light">
                                 <tr>
@@ -310,7 +307,6 @@
                                 @endforeach
                             </tbody>
                         </table>
-                    </div>
                     @else
                     <div class="py-4 text-center text-muted">
                         <i class="ti ti-device-mobile-off" style="font-size: 32px;"></i>
@@ -345,13 +341,29 @@
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
 <style>
 div.dataTables_wrapper div.dataTables_length,
-div.dataTables_wrapper div.dataTables_filter { margin-bottom: 8px; }
+div.dataTables_wrapper div.dataTables_filter {
+    padding: 12px 16px 0;
+}
 div.dataTables_wrapper div.dataTables_info,
-div.dataTables_wrapper div.dataTables_paginate { margin-top: 8px; }
+div.dataTables_wrapper div.dataTables_paginate {
+    padding: 10px 16px 12px;
+    border-top: 1px solid #e9ecef;
+}
 div.dataTables_wrapper div.dataTables_length label,
-div.dataTables_wrapper div.dataTables_filter label { font-size: .875rem; color: #6c757d; }
-div.dataTables_wrapper div.dataTables_filter input:focus { border-color: #4F46E5; box-shadow: 0 0 0 .2rem rgba(79,70,229,.15); }
-div.dataTables_wrapper div.dataTables_info { font-size: .8rem; color: #6c757d; }
+div.dataTables_wrapper div.dataTables_filter label {
+    font-size: 13px;
+    color: #6c757d;
+    margin-bottom: 8px;
+}
+div.dataTables_wrapper div.dataTables_info {
+    font-size: 13px;
+    color: #6c757d;
+}
+#historialTable th, #historialTable td,
+#dispositivosTable th, #dispositivosTable td {
+    font-size: 13px;
+    vertical-align: middle;
+}
 </style>
 @endpush
 
@@ -560,33 +572,41 @@ async function sendNotification() {
 
 // DataTable dispositivos
 const isAdminTenantBlade = {{ auth()->user()->admin_tenant ? 'true' : 'false' }};
+const dtLang = {
+    lengthMenu: 'Mostrar _MENU_ registros',
+    zeroRecords: 'Sin registros',
+    info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+    infoEmpty: 'Mostrando 0 registros',
+    infoFiltered: '(filtrado de _MAX_ registros)',
+    search: 'Buscar:',
+    paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' },
+    processing: 'Procesando...',
+};
+
 $(document).ready(function () {
     if ($('#historialTable').length) {
         $('#historialTable').DataTable({
-            language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
+            language: dtLang,
             pageLength: 10,
             order: [[0, 'desc']],
             columnDefs: [{ orderable: false, targets: [3, 8] }],
-            dom: "<'row mb-2'<'col-sm-6'l><'col-sm-6'f>>" +
-                 "<'row'<'col-12'tr>>" +
-                 "<'row mt-2'<'col-sm-5'i><'col-sm-7'p>>",
+            initComplete: function() {
+                $('#historialTable_length select').addClass('form-select form-select-sm d-inline-block w-auto');
+                $('#historialTable_filter input').addClass('form-control form-control-sm d-inline-block w-auto');
+            },
         });
     }
 
     if ($('#dispositivosTable').length) {
-        const columnDefs = [{ orderable: false, targets: isAdminTenantBlade ? 7 : 6 }];
-
         $('#dispositivosTable').DataTable({
-            language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
+            language: dtLang,
             pageLength: 10,
             order: [[isAdminTenantBlade ? 5 : 4, 'desc']],
-            columnDefs: columnDefs,
-            searching: true,
-            paging: true,
-            info: true,
-            dom: "<'row mb-2'<'col-sm-6'l><'col-sm-6'f>>" +
-                 "<'row'<'col-12'tr>>" +
-                 "<'row mt-2'<'col-sm-5'i><'col-sm-7'p>>",
+            columnDefs: [{ orderable: false, targets: isAdminTenantBlade ? 7 : 6 }],
+            initComplete: function() {
+                $('#dispositivosTable_length select').addClass('form-select form-select-sm d-inline-block w-auto');
+                $('#dispositivosTable_filter input').addClass('form-control form-control-sm d-inline-block w-auto');
+            },
         });
     }
 });
@@ -640,13 +660,14 @@ async function recargarHistorial() {
 
         // Re-inicializar DataTable
         $('#historialTable').DataTable({
-            language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
+            language: dtLang,
             pageLength: 10,
             order: [[0, 'desc']],
             columnDefs: [{ orderable: false, targets: [3, 8] }],
-            dom: "<'row mb-2'<'col-sm-6'l><'col-sm-6'f>>" +
-                 "<'row'<'col-12'tr>>" +
-                 "<'row mt-2'<'col-sm-5'i><'col-sm-7'p>>",
+            initComplete: function() {
+                $('#historialTable_length select').addClass('form-select form-select-sm d-inline-block w-auto');
+                $('#historialTable_filter input').addClass('form-control form-control-sm d-inline-block w-auto');
+            },
         });
 
         const badge = document.getElementById('historialCount');

@@ -16,8 +16,8 @@
     </div>
 
     <div class="card">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0 w-100" id="horariosTable">
                 <thead class="table-light">
                     <tr>
                         <th>Nombre</th>
@@ -27,7 +27,12 @@
                     </tr>
                 </thead>
                 <tbody id="horariosTbody">
-                    <tr><td colspan="5" class="text-center text-muted py-3">Cargando...</td></tr>
+                    <tr id="trLoadingHor">
+                        <td colspan="4" class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status" style="width:2rem;height:2rem;"></div>
+                            <p class="text-muted mt-2 mb-0 small">Cargando horarios...</p>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -87,10 +92,43 @@
 </div>
 @endsection
 
+@push('styles')
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
+<style>
+div.dataTables_wrapper div.dataTables_length,
+div.dataTables_wrapper div.dataTables_filter {
+    padding: 12px 16px 0;
+}
+div.dataTables_wrapper div.dataTables_info,
+div.dataTables_wrapper div.dataTables_paginate {
+    padding: 10px 16px 12px;
+    border-top: 1px solid #e9ecef;
+}
+div.dataTables_wrapper div.dataTables_length label,
+div.dataTables_wrapper div.dataTables_filter label {
+    font-size: 13px;
+    color: #6c757d;
+    margin-bottom: 8px;
+}
+div.dataTables_wrapper div.dataTables_info {
+    font-size: 13px;
+    color: #6c757d;
+}
+#horariosTable th, #horariosTable td {
+    font-size: 13px;
+    vertical-align: middle;
+}
+</style>
+@endpush
+
 @push('scripts')
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script>
 const csrfToken = '{{ csrf_token() }}';
 const DIAS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+var tablaHorarios = null;
 
 function buildDiasRows(diasData = []) {
     const diasMap = {};
@@ -134,26 +172,79 @@ function toggleDia(n, checked) {
 }
 
 async function loadHorarios() {
-    const res   = await fetch('/admin/horarios/list');
-    const data  = await res.json();
-    const tbody = document.getElementById('horariosTbody');
-    if (!data.data?.length) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">Sin horarios</td></tr>';
-        return;
+    if (tablaHorarios) { tablaHorarios.processing(true); }
+
+    try {
+        const res  = await fetch('/admin/horarios/list');
+        const data = await res.json();
+        const items = data.data || [];
+
+        var trLoading = document.getElementById('trLoadingHor');
+        if (trLoading) trLoading.remove();
+
+        if ($.fn.DataTable.isDataTable('#horariosTable')) {
+            tablaHorarios.processing(false);
+            tablaHorarios.clear().rows.add(items).draw();
+        } else {
+            tablaHorarios = $('#horariosTable').DataTable({
+                data: items,
+                processing: true,
+                order: [[0, 'asc']],
+                pageLength: 25,
+                lengthMenu: [10, 25, 50, 100],
+                language: {
+                    lengthMenu: 'Mostrar _MENU_ registros',
+                    zeroRecords: 'Sin horarios',
+                    info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+                    infoEmpty: 'Mostrando 0 registros',
+                    infoFiltered: '(filtrado de _MAX_ registros)',
+                    search: 'Buscar:',
+                    paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' },
+                    processing: 'Procesando...',
+                },
+                initComplete: function() {
+                    $('#horariosTable_length select').addClass('form-select form-select-sm d-inline-block w-auto');
+                    $('#horariosTable_filter input').addClass('form-control form-control-sm d-inline-block w-auto');
+                    $('#horariosTable_filter').prepend(
+                        '<button class="btn btn-sm btn-outline-secondary me-2" onclick="loadHorarios()" title="Recargar tabla"><i class="ti ti-refresh"></i></button>'
+                    );
+                },
+                columns: [
+                    {
+                        title: 'Nombre', data: 'nombre',
+                        render: function(d) { return '<strong>' + (d || '') + '</strong>'; }
+                    },
+                    {
+                        title: 'Días laborales', data: 'dias', orderable: false,
+                        render: function(d, type) {
+                            var diasLab = (d || []).filter(function(x) { return x.hora_entrada; });
+                            var nombres = diasLab.map(function(x) { return (DIAS[x.dia_semana - 1] || '').slice(0, 3); }).join(', ') || '—';
+                            if (type !== 'display') return nombres;
+                            return '<small class="text-muted">' + nombres + '</small>';
+                        }
+                    },
+                    {
+                        title: 'Estado', data: 'is_active',
+                        render: function(d, type) {
+                            if (type !== 'display') return d ? 1 : 0;
+                            return '<span class="badge ' + (d ? 'bg-success' : 'bg-secondary') + '">' + (d ? 'Activo' : 'Inactivo') + '</span>';
+                        }
+                    },
+                    {
+                        title: 'Acciones', data: null, orderable: false,
+                        render: function(d, type, row) {
+                            var h = JSON.stringify(row).replace(/'/g, '&#39;');
+                            return '<button class="btn btn-sm btn-outline-primary me-1" onclick=\'editHorario(' + h + ')\'><i class="fa-solid fa-pen"></i></button>'
+                                 + '<button class="btn btn-sm btn-outline-danger" onclick="deleteHorario(' + row.id + ')"><i class="fa-solid fa-trash"></i></button>';
+                        }
+                    }
+                ]
+            });
+        }
+    } catch(e) {
+        if (tablaHorarios) tablaHorarios.processing(false);
+        console.error(e);
     }
-    tbody.innerHTML = data.data.map(h => {
-        const diasLab    = (h.dias || []).filter(d => d.hora_entrada);
-        const diasNombres = diasLab.map(d => DIAS[d.dia_semana - 1]?.slice(0, 3)).join(', ') || '—';
-        return `<tr>
-            <td><strong>${h.nombre}</strong></td>
-            <td><small class="text-muted">${diasNombres}</small></td>
-            <td><span class="badge ${h.is_active ? 'bg-success' : 'bg-secondary'}">${h.is_active ? 'Activo' : 'Inactivo'}</span></td>
-            <td>
-                <button class="btn btn-sm btn-outline-primary me-1" onclick='editHorario(${JSON.stringify(h)})'><i class="fa-solid fa-pen"></i></button>
-                <button class="btn btn-sm btn-outline-danger" onclick="deleteHorario(${h.id})"><i class="fa-solid fa-trash"></i></button>
-            </td>
-        </tr>`;
-    }).join('');
 }
 
 function openModal(data = null) {
@@ -219,6 +310,6 @@ function showError(elId, msg) {
     el.textContent = msg; el.style.display = 'block';
 }
 
-document.addEventListener('DOMContentLoaded', loadHorarios);
+document.addEventListener('DOMContentLoaded', () => loadHorarios());
 </script>
 @endpush

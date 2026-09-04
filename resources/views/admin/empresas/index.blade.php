@@ -23,39 +23,37 @@
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>ID</th>
-                                <th>Nombre</th>
-                                <th>RUC / NIT</th>
-                                <th>Email</th>
-                                <th>Teléfono</th>
-                                <th>Plan</th>
-                                <th>Usuarios</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="empresasTbody">
-                            @if(!auth()->user()->admin_tenant)
-                            <tr><td colspan="9" class="text-center text-danger py-3">
-                                <i class="fa-solid fa-lock me-2"></i>No tienes permiso para ver esta información.
-                            </td></tr>
-                            @else
-                            <tr><td colspan="9" class="text-center text-muted py-3">Cargando...</td></tr>
-                            @endif
-                        </tbody>
-                    </table>
-                </div>
-                <div class="card-footer">
-                    <small class="text-muted" id="empresasInfo"></small>
-                </div>
-            </div>
+    <div class="card">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0 w-100" id="empresasTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>RUC / NIT</th>
+                        <th>Email</th>
+                        <th>Teléfono</th>
+                        <th>Plan</th>
+                        <th>Usuarios</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="empresasTbody">
+                    @if(!auth()->user()->admin_tenant)
+                    <tr><td colspan="9" class="text-center text-danger py-3">
+                        <i class="fa-solid fa-lock me-2"></i>No tienes permiso para ver esta información.
+                    </td></tr>
+                    @else
+                    <tr id="trLoadingEmp">
+                        <td colspan="9" class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status" style="width:2rem;height:2rem;"></div>
+                            <p class="text-muted mt-2 mb-0 small">Cargando empresas...</p>
+                        </td>
+                    </tr>
+                    @endif
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
@@ -180,9 +178,43 @@
 </div>
 @endsection
 
+@push('styles')
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
+<style>
+div.dataTables_wrapper div.dataTables_length,
+div.dataTables_wrapper div.dataTables_filter {
+    padding: 12px 16px 0;
+}
+div.dataTables_wrapper div.dataTables_info,
+div.dataTables_wrapper div.dataTables_paginate {
+    padding: 10px 16px 12px;
+    border-top: 1px solid #e9ecef;
+}
+div.dataTables_wrapper div.dataTables_length label,
+div.dataTables_wrapper div.dataTables_filter label {
+    font-size: 13px;
+    color: #6c757d;
+    margin-bottom: 8px;
+}
+div.dataTables_wrapper div.dataTables_info {
+    font-size: 13px;
+    color: #6c757d;
+}
+#empresasTable th, #empresasTable td {
+    font-size: 13px;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+</style>
+@endpush
+
 @push('scripts')
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script>
 const csrfToken = '{{ csrf_token() }}';
+var tablaEmpresas = null;
 
 const planBadge = {
     bronce: '<span class="badge bg-warning text-dark">Bronce</span>',
@@ -207,43 +239,100 @@ function resetForm() {
 }
 
 async function loadEmpresas() {
+    if (tablaEmpresas) { tablaEmpresas.processing(true); }
+
     try {
         const res = await fetch('/admin/empresas/list');
         const data = await res.json();
-        console.log('Empresas response:', res.status, data);
         if (!res.ok) {
-            document.getElementById('empresasTbody').innerHTML = `<tr><td colspan="9" class="text-center text-danger py-3">${data.message || 'Error al cargar'}</td></tr>`;
+            var trLoading = document.getElementById('trLoadingEmp');
+            if (trLoading) trLoading.remove();
+            document.getElementById('empresasTbody').innerHTML =
+                '<tr><td colspan="9" class="text-center text-danger py-3">' + (data.message || 'Error al cargar') + '</td></tr>';
             return;
         }
-        const tbody = document.getElementById('empresasTbody');
-        const empresas = data.data || [];
+        const items = data.data || [];
 
-        if (empresas.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-3">Sin empresas</td></tr>';
+        var trLoading = document.getElementById('trLoadingEmp');
+        if (trLoading) trLoading.remove();
+
+        if ($.fn.DataTable.isDataTable('#empresasTable')) {
+            tablaEmpresas.processing(false);
+            tablaEmpresas.clear().rows.add(items).draw();
         } else {
-            tbody.innerHTML = empresas.map(e => `
-                <tr>
-                    <td>${e.id}</td>
-                    <td><strong>${e.nombre}</strong></td>
-                    <td>${e.ruc || '—'}</td>
-                    <td>${e.email || '—'}</td>
-                    <td>${e.telefono || '—'}</td>
-                    <td>${planBadge[e.plan] || '<span class="badge bg-light text-dark">—</span>'}</td>
-                    <td><span class="badge ${(e.users_count || 0) >= (e.max_usuarios || 50) ? 'bg-danger' : 'bg-info'}">${e.users_count || 0} / ${e.max_usuarios || 50}</span></td>
-                    <td><span class="badge ${e.is_active ? 'bg-success' : 'bg-danger'}">${e.is_active ? 'Activa' : 'Inactiva'}</span></td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary me-1" onclick="editEmpresa(${e.id})"><i class="fa-solid fa-pen"></i></button>
-                        <button class="btn btn-sm btn-outline-secondary me-1" onclick="openTokenModal(${e.id}, '${e.nombre}', ${JSON.stringify(e.agent_token ? '****' + e.agent_token.slice(-6) : null)}, ${JSON.stringify(e.agent_token_vigencia || null)})" title="Token agente"><i class="fa-solid fa-key"></i></button>
-                        ${e.is_active
-                            ? `<button class="btn btn-sm btn-outline-danger" onclick="deleteEmpresa(${e.id})"><i class="fa-solid fa-ban"></i></button>`
-                            : `<button class="btn btn-sm btn-outline-success" onclick="activarEmpresa(${e.id})"><i class="fa-solid fa-check"></i></button>`
+            tablaEmpresas = $('#empresasTable').DataTable({
+                data: items,
+                processing: true,
+                order: [[0, 'asc']],
+                scrollX: true,
+                pageLength: 25,
+                lengthMenu: [10, 25, 50, 100],
+                language: {
+                    lengthMenu: 'Mostrar _MENU_ registros',
+                    zeroRecords: 'Sin empresas',
+                    info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+                    infoEmpty: 'Mostrando 0 registros',
+                    infoFiltered: '(filtrado de _MAX_ registros)',
+                    search: 'Buscar:',
+                    paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' },
+                    processing: 'Procesando...',
+                },
+                initComplete: function() {
+                    $('#empresasTable_length select').addClass('form-select form-select-sm d-inline-block w-auto');
+                    $('#empresasTable_filter input').addClass('form-control form-control-sm d-inline-block w-auto');
+                    $('#empresasTable_filter').prepend(
+                        '<button class="btn btn-sm btn-outline-secondary me-2" onclick="loadEmpresas()" title="Recargar tabla"><i class="ti ti-refresh"></i></button>'
+                    );
+                },
+                columns: [
+                    { title: 'ID',        data: 'id',       render: function(d) { return d; } },
+                    { title: 'Nombre',    data: 'nombre',   render: function(d) { return '<strong>' + (d || '') + '</strong>'; } },
+                    { title: 'RUC / NIT', data: 'ruc',      render: function(d) { return d || '—'; } },
+                    { title: 'Email',     data: 'email',    render: function(d) { return d || '—'; } },
+                    { title: 'Teléfono', data: 'telefono', render: function(d) { return d || '—'; } },
+                    {
+                        title: 'Plan', data: 'plan',
+                        render: function(d, type) {
+                            if (type !== 'display') return d || '';
+                            return planBadge[d] || '<span class="badge bg-light text-dark">—</span>';
                         }
-                    </td>
-                </tr>
-            `).join('');
+                    },
+                    {
+                        title: 'Usuarios', data: 'users_count',
+                        render: function(d, type, row) {
+                            var count = d || 0;
+                            var max   = row.max_usuarios || 50;
+                            if (type !== 'display') return count;
+                            return '<span class="badge ' + (count >= max ? 'bg-danger' : 'bg-info') + '">' + count + ' / ' + max + '</span>';
+                        }
+                    },
+                    {
+                        title: 'Estado', data: 'is_active',
+                        render: function(d, type) {
+                            if (type !== 'display') return d ? 1 : 0;
+                            return '<span class="badge ' + (d ? 'bg-success' : 'bg-danger') + '">' + (d ? 'Activa' : 'Inactiva') + '</span>';
+                        }
+                    },
+                    {
+                        title: 'Acciones', data: null, orderable: false,
+                        render: function(d, type, row) {
+                            var tokenMasked = row.agent_token ? '****' + row.agent_token.slice(-6) : null;
+                            var vigencia    = row.agent_token_vigencia || null;
+                            var btnEdit  = '<button class="btn btn-sm btn-outline-primary me-1" onclick="editEmpresa(' + row.id + ')"><i class="fa-solid fa-pen"></i></button>';
+                            var btnToken = '<button class="btn btn-sm btn-outline-secondary me-1" onclick="openTokenModal(' + row.id + ',\'' + (row.nombre || '').replace(/'/g,'') + '\',' + JSON.stringify(tokenMasked) + ',' + JSON.stringify(vigencia) + ')" title="Token agente"><i class="fa-solid fa-key"></i></button>';
+                            var btnToggle = row.is_active
+                                ? '<button class="btn btn-sm btn-outline-danger" onclick="deleteEmpresa(' + row.id + ')"><i class="fa-solid fa-ban"></i></button>'
+                                : '<button class="btn btn-sm btn-outline-success" onclick="activarEmpresa(' + row.id + ')"><i class="fa-solid fa-check"></i></button>';
+                            return '<div class="d-flex flex-nowrap gap-1">' + btnEdit + btnToken + btnToggle + '</div>';
+                        }
+                    }
+                ]
+            });
         }
-        document.getElementById('empresasInfo').textContent = `${empresas.length} empresa${empresas.length !== 1 ? 's' : ''}`;
-    } catch(e) { console.error(e); }
+    } catch(e) {
+        if (tablaEmpresas) tablaEmpresas.processing(false);
+        console.error(e);
+    }
 }
 
 async function editEmpresa(id) {
@@ -329,7 +418,7 @@ async function activarEmpresa(id) {
 }
 
 @if(auth()->user()->admin_tenant)
-document.addEventListener('DOMContentLoaded', loadEmpresas);
+document.addEventListener('DOMContentLoaded', () => loadEmpresas());
 @endif
 
 // --- Token Agente ---
