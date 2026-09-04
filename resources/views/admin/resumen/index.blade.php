@@ -97,10 +97,6 @@
                 </tbody>
             </table>
         </div>
-        <div class="card-footer d-flex justify-content-between align-items-center border-top">
-            <small class="text-muted" id="resumenInfo"></small>
-            <small class="text-muted" id="resumenTotal"></small>
-        </div>
     </div>
 </div>
 
@@ -552,10 +548,6 @@ async function cargarResumen() {
 
         colVisResApply(colVisResGetState());
 
-        const th = Math.floor(totalMinGlobal / 60);
-        const tm = totalMinGlobal % 60;
-        document.getElementById('resumenInfo').textContent  = `${totalDias} días · ${registros.length} marcaciones`;
-        document.getElementById('resumenTotal').textContent = `Total período: ${th}h ${String(tm).padStart(2,'0')}m`;
 
     } catch(e) {
         tbody.innerHTML = `<tr><td colspan="14" class="text-center text-danger py-3">Error al cargar datos: ${e.message}</td></tr>`;
