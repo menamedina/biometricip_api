@@ -302,12 +302,14 @@ async function loadDashboard() {
                 const dt    = new Date(r.fecha_hora);
                 const fecha = dt.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' });
                 const hora  = dt.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
-                const color = avatarColor(name);
-                const initials = avatarInitials(name);
+                const thumb = r.foto_perfil_thumbnail;
+                const avatarHtml = thumb
+                    ? `<img src="${thumb}" style="width:32px;height:32px;object-fit:cover;border-radius:50%;border:2px solid #1ab394;flex-shrink:0;" alt="">`
+                    : `<span style="width:32px;height:32px;border-radius:50%;background:#e9ecef;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fa-solid fa-user text-muted" style="font-size:14px;"></i></span>`;
                 return `<tr>
                     <td class="ps-3">
                         <div class="d-flex align-items-center gap-2">
-                            <span class="employee-avatar" style="background:${color};">${initials}</span>
+                            ${avatarHtml}
                             <div>
                                 <div class="fw-semibold">${name}</div>
                                 ${depto ? `<small class="text-muted">${depto}</small>` : ''}
