@@ -226,6 +226,7 @@ async function loadRecords() {
         if ($.fn.DataTable.isDataTable('#attendanceTable')) {
             tablaAtt.processing(false);
             tablaAtt.clear().rows.add(datos).draw();
+            colVisAttApply(colVisAttGetState());
         } else {
             tablaAtt = $('#attendanceTable').DataTable({
                 data: datos,
@@ -439,6 +440,9 @@ document.addEventListener('DOMContentLoaded', function() {
         loadEmpleadosFilter();
     }
     loadRecords();
+    document.getElementById('filterSearch').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') loadRecords();
+    });
     document.addEventListener('click', function(e) {
         if (!e.target.closest('#colVisPanelAtt, #colVisBtnAtt')) {
             document.getElementById('colVisPanelAtt').style.display = 'none';
