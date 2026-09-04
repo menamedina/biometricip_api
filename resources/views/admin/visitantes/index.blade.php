@@ -360,13 +360,8 @@ div.dataTables_wrapper div.dataTables_info {
     vertical-align: middle;
     white-space: nowrap;
 }
-#visitantesTable td:nth-child(14) {
-    white-space: normal;
-    max-width: 180px;
-    overflow: hidden;
-}
-#visitantesTable td:nth-child(14) small {
-    display: -webkit-box !important;
+.obs-cell-text {
+    display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
@@ -593,13 +588,11 @@ function cargarTabla(silent) {
                         data: 'observacion',
                         orderable: false,
                         render: function(data, type, row) {
-                            var maxLen = 60;
-                            var textoCorto = data && data.length > maxLen ? data.substring(0, maxLen) + '…' : (data || '');
-                            var tooltipAttr = data && data.length > maxLen
+                            var tooltipAttr = data
                                 ? ' data-bs-toggle="tooltip" data-bs-placement="top" title="' + data.replace(/"/g, '&quot;') + '"'
                                 : '';
-                            return '<div style="max-width:180px">' +
-                                (data ? '<small class="text-muted d-block mb-1"' + tooltipAttr + '>' + textoCorto + '</small>' : '') +
+                            return '<div style="max-width:180px; white-space:normal;">' +
+                                (data ? '<small class="text-muted obs-cell-text mb-1"' + tooltipAttr + '>' + data + '</small>' : '') +
                                 '<button class="btn btn-sm btn-outline-secondary py-0 px-1" onclick="editarObservacion(' + row.id + ')">' +
                                     '<i class="ti ti-' + (data ? 'edit' : 'plus') + '"></i>' +
                                 '</button></div>';
