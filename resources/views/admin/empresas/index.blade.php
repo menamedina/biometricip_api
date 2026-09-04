@@ -239,8 +239,6 @@ function resetForm() {
 }
 
 async function loadEmpresas() {
-    if (tablaEmpresas) { tablaEmpresas.processing(true); }
-
     try {
         const res = await fetch('/admin/empresas/list');
         const data = await res.json();
@@ -257,7 +255,6 @@ async function loadEmpresas() {
         if (trLoading) trLoading.remove();
 
         if ($.fn.DataTable.isDataTable('#empresasTable')) {
-            tablaEmpresas.processing(false);
             tablaEmpresas.clear().rows.add(items).draw();
         } else {
             tablaEmpresas = $('#empresasTable').DataTable({
@@ -330,7 +327,6 @@ async function loadEmpresas() {
             });
         }
     } catch(e) {
-        if (tablaEmpresas) tablaEmpresas.processing(false);
         console.error(e);
     }
 }

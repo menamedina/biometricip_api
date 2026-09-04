@@ -45,6 +45,7 @@
                                 <i class="fa-solid fa-sliders"></i>
                             </button>
                             <button class="btn btn-sm btn-primary" onclick="loadRecords()"><i class="fa-solid fa-filter me-1"></i> Filtrar</button>
+                            <button class="btn btn-sm btn-secondary" onclick="limpiarFiltros()"><i class="fa-solid fa-xmark me-1"></i> Limpiar</button>
                             <button class="btn btn-sm btn-success" onclick="exportCSV()"><i class="fa-solid fa-file-csv me-1"></i> Exportar CSV</button>
                         </div>
                     </div>
@@ -213,18 +214,16 @@ async function loadRecords() {
     if (empId)  url += `&user_id=${empId}`;
     if (search) url += `&search=${encodeURIComponent(search)}`;
 
-    if (tablaAtt) tablaAtt.processing(true);
-
     try {
         const res  = await fetch(url, { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
         const json = await res.json();
         const datos = json.data || [];
 
         var trLoading = document.getElementById('trLoadingAtt');
         if (trLoading) trLoading.remove();
 
-        if ($.fn.DataTable.isDataTable('#attendanceTable')) {
-            tablaAtt.processing(false);
+        if (tablaAtt) {
             tablaAtt.clear().rows.add(datos).draw();
             colVisAttApply(colVisAttGetState());
         } else {
@@ -382,11 +381,23 @@ async function loadRecords() {
                     }
                 ]
             });
+            colVisAttApply(colVisAttGetState());
         }
     } catch(e) {
-        if (tablaAtt) tablaAtt.processing(false);
-        console.error(e);
+        console.error('loadRecords error:', e);
+        alert('Error al cargar registros: ' + e.message);
     }
+}
+
+function limpiarFiltros() {
+    const today = '{{ date('Y-m-d') }}';
+    document.getElementById('filterSearch').value = '';
+    document.getElementById('reportFrom').value = today;
+    document.getElementById('reportTo').value = today;
+    document.getElementById('filterTipo').value = '';
+    document.getElementById('filterMetodo').value = '';
+    if (!isEmpleado) document.getElementById('filterEmpleado').value = '';
+    loadRecords();
 }
 
 async function loadEmpleadosFilter() {

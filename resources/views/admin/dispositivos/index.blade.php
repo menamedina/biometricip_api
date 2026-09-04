@@ -323,8 +323,6 @@ async function loadSedes() {
 var tablaDevices = null;
 
 async function loadDevices() {
-    if (tablaDevices) tablaDevices.processing(true);
-
     try {
         const res = await fetch('/admin/dispositivos/list', { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
         const devices = await res.json();
@@ -341,7 +339,6 @@ async function loadDevices() {
         if (trLoading) trLoading.remove();
 
         if ($.fn.DataTable.isDataTable('#devicesTable')) {
-            tablaDevices.processing(false);
             tablaDevices.clear().rows.add(devices).draw();
         } else {
             tablaDevices = $('#devicesTable').DataTable({
@@ -436,7 +433,6 @@ async function loadDevices() {
             });
         }
     } catch(e) {
-        if (tablaDevices) tablaDevices.processing(false);
         console.error(e);
     }
 }

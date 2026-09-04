@@ -172,8 +172,6 @@ function toggleDia(n, checked) {
 }
 
 async function loadHorarios() {
-    if (tablaHorarios) { tablaHorarios.processing(true); }
-
     try {
         const res  = await fetch('/admin/horarios/list');
         const data = await res.json();
@@ -183,7 +181,6 @@ async function loadHorarios() {
         if (trLoading) trLoading.remove();
 
         if ($.fn.DataTable.isDataTable('#horariosTable')) {
-            tablaHorarios.processing(false);
             tablaHorarios.clear().rows.add(items).draw();
         } else {
             tablaHorarios = $('#horariosTable').DataTable({
@@ -242,7 +239,6 @@ async function loadHorarios() {
             });
         }
     } catch(e) {
-        if (tablaHorarios) tablaHorarios.processing(false);
         console.error(e);
     }
 }

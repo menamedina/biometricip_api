@@ -746,8 +746,6 @@ async function loadEmpleados() {
     if (liderId)     url += `&lider_id=${liderId}`;
     if (empresaId)   url += `&empresa_id=${empresaId}`;
 
-    if (tablaEmpleados) { tablaEmpleados.processing(true); }
-
     try {
         const res = await fetch(url);
         if (!res.ok) throw new Error('Error ' + res.status);
@@ -758,7 +756,6 @@ async function loadEmpleados() {
         if (trLoading) trLoading.remove();
 
         if ($.fn.DataTable.isDataTable('#empleadosTable')) {
-            tablaEmpleados.processing(false);
             tablaEmpleados.clear().rows.add(items).draw();
         } else {
             var cols = [
@@ -881,7 +878,6 @@ async function loadEmpleados() {
             });
         }
     } catch(e) {
-        if (tablaEmpleados) tablaEmpleados.processing(false);
         console.error(e);
     }
 }

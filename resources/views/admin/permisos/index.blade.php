@@ -212,8 +212,6 @@ async function loadPermisos() {
     if (userId) url += `&user_id=${userId}`;
     if (estado) url += `&estado=${estado}`;
 
-    if (tablaPermisos) { tablaPermisos.processing(true); }
-
     try {
         const res  = await fetch(url, { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
         const data = await res.json();
@@ -223,7 +221,6 @@ async function loadPermisos() {
         if (trLoading) trLoading.remove();
 
         if ($.fn.DataTable.isDataTable('#permisosTable')) {
-            tablaPermisos.processing(false);
             tablaPermisos.clear().rows.add(items).draw();
         } else {
             tablaPermisos = $('#permisosTable').DataTable({
@@ -309,7 +306,6 @@ async function loadPermisos() {
             });
         }
     } catch(e) {
-        if (tablaPermisos) tablaPermisos.processing(false);
         console.error(e);
     }
 }

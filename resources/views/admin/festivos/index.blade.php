@@ -149,8 +149,6 @@ async function loadFestivos() {
     let url = '/admin/festivos/list';
     if (year) url += `?year=${year}`;
 
-    if (tablaFestivos) { tablaFestivos.processing(true); }
-
     try {
         const res  = await fetch(url);
         const data = await res.json();
@@ -160,7 +158,6 @@ async function loadFestivos() {
         if (trLoading) trLoading.remove();
 
         if ($.fn.DataTable.isDataTable('#festivosTable')) {
-            tablaFestivos.processing(false);
             tablaFestivos.clear().rows.add(items).draw();
         } else {
             tablaFestivos = $('#festivosTable').DataTable({
@@ -215,7 +212,6 @@ async function loadFestivos() {
             });
         }
     } catch(e) {
-        if (tablaFestivos) tablaFestivos.processing(false);
         console.error(e);
     }
 }

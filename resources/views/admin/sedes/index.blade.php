@@ -486,7 +486,6 @@ async function loadSedes() {
         if (sedesTable) { sedesTable.clear().draw(); }
         return;
     }
-    if (sedesTable) sedesTable.processing(true);
     try {
         const res  = await fetch('/admin/sedes/list', { headers: buildHeaders() });
         const data = await res.json();
@@ -496,7 +495,6 @@ async function loadSedes() {
         if (trLoading) trLoading.remove();
 
         if ($.fn.DataTable.isDataTable('#sedesTable')) {
-            sedesTable.processing(false);
             sedesTable.clear().rows.add(rows).draw();
         } else {
             sedesTable = $('#sedesTable').DataTable({
@@ -527,7 +525,6 @@ async function loadSedes() {
             });
         }
     } catch(e) {
-        if (sedesTable) sedesTable.processing(false);
         console.error(e);
     }
 }
