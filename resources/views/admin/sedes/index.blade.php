@@ -30,29 +30,31 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0"><i class="fa-solid fa-building me-2 text-primary"></i>Sedes</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table id="sedesTable" class="table table-hover w-100">
-                            <thead>
-                                <tr>
-                                    <th>Código</th>
-                                    <th>Nombre</th>
-                                    @if(auth()->user()->admin_tenant ?? false)
-                                    <th>Empresa</th>
-                                    @endif
-                                    <th>Dirección</th>
-                                    <th>Coordenadas</th>
-                                    <th>Radio (mts)</th>
-                                    <th>Estado</th>
-                                    <th class="no-sort">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
+                <div class="card-body p-0">
+                    <table id="sedesTable" class="table table-hover mb-0 w-100">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Código</th>
+                                <th>Nombre</th>
+                                @if(auth()->user()->admin_tenant ?? false)
+                                <th>Empresa</th>
+                                @endif
+                                <th>Dirección</th>
+                                <th>Coordenadas</th>
+                                <th>Radio (mts)</th>
+                                <th>Estado</th>
+                                <th class="no-sort">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr id="trLoadingSedes">
+                                <td colspan="8" class="text-center py-5">
+                                    <div class="spinner-border text-primary" role="status" style="width:2rem;height:2rem;"></div>
+                                    <p class="text-muted mt-2 mb-0 small">Cargando sedes...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -220,13 +222,13 @@
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
 <style>
 div.dataTables_wrapper div.dataTables_length,
-div.dataTables_wrapper div.dataTables_filter { margin-bottom: 8px; }
+div.dataTables_wrapper div.dataTables_filter { padding: 12px 16px 0; }
 div.dataTables_wrapper div.dataTables_info,
-div.dataTables_wrapper div.dataTables_paginate { margin-top: 8px; }
+div.dataTables_wrapper div.dataTables_paginate { padding: 10px 16px 12px; border-top: 1px solid #e9ecef; }
 div.dataTables_wrapper div.dataTables_length label,
-div.dataTables_wrapper div.dataTables_filter label { font-size: .875rem; color: #6c757d; }
-div.dataTables_wrapper div.dataTables_filter input:focus { border-color: #4F46E5; box-shadow: 0 0 0 .2rem rgba(79,70,229,.15); }
-div.dataTables_wrapper div.dataTables_info { font-size: .8rem; color: #6c757d; }
+div.dataTables_wrapper div.dataTables_filter label { font-size: 13px; color: #6c757d; margin-bottom: 8px; }
+div.dataTables_wrapper div.dataTables_info { font-size: 13px; color: #6c757d; }
+#sedesTable th, #sedesTable td { font-size: 13px; vertical-align: middle; white-space: nowrap; }
 .pac-container { z-index: 1060 !important; }
 </style>
 @endpush
@@ -484,28 +486,50 @@ async function loadSedes() {
         if (sedesTable) { sedesTable.clear().draw(); }
         return;
     }
+    if (sedesTable) sedesTable.processing(true);
     try {
         const res  = await fetch('/admin/sedes/list', { headers: buildHeaders() });
         const data = await res.json();
         const rows = data.data || [];
 
+        var trLoading = document.getElementById('trLoadingSedes');
+        if (trLoading) trLoading.remove();
+
         if ($.fn.DataTable.isDataTable('#sedesTable')) {
+            sedesTable.processing(false);
             sedesTable.clear().rows.add(rows).draw();
         } else {
             sedesTable = $('#sedesTable').DataTable({
                 data: rows,
+                processing: true,
                 columns: buildSedesColumns(),
                 order: [[1, 'asc']],
+                scrollX: true,
                 pageLength: 10,
                 lengthMenu: [10, 25, 50],
-                language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
+                language: {
+                    lengthMenu: 'Mostrar _MENU_ registros',
+                    zeroRecords: 'Sin sedes',
+                    info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+                    infoEmpty: 'Sin sedes',
+                    infoFiltered: '(filtrado de _MAX_)',
+                    search: 'Buscar:',
+                    paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' },
+                    processing: 'Procesando...',
+                },
                 initComplete: function() {
                     $('#sedesTable_length select').addClass('form-select form-select-sm d-inline-block w-auto');
                     $('#sedesTable_filter input').addClass('form-control form-control-sm d-inline-block w-auto');
+                    $('#sedesTable_filter').prepend(
+                        '<button class="btn btn-sm btn-outline-secondary me-2" onclick="loadSedes()" title="Recargar"><i class="ti ti-refresh"></i></button>'
+                    );
                 },
             });
         }
-    } catch(e) { console.error(e); }
+    } catch(e) {
+        if (sedesTable) sedesTable.processing(false);
+        console.error(e);
+    }
 }
 
 function editSede(sede) {
