@@ -67,8 +67,8 @@
 
     {{-- Tabla resumen --}}
     <div class="card">
-        <div class="table-responsive">
-            <table class="table table-hover table-sm mb-0">
+        <div class="card-body p-0">
+            <table class="table table-hover table-sm mb-0 w-100" id="resumenTable">
                 <thead class="table-light">
                     <tr>
                         <th class="col-res-empleado">Empleado</th>
@@ -88,11 +88,16 @@
                     </tr>
                 </thead>
                 <tbody id="resumenTbody">
-                    <tr><td colspan="14" class="text-center text-muted py-4">Cargando...</td></tr>
+                    <tr id="trLoadingRes">
+                        <td colspan="14" class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status" style="width:2rem;height:2rem;"></div>
+                            <p class="text-muted mt-2 mb-0 small">Cargando registros...</p>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>
-        <div class="card-footer d-flex justify-content-between align-items-center">
+        <div class="card-footer d-flex justify-content-between align-items-center border-top">
             <small class="text-muted" id="resumenInfo"></small>
             <small class="text-muted" id="resumenTotal"></small>
         </div>
@@ -253,7 +258,40 @@
 </div>
 @endsection
 
+@push('styles')
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
+<style>
+div.dataTables_wrapper div.dataTables_length,
+div.dataTables_wrapper div.dataTables_filter {
+    padding: 12px 16px 0;
+}
+div.dataTables_wrapper div.dataTables_info,
+div.dataTables_wrapper div.dataTables_paginate {
+    padding: 10px 16px 12px;
+    border-top: 1px solid #e9ecef;
+}
+div.dataTables_wrapper div.dataTables_length label,
+div.dataTables_wrapper div.dataTables_filter label {
+    font-size: 13px;
+    color: #6c757d;
+    margin-bottom: 8px;
+}
+div.dataTables_wrapper div.dataTables_info {
+    font-size: 13px;
+    color: #6c757d;
+}
+#resumenTable th, #resumenTable td {
+    font-size: 13px;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+</style>
+@endpush
+
 @push('scripts')
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script>
 const csrfToken  = '{{ csrf_token() }}';
 const isEmpleado = {{ auth()->user()->role === 'empleado' ? 'true' : 'false' }};
@@ -342,7 +380,10 @@ async function cargarResumen() {
     if (userId)  url += `&user_id=${userId}`;
 
     const tbody = document.getElementById('resumenTbody');
-    tbody.innerHTML = '<tr><td colspan="14" class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div> Cargando...</td></tr>';
+    if ($.fn.DataTable.isDataTable('#resumenTable')) {
+        $('#resumenTable').DataTable().destroy();
+    }
+    tbody.innerHTML = '<tr id="trLoadingRes"><td colspan="14" class="text-center py-5"><div class="spinner-border text-primary" role="status" style="width:2rem;height:2rem;"></div><p class="text-muted mt-2 mb-0 small">Cargando registros...</p></td></tr>';
 
     try {
         const res  = await fetch(url, { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
@@ -484,6 +525,31 @@ async function cargarResumen() {
         });
 
         tbody.innerHTML = filas;
+
+        $('#resumenTable').DataTable({
+            paging:    true,
+            pageLength: 25,
+            lengthMenu: [10, 25, 50, 100],
+            ordering:  false,
+            scrollX:   true,
+            language: {
+                lengthMenu: 'Mostrar _MENU_ registros',
+                zeroRecords: 'Sin registros',
+                info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+                infoEmpty: 'Mostrando 0 registros',
+                infoFiltered: '(filtrado de _MAX_ registros)',
+                search: 'Buscar:',
+                paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' },
+            },
+            initComplete: function() {
+                $('#resumenTable_length select').addClass('form-select form-select-sm d-inline-block w-auto');
+                $('#resumenTable_filter input').addClass('form-control form-control-sm d-inline-block w-auto');
+                $('#resumenTable_filter').prepend(
+                    '<button class="btn btn-sm btn-outline-secondary me-2" onclick="cargarResumen()" title="Recargar tabla"><i class="ti ti-refresh"></i></button>'
+                );
+            },
+        });
+
         colVisResApply(colVisResGetState());
 
         const th = Math.floor(totalMinGlobal / 60);
