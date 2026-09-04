@@ -626,7 +626,20 @@ class AdminController extends Controller
 
         // Exportar Excel
         if ($request->input('export') === 'xlsx') {
-            $rows = $query->get()->map(function ($v) {
+            $visitantesExport = $query->get();
+
+            // Batch: última inducción histórica por (cedula, sede_id)
+            $cedulasExport = $visitantesExport->pluck('cedula')->filter()->unique()->values();
+            $ultimasInduccionesExport = $cedulasExport->isNotEmpty()
+                ? Visitante::select('cedula', 'sede_id', DB::raw('MAX(induccion_fecha) as ultima'))
+                    ->whereIn('cedula', $cedulasExport)
+                    ->whereNotNull('induccion_fecha')
+                    ->groupBy('cedula', 'sede_id')
+                    ->get()
+                    ->keyBy(fn ($r) => $r->cedula . '_' . $r->sede_id)
+                : collect();
+
+            $rows = $visitantesExport->map(function ($v) use ($ultimasInduccionesExport) {
                 $tz        = 'America/Bogota';
                 $entrada   = \Carbon\Carbon::parse($v->getRawOriginal('hora_entrada'), $tz);
                 $salidaRaw = $v->getRawOriginal('hora_salida');
@@ -634,6 +647,13 @@ class AdminController extends Controller
                 $fin       = $salida ?? \Carbon\Carbon::now($tz);
                 $mins      = max(0, (int) $entrada->diffInMinutes($fin));
                 $h = intdiv($mins, 60); $m = $mins % 60;
+
+                $ultimaKey    = $v->cedula . '_' . $v->sede_id;
+                $ultimaReg    = $ultimasInduccionesExport->get($ultimaKey);
+                $ultimaFecha  = $ultimaReg?->ultima
+                    ? \Carbon\Carbon::parse($ultimaReg->ultima, $tz)->format('d/m/Y H:i')
+                    : '';
+
                 return [
                     'Nombre'        => $v->nombre,
                     'Cédula'        => $v->cedula,
@@ -652,6 +672,7 @@ class AdminController extends Controller
                     'Fecha Inducción' => $v->getRawOriginal('induccion_fecha')
                         ? \Carbon\Carbon::parse($v->getRawOriginal('induccion_fecha'), $tz)->format('d/m/Y H:i')
                         : '',
+                    'Última inducción' => $ultimaFecha,
                 ];
             });
 
