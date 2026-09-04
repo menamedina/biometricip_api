@@ -450,6 +450,13 @@ function cargarTabla(silent) {
                         '<i class="ti ti-refresh"></i></button>'
                     );
                 },
+                drawCallback: function() {
+                    // Inicializar tooltips de Bootstrap en los elementos recién renderizados
+                    var tooltipEls = document.querySelectorAll('#visitantesTable [data-bs-toggle="tooltip"]');
+                    tooltipEls.forEach(function(el) {
+                        new bootstrap.Tooltip(el, { trigger: 'hover' });
+                    });
+                },
                 columns: [
                     {
                         title: 'Cédula',
@@ -572,8 +579,13 @@ function cargarTabla(silent) {
                         data: 'observacion',
                         orderable: false,
                         render: function(data, type, row) {
-                            return '<div style="max-width:160px">' +
-                                (data ? '<small class="text-muted d-block mb-1" style="word-break:break-word">' + data + '</small>' : '') +
+                            var maxLen = 60;
+                            var textoCorto = data && data.length > maxLen ? data.substring(0, maxLen) + '…' : (data || '');
+                            var tooltipAttr = data && data.length > maxLen
+                                ? ' data-bs-toggle="tooltip" data-bs-placement="top" title="' + data.replace(/"/g, '&quot;') + '"'
+                                : '';
+                            return '<div style="max-width:180px">' +
+                                (data ? '<small class="text-muted d-block mb-1"' + tooltipAttr + '>' + textoCorto + '</small>' : '') +
                                 '<button class="btn btn-sm btn-outline-secondary py-0 px-1" onclick="editarObservacion(' + row.id + ')">' +
                                     '<i class="ti ti-' + (data ? 'edit' : 'plus') + '"></i>' +
                                 '</button></div>';
