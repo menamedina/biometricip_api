@@ -80,30 +80,19 @@
                         </div>
                     </div>
                 </div>
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th class="col-att-empleado">Empleado</th>
-                                <th class="col-att-codigo">Código</th>
-                                <th class="col-att-sede">Sede</th>
-                                <th class="col-att-tipo">Tipo</th>
-                                <th class="col-att-fecha">Fecha/Hora</th>
-                                <th class="col-att-metodo">Método</th>
-                                <th class="col-att-qr">QR</th>
-                                <th class="col-att-geocerca">Geocerca</th>
-                                <th class="col-att-distancia">Distancia</th>
-                                <th class="col-att-foto">Foto</th>
-                            </tr>
-                        </thead>
-                        <tbody id="recordsTbody">
-                            <tr><td colspan="10" class="text-center text-muted py-3">Cargando...</td></tr>
-                        </tbody>
+            </div>
+        </div>
+    </div>
+
+    {{-- Tabla --}}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0 w-100" id="attendanceTable">
+                        <thead class="table-light"></thead>
+                        <tbody></tbody>
                     </table>
-                </div>
-                <div class="card-footer d-flex justify-content-between align-items-center">
-                    <small class="text-muted" id="recordsInfo"></small>
-                    <div id="recordsPagination"></div>
                 </div>
             </div>
         </div>
@@ -137,6 +126,7 @@
         <button class="btn btn-sm btn-outline-secondary flex-fill" onclick="colVisAttTodos(false)">Ninguno</button>
     </div>
 </div>
+
 {{-- Modal previsualización foto de perfil --}}
 <div class="modal fade" id="modalFotoPerfil" tabindex="-1">
     <div class="modal-dialog modal-sm modal-dialog-centered">
@@ -154,23 +144,61 @@
 </div>
 @endsection
 
+@push('styles')
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
+<style>
+/* Controles DataTable dentro del card */
+div.dataTables_wrapper div.dataTables_length,
+div.dataTables_wrapper div.dataTables_filter {
+    padding: 12px 16px 0;
+}
+div.dataTables_wrapper div.dataTables_info,
+div.dataTables_wrapper div.dataTables_paginate {
+    padding: 10px 16px 12px;
+    border-top: 1px solid #e9ecef;
+}
+div.dataTables_wrapper div.dataTables_length label,
+div.dataTables_wrapper div.dataTables_filter label {
+    font-size: 13px;
+    color: #6c757d;
+    margin-bottom: 8px;
+}
+div.dataTables_wrapper div.dataTables_filter input:focus {
+    outline: none;
+    border-color: #4F46E5;
+    box-shadow: 0 0 0 3px rgba(79,70,229,.1);
+}
+div.dataTables_wrapper div.dataTables_info {
+    font-size: 13px;
+    color: #6c757d;
+}
+#attendanceTable th, #attendanceTable td {
+    font-size: 13px;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+</style>
+@endpush
+
 @push('scripts')
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script>
 const csrfToken  = '{{ csrf_token() }}';
 const isEmpleado = {{ auth()->user()->role === 'empleado' ? 'true' : 'false' }};
 const canViewPhoto = {{ auth()->user()->role === 'admin' ? 'true' : 'false' }};
 const myUserId   = {{ auth()->id() }};
-let recordsPage  = 1;
+var tablaAtt = null;
 
-async function loadRecords(page = 1) {
-    recordsPage = page;
+async function loadRecords() {
     const from   = document.getElementById('reportFrom').value;
     const to     = document.getElementById('reportTo').value;
     const tipo   = document.getElementById('filterTipo').value;
     const metodo = document.getElementById('filterMetodo').value;
     const search = document.getElementById('filterSearch').value;
     const empId  = isEmpleado ? myUserId : document.getElementById('filterEmpleado').value;
-    let url = `/admin/attendance/records?page=${page}&per_page=20`;
+    let url = `/admin/attendance/records?per_page=1000`;
     if (from)   url += `&date_from=${from}`;
     if (to)     url += `&date_to=${to}`;
     if (tipo)   url += `&tipo=${tipo}`;
@@ -178,89 +206,176 @@ async function loadRecords(page = 1) {
     if (empId)  url += `&user_id=${empId}`;
     if (search) url += `&search=${encodeURIComponent(search)}`;
 
+    if (tablaAtt) tablaAtt.processing(true);
+
     try {
-        const res = await fetch(url, { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
-        const data = await res.json();
-        const tbody = document.getElementById('recordsTbody');
-        if (!data.data || data.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-3">Sin registros</td></tr>';
+        const res  = await fetch(url, { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
+        const json = await res.json();
+        const datos = json.data || [];
+
+        if ($.fn.DataTable.isDataTable('#attendanceTable')) {
+            tablaAtt.processing(false);
+            tablaAtt.clear().rows.add(datos).draw();
         } else {
-            tbody.innerHTML = data.data.map(r => {
-                const tienefoto = r.foto_evidencia === 'base64';
-                const fotoHtml = tienefoto
-                    ? `<button class="btn btn-sm btn-outline-primary" onclick="verFoto(${r.id})" title="Ver foto" ${canViewPhoto ? '' : 'disabled'}>
-                         <i class="fa-solid fa-camera"></i>
-                       </button>`
-                    : '<span class="text-muted">—</span>';
-                return `
-                <tr>
-                    <td class="col-att-empleado">
-                        <div class="d-flex align-items-center gap-2">
-                            ${r.foto_perfil_thumbnail
-                                ? `<img src="${r.foto_perfil_thumbnail}" onclick="verFotoPerfil('${(r.user?.name||'').replace(/'/g,'')}','${r.foto_perfil_thumbnail}',${r.user_id})" style="width:32px;height:32px;object-fit:cover;border-radius:50%;border:2px solid #1ab394;flex-shrink:0;cursor:pointer;" title="Ver foto de perfil" alt="">`
-                                : `<span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#e9ecef;color:#adb5bd;font-size:15px;flex-shrink:0;"><i class="fa-solid fa-user"></i></span>`
-                            }
-                            <div>
-                                ${(function() {
-                                    if (!r.horario) return '<i class="fa-solid fa-circle-question text-light me-1" data-bs-toggle="tooltip" title="Sin horario asignado"></i>';
-                                    const fecha = new Date(r.fecha_hora);
-                                    const isoDay = fecha.getDay() === 0 ? 7 : fecha.getDay();
-                                    const dia = (r.horario.dias || []).find(d => d.dia_semana === isoDay);
-                                    const diaLabel = ['','Lun','Mar','Mié','Jue','Vie','Sáb','Dom'][isoDay] || '';
-                                    const horaInfo = dia
-                                        ? `${diaLabel}: ${dia.hora_entrada?.slice(0,5)}–${dia.hora_salida?.slice(0,5)}${dia.retardo_min ? ' | Retardo: ' + dia.retardo_min + ' min' : ''}`
-                                        : `${diaLabel}: día no laboral`;
-                                    return `<i class="fa-solid fa-circle-question text-muted me-1" style="cursor:default;"
-                                                data-bs-toggle="tooltip"
-                                                title="Horario: ${r.horario.nombre} | ${horaInfo}"></i>`;
-                                })()}<strong>${r.user?.name || 'N/A'}</strong>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="col-att-codigo"><span class="badge bg-primary">${r.user?.codigo_empleado || '—'}</span></td>
-                    <td class="col-att-sede">${r.sede?.nombre || '—'}</td>
-                    <td class="col-att-tipo"><span class="badge ${r.tipo.includes('entrada') ? 'bg-success' : 'bg-danger'}">${r.tipo.replace(/_/g, ' ')}</span></td>
-                    <td class="col-att-fecha">${(function() {
-                            const fechaStr = new Date(r.fecha_hora).toLocaleString('es-CO', {timeZone: 'America/Bogota'});
-                            if (r.tipo !== 'entrada') return fechaStr;
-                            if (!r.horario) return fechaStr;
-                            const fecha   = new Date(r.fecha_hora);
-                            const isoDay  = fecha.getDay() === 0 ? 7 : fecha.getDay();
-                            const dia     = (r.horario.dias || []).find(d => d.dia_semana === isoDay);
-                            if (!dia?.hora_entrada) return fechaStr;
-                            const [hE, mE] = dia.hora_entrada.split(':').map(Number);
-                            const limite = new Date(fecha);
-                            limite.setHours(hE, mE + (dia.retardo_min || 0), 0, 0);
-                            const tarde = fecha > limite;
-                            const icono = tarde
+            tablaAtt = $('#attendanceTable').DataTable({
+                data: datos,
+                processing: true,
+                order: [[4, 'desc']],
+                scrollX: true,
+                pageLength: 20,
+                lengthMenu: [10, 20, 50, 100],
+                language: {
+                    lengthMenu: 'Mostrar _MENU_ registros',
+                    zeroRecords: 'Sin registros',
+                    info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+                    infoEmpty: 'Mostrando 0 registros',
+                    infoFiltered: '(filtrado de _MAX_ registros)',
+                    search: 'Buscar:',
+                    paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' },
+                    loadingRecords: 'Cargando...',
+                    processing: 'Procesando...',
+                },
+                initComplete: function() {
+                    $('#attendanceTable_length select').addClass('form-select form-select-sm d-inline-block w-auto');
+                    $('#attendanceTable_filter input').addClass('form-control form-control-sm d-inline-block w-auto');
+                    $('#attendanceTable_filter').prepend(
+                        '<button id="btnReloadAtt" class="btn btn-sm btn-outline-secondary me-2" onclick="loadRecords()" title="Recargar tabla">' +
+                        '<i class="ti ti-refresh"></i></button>'
+                    );
+                },
+                drawCallback: function() {
+                    document.querySelectorAll('#attendanceTable [data-bs-toggle="tooltip"]').forEach(function(el) {
+                        new bootstrap.Tooltip(el, { trigger: 'hover' });
+                    });
+                },
+                columns: [
+                    {
+                        title: 'Empleado',
+                        data: 'user',
+                        className: 'col-att-empleado',
+                        render: function(data, type, r) {
+                            if (type !== 'display') return data ? data.name : '';
+                            var avatar = r.foto_perfil_thumbnail
+                                ? '<img src="' + r.foto_perfil_thumbnail + '" onclick="verFotoPerfil(\'' + ((r.user && r.user.name)||'').replace(/'/g,"") + '\',\'' + r.foto_perfil_thumbnail + '\',' + r.user_id + ')" style="width:32px;height:32px;object-fit:cover;border-radius:50%;border:2px solid #1ab394;flex-shrink:0;cursor:pointer;" title="Ver foto de perfil" alt="">'
+                                : '<span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#e9ecef;color:#adb5bd;font-size:15px;flex-shrink:0;"><i class="fa-solid fa-user"></i></span>';
+                            var horarioIcon = (function() {
+                                if (!r.horario) return '<i class="fa-solid fa-circle-question text-light me-1" data-bs-toggle="tooltip" title="Sin horario asignado"></i>';
+                                var fecha = new Date(r.fecha_hora);
+                                var isoDay = fecha.getDay() === 0 ? 7 : fecha.getDay();
+                                var dia = (r.horario.dias || []).find(function(d) { return d.dia_semana === isoDay; });
+                                var diaLabel = ['','Lun','Mar','Mié','Jue','Vie','Sáb','Dom'][isoDay] || '';
+                                var horaInfo = dia
+                                    ? diaLabel + ': ' + (dia.hora_entrada||'').slice(0,5) + '–' + (dia.hora_salida||'').slice(0,5) + (dia.retardo_min ? ' | Retardo: ' + dia.retardo_min + ' min' : '')
+                                    : diaLabel + ': día no laboral';
+                                return '<i class="fa-solid fa-circle-question text-muted me-1" style="cursor:default;" data-bs-toggle="tooltip" title="Horario: ' + r.horario.nombre + ' | ' + horaInfo + '"></i>';
+                            })();
+                            return '<div class="d-flex align-items-center gap-2">' + avatar +
+                                '<div>' + horarioIcon + '<strong>' + ((r.user && r.user.name) || 'N/A') + '</strong></div></div>';
+                        }
+                    },
+                    {
+                        title: 'Código',
+                        data: 'user',
+                        className: 'col-att-codigo',
+                        render: function(data, type) {
+                            if (type !== 'display') return data ? data.codigo_empleado : '';
+                            return data ? '<span class="badge bg-primary">' + (data.codigo_empleado || '—') + '</span>' : '—';
+                        }
+                    },
+                    {
+                        title: 'Sede',
+                        data: 'sede',
+                        className: 'col-att-sede',
+                        render: function(data, type) {
+                            if (type !== 'display') return data ? data.nombre : '';
+                            return data ? '<span class="badge bg-primary">' + data.nombre + '</span>' : '—';
+                        }
+                    },
+                    {
+                        title: 'Tipo',
+                        data: 'tipo',
+                        className: 'col-att-tipo',
+                        render: function(data, type) {
+                            if (type !== 'display') return data;
+                            return '<span class="badge ' + (data.includes('entrada') ? 'bg-success' : 'bg-danger') + '">' + data.replace(/_/g, ' ') + '</span>';
+                        }
+                    },
+                    {
+                        title: 'Fecha/Hora',
+                        data: 'fecha_hora',
+                        className: 'col-att-fecha',
+                        render: function(data, type, r) {
+                            if (type !== 'display') return data;
+                            var fechaStr = new Date(data).toLocaleString('es-CO', {timeZone: 'America/Bogota'});
+                            if (r.tipo !== 'entrada' || !r.horario) return fechaStr;
+                            var fecha  = new Date(data);
+                            var isoDay = fecha.getDay() === 0 ? 7 : fecha.getDay();
+                            var dia    = (r.horario.dias || []).find(function(d) { return d.dia_semana === isoDay; });
+                            if (!dia || !dia.hora_entrada) return fechaStr;
+                            var parts  = dia.hora_entrada.split(':').map(Number);
+                            var limite = new Date(fecha);
+                            limite.setHours(parts[0], parts[1] + (dia.retardo_min || 0), 0, 0);
+                            var tarde  = fecha > limite;
+                            var icono  = tarde
                                 ? '<i class="fa-solid fa-circle-exclamation text-danger me-1" title="Tardanza"></i>'
                                 : '<i class="fa-solid fa-circle-check text-success me-1" title="A tiempo"></i>';
                             return icono + fechaStr;
-                        })()}</td>
-                    <td class="col-att-metodo"><span class="badge bg-info">${r.metodo}</span></td>
-                    <td class="col-att-qr"><span class="badge ${r.qr_validado ? 'bg-success' : 'bg-danger'}">${r.qr_validado ? 'Sí' : 'No'}</span></td>
-                    <td class="col-att-geocerca"><span class="badge ${r.geocerca_validada ? 'bg-success' : 'bg-danger'}">${r.geocerca_validada ? 'Sí' : 'No'}</span></td>
-                    <td class="col-att-distancia">${r.distancia_oficina_mts ? r.distancia_oficina_mts + 'm' : '—'}</td>
-                    <td class="col-att-foto">${fotoHtml}</td>
-                </tr>`;
-            }).join('');
+                        }
+                    },
+                    {
+                        title: 'Método',
+                        data: 'metodo',
+                        className: 'col-att-metodo',
+                        render: function(data, type) {
+                            if (type !== 'display') return data;
+                            return '<span class="badge bg-info">' + data + '</span>';
+                        }
+                    },
+                    {
+                        title: 'QR',
+                        data: 'qr_validado',
+                        className: 'col-att-qr',
+                        render: function(data, type) {
+                            if (type !== 'display') return data ? 'Sí' : 'No';
+                            return '<span class="badge ' + (data ? 'bg-success' : 'bg-danger') + '">' + (data ? 'Sí' : 'No') + '</span>';
+                        }
+                    },
+                    {
+                        title: 'Geocerca',
+                        data: 'geocerca_validada',
+                        className: 'col-att-geocerca',
+                        render: function(data, type) {
+                            if (type !== 'display') return data ? 'Sí' : 'No';
+                            return '<span class="badge ' + (data ? 'bg-success' : 'bg-danger') + '">' + (data ? 'Sí' : 'No') + '</span>';
+                        }
+                    },
+                    {
+                        title: 'Distancia',
+                        data: 'distancia_oficina_mts',
+                        className: 'col-att-distancia',
+                        render: function(data) {
+                            return data ? data + 'm' : '—';
+                        }
+                    },
+                    {
+                        title: 'Foto',
+                        data: 'foto_evidencia',
+                        className: 'col-att-foto',
+                        orderable: false,
+                        render: function(data, type, r) {
+                            if (type !== 'display') return data || '';
+                            return data === 'base64'
+                                ? '<button class="btn btn-sm btn-outline-primary" onclick="verFoto(' + r.id + ')" title="Ver foto" ' + (canViewPhoto ? '' : 'disabled') + '><i class="fa-solid fa-camera"></i></button>'
+                                : '<span class="text-muted">—</span>';
+                        }
+                    }
+                ]
+            });
         }
-        document.getElementById('recordsInfo').textContent = `${data.total || 0} registros`;
-        renderRecordsPagination(data);
-        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
-        colVisAttApply(colVisAttGetState());
-    } catch(e) { console.error(e); }
-}
-
-function renderRecordsPagination(data) {
-    const nav = document.getElementById('recordsPagination');
-    if (!data.last_page || data.last_page <= 1) { nav.innerHTML = ''; return; }
-    let html = '<nav><ul class="pagination pagination-sm mb-0">';
-    for (let i = 1; i <= data.last_page; i++) {
-        html += `<li class="page-item ${i === data.current_page ? 'active' : ''}"><a class="page-link" href="#" onclick="loadRecords(${i});return false">${i}</a></li>`;
+    } catch(e) {
+        if (tablaAtt) tablaAtt.processing(false);
+        console.error(e);
     }
-    html += '</ul></nav>';
-    nav.innerHTML = html;
 }
 
 async function loadEmpleadosFilter() {
@@ -295,14 +410,25 @@ async function verFoto(id) {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+async function verFotoPerfil(nombre, thumbnail, userId) {
+    const img = document.getElementById('modalFotoPerfilImg');
+    document.getElementById('modalFotoPerfilNombre').textContent = nombre;
+    img.src = thumbnail;
+    new bootstrap.Modal(document.getElementById('modalFotoPerfil')).show();
+    try {
+        const res  = await fetch(`/admin/empleados/${userId}/imagen-perfil`);
+        const data = await res.json();
+        if (data.imagen_base64) img.src = data.imagen_base64;
+    } catch(e) {}
+}
+
+document.addEventListener('DOMContentLoaded', function() {
     if (isEmpleado) {
         document.getElementById('filterEmpleado').closest('.col-md-3').style.display = 'none';
     } else {
         loadEmpleadosFilter();
     }
     loadRecords();
-    colVisAttApply(colVisAttGetState());
     document.addEventListener('click', function(e) {
         if (!e.target.closest('#colVisPanelAtt, #colVisBtnAtt')) {
             document.getElementById('colVisPanelAtt').style.display = 'none';
@@ -340,12 +466,11 @@ function colVisAttSaveState(state) {
 }
 
 function colVisAttApply(state) {
-    COL_VIS_DEFS_ATT.forEach(function(c) {
-        var visible = !!state[c.cls];
-        document.querySelectorAll('.' + c.cls).forEach(function(el) {
-            el.style.display = visible ? '' : 'none';
-        });
+    if (!tablaAtt) return;
+    COL_VIS_DEFS_ATT.forEach(function(c, i) {
+        tablaAtt.column(i).visible(!!state[c.cls], false);
     });
+    tablaAtt.columns.adjust();
 }
 
 function colVisAttBuildPanel() {
@@ -391,16 +516,12 @@ function toggleColVisPanelAtt() {
     }
 }
 
-async function verFotoPerfil(nombre, thumbnail, userId) {
-    const img = document.getElementById('modalFotoPerfilImg');
-    document.getElementById('modalFotoPerfilNombre').textContent = nombre;
-    img.src = thumbnail; // muestra thumbnail mientras carga la completa
-    new bootstrap.Modal(document.getElementById('modalFotoPerfil')).show();
-    try {
-        const res  = await fetch(`/admin/empleados/${userId}/imagen-perfil`);
-        const data = await res.json();
-        if (data.imagen_base64) img.src = data.imagen_base64;
-    } catch(e) {}
-}
+// Aplicar visibilidad guardada una vez la tabla esté lista
+var _colVisAttInterval = setInterval(function() {
+    if (tablaAtt) {
+        colVisAttApply(colVisAttGetState());
+        clearInterval(_colVisAttInterval);
+    }
+}, 200);
 </script>
 @endpush

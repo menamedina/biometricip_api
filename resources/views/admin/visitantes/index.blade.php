@@ -448,7 +448,15 @@ function cargarTabla(silent) {
                 pageLength: 10,
                 lengthMenu: [10, 25, 50, 100],
                 language: {
-                    url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json'
+                    lengthMenu: 'Mostrar _MENU_ registros',
+                    zeroRecords: 'Sin registros',
+                    info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+                    infoEmpty: 'Mostrando 0 registros',
+                    infoFiltered: '(filtrado de _MAX_ registros)',
+                    search: 'Buscar:',
+                    paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' },
+                    loadingRecords: 'Cargando...',
+                    processing: 'Procesando...',
                 },
                 initComplete: function() {
                     $('#visitantesTable_length select').addClass('form-select form-select-sm d-inline-block w-auto');
