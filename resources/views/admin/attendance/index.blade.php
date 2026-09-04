@@ -91,7 +91,14 @@
                 <div class="card-body p-0">
                     <table class="table table-hover mb-0 w-100" id="attendanceTable">
                         <thead class="table-light"></thead>
-                        <tbody></tbody>
+                        <tbody>
+                            <tr id="trLoadingAtt">
+                                <td colspan="10" class="text-center py-5">
+                                    <div class="spinner-border text-primary" role="status" style="width:2rem;height:2rem;"></div>
+                                    <p class="text-muted mt-2 mb-0 small">Cargando registros...</p>
+                                </td>
+                            </tr>
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -212,6 +219,9 @@ async function loadRecords() {
         const res  = await fetch(url, { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
         const json = await res.json();
         const datos = json.data || [];
+
+        var trLoading = document.getElementById('trLoadingAtt');
+        if (trLoading) trLoading.remove();
 
         if ($.fn.DataTable.isDataTable('#attendanceTable')) {
             tablaAtt.processing(false);
