@@ -354,5 +354,27 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!esEmpleado) loadVisitantesStats();
     }, 30000);
 });
+
+function showPhotoModal(src, name) {
+    document.getElementById('photoModalImg').src = src;
+    document.getElementById('photoModalLabel').textContent = name;
+    new bootstrap.Modal(document.getElementById('photoModal')).show();
+}
 </script>
 @endpush
+
+<!-- Modal foto empleado -->
+<div class="modal fade" id="photoModal" tabindex="-1" aria-labelledby="photoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h6 class="modal-title fw-semibold" id="photoModalLabel"></h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body text-center pt-2">
+                <img id="photoModalImg" src="" alt="Foto empleado"
+                     style="width:100%;max-width:220px;height:220px;object-fit:cover;border-radius:12px;border:3px solid #1ab394;">
+            </div>
+        </div>
+    </div>
+</div>
