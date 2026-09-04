@@ -25,112 +25,121 @@
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body p-2">
-                    <div class="row g-2 mb-2">
-                        <div class="col-md-3">
-                            <input type="text" class="form-control form-control-sm" id="filterSearch" placeholder="Buscar..." oninput="debounceSearch()">
-                        </div>
-                        @if(auth()->user()->admin_tenant)
-                        <div class="col-md-2">
-                            <select class="form-select form-select-sm" id="filterEmpresa" onchange="loadEmpleados()">
-                                <option value="">Todas las empresas</option>
-                            </select>
-                        </div>
-                        @endif
-                        <div class="col-md-2">
-                            <select class="form-select form-select-sm" id="filterDepto" onchange="loadEmpleados()">
-                                <option value="">Todos los deptos.</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <select class="form-select form-select-sm" id="filterSede" onchange="loadEmpleados()">
-                                <option value="">Todas las sedes</option>
-                            </select>
-                        </div>
-                        <div class="col-md-auto">
-                            <select class="form-select form-select-sm" id="filterEstado" onchange="loadEmpleados()">
-                                <option value="">Todos los estados</option>
-                                <option value="1">Activo</option>
-                                <option value="0">Inactivo</option>
-                            </select>
-                        </div>
-                        <div class="col-md-auto ms-auto d-flex align-items-center gap-2">
-                            <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#filtrosExtra" title="Más filtros">
-                                <i class="fa-solid fa-sliders"></i>
-                            </button>
-                            <label class="form-label mb-0 text-muted small text-nowrap">Mostrar</label>
-                            <select class="form-select form-select-sm" id="perPageSelect" style="width:75px" onchange="loadEmpleados()">
-                                <option value="10">10</option>
-                                <option value="25" selected>25</option>
-                                <option value="50">50</option>
-                                <option value="100">100</option>
-                            </select>
-                            <span class="text-muted small text-nowrap">registros</span>
-                        </div>
-                    </div>
-                    <div class="collapse" id="filtrosExtra">
-                        <div class="row g-2 mb-2">
-                            <div class="col-md-3">
-                                <select class="form-select form-select-sm" id="filterCargo" onchange="loadEmpleados()">
-                                    <option value="">Todos los cargos</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <select class="form-select form-select-sm" id="filterHorario" onchange="loadEmpleados()">
-                                    <option value="">Todos los horarios</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <select class="form-select form-select-sm" id="filterEmpleador" onchange="loadEmpleados()">
-                                    <option value="">Todos los empleadores</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <select class="form-select form-select-sm" id="filterLider" onchange="loadEmpleados()">
-                                    <option value="">Todos los líderes</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
+    {{-- Filtros --}}
+    <div class="card mb-3">
+        <div class="card-body p-2">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label form-label-sm mb-1">Buscar</label>
+                    <input type="text" class="form-control form-control-sm" id="filterSearch" placeholder="Nombre, cédula, email...">
                 </div>
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th class="sortable col-emp-codigo" data-col="codigo_empleado">Código</th>
-                                <th class="sortable col-emp-nombre" data-col="name">Nombre</th>
-                                <th class="sortable col-emp-cedula" data-col="cedula">Cédula</th>
-                                <th class="sortable col-emp-email" data-col="email">Email</th>
-                                <th class="sortable col-emp-telefono" data-col="telefono">Teléfono</th>
-                                @if(auth()->user()->admin_tenant)
-                                <th class="col-emp-empresa">Empresa</th>
-                                @endif
-                                <th class="sortable col-emp-rol" data-col="role">Rol</th>
-                                <th class="sortable col-emp-cargo" data-col="cargo_id">Cargo / Departamento</th>
-                                <th class="col-emp-sede">Sede</th>
-                                <th class="sortable col-emp-horario" data-col="horario_id">Horario</th>
-                                <th class="sortable col-emp-empleador" data-col="empleador_id">Empleador</th>
-                                <th class="sortable col-emp-lider" data-col="lider_id">Líder</th>
-                                <th class="sortable col-emp-centro-costo" data-col="centro_costo">Centro de costo</th>
-                                <th class="sortable col-emp-ruta" data-col="ruta">Ruta</th>
-                                <th class="sortable col-emp-estado" data-col="is_active">Estado</th>
-                                <th class="col-emp-rostros">Rostros</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="empleadosTbody">
-                            <tr><td colspan="9" class="text-center text-muted py-3">Cargando...</td></tr>
-                        </tbody>
-                    </table>
+                @if(auth()->user()->admin_tenant)
+                <div class="col-md-2">
+                    <label class="form-label form-label-sm mb-1">Empresa</label>
+                    <select class="form-select form-select-sm" id="filterEmpresa">
+                        <option value="">Todas las empresas</option>
+                    </select>
                 </div>
-                <div class="card-footer d-flex justify-content-between align-items-center">
-                    <small class="text-muted" id="empleadosInfo"></small>
-                    <div id="empleadosPagination"></div>
+                @endif
+                <div class="col-md-2">
+                    <label class="form-label form-label-sm mb-1">Departamento</label>
+                    <select class="form-select form-select-sm" id="filterDepto">
+                        <option value="">Todos los deptos.</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label form-label-sm mb-1">Sede</label>
+                    <select class="form-select form-select-sm" id="filterSede">
+                        <option value="">Todas las sedes</option>
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label form-label-sm mb-1">Estado</label>
+                    <select class="form-select form-select-sm" id="filterEstado">
+                        <option value="">Todos</option>
+                        <option value="1">Activo</option>
+                        <option value="0">Inactivo</option>
+                    </select>
+                </div>
+                <div class="col-md-auto d-flex align-items-end gap-2">
+                    <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#filtrosExtra" title="Más filtros">
+                        <i class="fa-solid fa-sliders"></i>
+                    </button>
+                    <button class="btn btn-sm btn-primary" onclick="loadEmpleados()">
+                        <i class="fa-solid fa-search me-1"></i> Filtrar
+                    </button>
+                    <button class="btn btn-sm btn-secondary" onclick="limpiarFiltros()">
+                        <i class="fa-solid fa-xmark me-1"></i> Limpiar
+                    </button>
                 </div>
             </div>
+            <div class="collapse mt-2" id="filtrosExtra">
+                <div class="row g-2">
+                    <div class="col-md-3">
+                        <label class="form-label form-label-sm mb-1">Cargo</label>
+                        <select class="form-select form-select-sm" id="filterCargo">
+                            <option value="">Todos los cargos</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label form-label-sm mb-1">Horario</label>
+                        <select class="form-select form-select-sm" id="filterHorario">
+                            <option value="">Todos los horarios</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label form-label-sm mb-1">Empleador</label>
+                        <select class="form-select form-select-sm" id="filterEmpleador">
+                            <option value="">Todos los empleadores</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label form-label-sm mb-1">Líder</label>
+                        <select class="form-select form-select-sm" id="filterLider">
+                            <option value="">Todos los líderes</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Tabla --}}
+    <div class="card">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0 w-100" id="empleadosTable">
+                <thead class="table-light">
+                    <tr>
+                        <th class="col-emp-codigo">Código</th>
+                        <th class="col-emp-nombre">Nombre</th>
+                        <th class="col-emp-cedula">Cédula</th>
+                        <th class="col-emp-email">Email</th>
+                        <th class="col-emp-telefono">Teléfono</th>
+                        @if(auth()->user()->admin_tenant)
+                        <th class="col-emp-empresa">Empresa</th>
+                        @endif
+                        <th class="col-emp-rol">Rol</th>
+                        <th class="col-emp-cargo">Cargo / Departamento</th>
+                        <th class="col-emp-sede">Sede</th>
+                        <th class="col-emp-horario">Horario</th>
+                        <th class="col-emp-empleador">Empleador</th>
+                        <th class="col-emp-lider">Líder</th>
+                        <th class="col-emp-centro-costo">Centro de costo</th>
+                        <th class="col-emp-ruta">Ruta</th>
+                        <th class="col-emp-estado">Estado</th>
+                        <th class="col-emp-rostros">Rostros</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="empleadosTbody">
+                    <tr id="trLoadingEmp">
+                        <td colspan="17" class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status" style="width:2rem;height:2rem;"></div>
+                            <p class="text-muted mt-2 mb-0 small">Cargando empleados...</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
@@ -473,16 +482,47 @@
 </div>
 @endsection
 
+@push('styles')
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
+<style>
+div.dataTables_wrapper div.dataTables_length,
+div.dataTables_wrapper div.dataTables_filter {
+    padding: 12px 16px 0;
+}
+div.dataTables_wrapper div.dataTables_info,
+div.dataTables_wrapper div.dataTables_paginate {
+    padding: 10px 16px 12px;
+    border-top: 1px solid #e9ecef;
+}
+div.dataTables_wrapper div.dataTables_length label,
+div.dataTables_wrapper div.dataTables_filter label {
+    font-size: 13px;
+    color: #6c757d;
+    margin-bottom: 8px;
+}
+div.dataTables_wrapper div.dataTables_info {
+    font-size: 13px;
+    color: #6c757d;
+}
+#empleadosTable th, #empleadosTable td {
+    font-size: 13px;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+</style>
+@endpush
+
 @push('scripts')
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script>
 
 const csrfToken     = '{{ csrf_token() }}';
 const isAdminTenant = {{ auth()->user()->admin_tenant ? 'true' : 'false' }};
 const isSupervisor  = {{ auth()->user()->role === 'supervisor' ? 'true' : 'false' }};
 const canEditEmpleado = {{ (auth()->user()->admin_tenant || auth()->user()->editar_empleado) ? 'true' : 'false' }};
-let currentPage = 1;
-let sortBy  = 'name';
-let sortDir = 'asc';
+var tablaEmpleados = null;
 
 let deptoMap      = {};
 let cargoMap      = {};
@@ -684,8 +724,7 @@ async function loadSedesParaEmpresa(empresaId, selectedIds = []) {
     }
 }
 
-async function loadEmpleados(page = 1) {
-    currentPage = page;
+async function loadEmpleados() {
     const search      = document.getElementById('filterSearch').value;
     const deptoId     = document.getElementById('filterDepto').value;
     const sedeId      = document.getElementById('filterSede').value;
@@ -695,8 +734,8 @@ async function loadEmpleados(page = 1) {
     const empleadorId = document.getElementById('filterEmpleador')?.value || '';
     const liderId     = document.getElementById('filterLider')?.value || '';
     const empresaId   = isAdminTenant ? document.getElementById('filterEmpresa').value : '';
-    const perPage = document.getElementById('perPageSelect').value;
-    let url = `/admin/empleados/list?page=${page}&per_page=${perPage}&sort=${sortBy}&dir=${sortDir}`;
+
+    let url = `/admin/empleados/list?per_page=1000&sort=name&dir=asc`;
     if (search)      url += `&search=${encodeURIComponent(search)}`;
     if (deptoId)     url += `&departamento_id=${deptoId}`;
     if (cargoId)     url += `&cargo_id=${cargoId}`;
@@ -707,86 +746,157 @@ async function loadEmpleados(page = 1) {
     if (liderId)     url += `&lider_id=${liderId}`;
     if (empresaId)   url += `&empresa_id=${empresaId}`;
 
+    if (tablaEmpleados) { tablaEmpleados.processing(true); }
+
     try {
         const res = await fetch(url);
-        if (!res.ok) {
-            document.getElementById('empleadosTbody').innerHTML = `<tr><td colspan="12" class="text-center text-danger py-3">Error ${res.status} al cargar empleados</td></tr>`;
-            return;
-        }
+        if (!res.ok) throw new Error('Error ' + res.status);
         const data = await res.json();
-        const tbody = document.getElementById('empleadosTbody');
-        if (!data.data || data.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-3">Sin usuarios</td></tr>';
+        const items = data.data || [];
+
+        var trLoading = document.getElementById('trLoadingEmp');
+        if (trLoading) trLoading.remove();
+
+        if ($.fn.DataTable.isDataTable('#empleadosTable')) {
+            tablaEmpleados.processing(false);
+            tablaEmpleados.clear().rows.add(items).draw();
         } else {
-            tbody.innerHTML = data.data.map(e => {
-                const rolBadge = e.role === 'admin'
-                    ? `<span class="badge bg-warning text-dark">${e.admin_tenant ? 'Admin multi-empresa' : 'Admin'}</span>`
-                    : e.role === 'supervisor'
-                        ? '<span class="badge bg-info text-dark">Supervisor</span>'
-                        : '<span class="badge bg-secondary">Empleado</span>';
-                return `
-                <tr>
-                    <td class="col-emp-codigo"><span class="badge bg-primary">${e.codigo_empleado || '—'}</span></td>
-                    <td class="col-emp-nombre">
-                        <div class="d-flex align-items-center gap-2">
-                            ${e.foto_perfil_thumbnail
-                                ? `<img src="${e.foto_perfil_thumbnail}" onclick="verFotoPerfilEmp('${(e.name||'').replace(/'/g,'')}',${e.id})" style="width:32px;height:32px;object-fit:cover;border-radius:50%;border:2px solid #1ab394;flex-shrink:0;cursor:pointer;" title="Ver foto" alt="">`
-                                : `<span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#e9ecef;color:#adb5bd;font-size:15px;flex-shrink:0;"><i class="fa-solid fa-user"></i></span>`
-                            }
-                            <strong>${e.name || 'N/A'}</strong>
-                        </div>
-                    </td>
-                    <td class="col-emp-cedula">${e.cedula || '—'}</td>
-                    <td class="col-emp-email">${e.email || 'N/A'}</td>
-                    <td class="col-emp-telefono">${e.telefono || '—'}</td>
-                    ${isAdminTenant ? `<td class="col-emp-empresa"><span class="badge bg-light text-dark border">${empresaMap[e.empresa_id] || '—'}</span></td>` : ''}
-                    <td class="col-emp-rol">${rolBadge}</td>
-                    <td class="col-emp-cargo">
-                        <div>${e.cargo_nombre || (e.cargo_id ? cargoMap[e.cargo_id] : null) || '—'}</div>
-                        <small class="text-muted">${e.departamento_nombre || (e.departamento_id ? deptoMap[e.departamento_id] : null) || ''}</small>
-                    </td>
-                    <td class="col-emp-sede">${(e.sede_nombres && e.sede_nombres.length) ? e.sede_nombres.map(n => `<span class="badge bg-info text-dark me-1">${n}</span>`).join('') : (e.sede_ids && e.sede_ids.length) ? e.sede_ids.map(id => `<span class="badge bg-info text-dark me-1">${sedeMap[id] || id}</span>`).join('') : '—'}</td>
-                    <td class="col-emp-horario">${e.horario_id ? (horarioMap[e.horario_id] || e.horario_id) : '—'}</td>
-                    <td class="col-emp-empleador">${e.empleador_id ? (empleadorMap[e.empleador_id] || '—') : '—'}</td>
-                    <td class="col-emp-lider">${e.lider_id ? (liderMap[e.lider_id] || '—') : '—'}</td>
-                    <td class="col-emp-centro-costo">${e.centro_costo || '—'}</td>
-                    <td class="col-emp-ruta">${e.ruta || '—'}</td>
-                    <td class="col-emp-estado"><span class="badge ${e.is_active ? 'bg-success' : 'bg-danger'}">${e.is_active ? 'Activo' : 'Inactivo'}</span></td>
-                    <td class="col-emp-rostros">
-                        <button class="btn btn-sm ${e.has_face_descriptor ? 'btn-success' : 'btn-outline-secondary'}" onclick="verRostros(${e.id}, '${(e.name||'').replace(/'/g,'')}')">
-                            <i class="fa-solid fa-face-smile"></i>
-                            <span class="ms-1">${e.has_face_descriptor ? '✓' : '—'}</span>
-                        </button>
-                    </td>
-                    <td>
-                        <div class="d-flex flex-nowrap gap-1">
-                            <button class="btn btn-sm btn-outline-primary" onclick="this.disabled=true;editEmpleado(${e.id}, '${e.encrypted_id}').finally(()=>this.disabled=false)" ${canEditEmpleado ? '' : 'disabled'}><i class="fa-solid fa-pen"></i></button>
-                            <button class="btn btn-sm btn-outline-secondary" onclick="verLogEmpleado(${e.id})" title="Ver historial de cambios"><i class="fa-solid fa-clock-rotate-left"></i></button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteEmpleado('${e.encrypted_id}')" ${isSupervisor ? 'disabled' : ''}><i class="fa-solid fa-trash"></i></button>
-                        </div>
-                    </td>
-                </tr>`;
-            }).join('');
+            var cols = [
+                {
+                    title: 'Código', data: 'codigo_empleado', className: 'col-emp-codigo',
+                    render: function(d) { return d ? '<span class="badge bg-primary">' + d + '</span>' : '—'; }
+                },
+                {
+                    title: 'Nombre', data: 'name', className: 'col-emp-nombre',
+                    render: function(d, type, row) {
+                        if (type !== 'display') return d || '';
+                        var foto = row.foto_perfil_thumbnail
+                            ? '<img src="' + row.foto_perfil_thumbnail + '" onclick="verFotoPerfilEmp(\'' + (row.name||'').replace(/'/g,'') + '\',' + row.id + ')" style="width:32px;height:32px;object-fit:cover;border-radius:50%;border:2px solid #1ab394;flex-shrink:0;cursor:pointer;" title="Ver foto" alt="">'
+                            : '<span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#e9ecef;color:#adb5bd;font-size:15px;flex-shrink:0;"><i class="fa-solid fa-user"></i></span>';
+                        return '<div class="d-flex align-items-center gap-2">' + foto + '<strong>' + (d || 'N/A') + '</strong></div>';
+                    }
+                },
+                { title: 'Cédula',    data: 'cedula',   className: 'col-emp-cedula',   render: function(d) { return d || '—'; } },
+                { title: 'Email',     data: 'email',    className: 'col-emp-email',    render: function(d) { return d || 'N/A'; } },
+                { title: 'Teléfono', data: 'telefono', className: 'col-emp-telefono', render: function(d) { return d || '—'; } },
+            ];
+
+            if (isAdminTenant) {
+                cols.push({
+                    title: 'Empresa', data: 'empresa_id', className: 'col-emp-empresa',
+                    render: function(d) { return '<span class="badge bg-light text-dark border">' + (empresaMap[d] || '—') + '</span>'; }
+                });
+            }
+
+            cols = cols.concat([
+                {
+                    title: 'Rol', data: 'role', className: 'col-emp-rol',
+                    render: function(d, type, row) {
+                        if (type !== 'display') return d || '';
+                        if (d === 'admin') return '<span class="badge bg-warning text-dark">' + (row.admin_tenant ? 'Admin multi-empresa' : 'Admin') + '</span>';
+                        if (d === 'supervisor') return '<span class="badge bg-info text-dark">Supervisor</span>';
+                        return '<span class="badge bg-secondary">Empleado</span>';
+                    }
+                },
+                {
+                    title: 'Cargo / Departamento', data: 'cargo_id', className: 'col-emp-cargo',
+                    render: function(d, type, row) {
+                        var cargo = row.cargo_nombre || (d ? cargoMap[d] : null) || '—';
+                        var depto = row.departamento_nombre || (row.departamento_id ? deptoMap[row.departamento_id] : null) || '';
+                        if (type !== 'display') return cargo;
+                        return '<div>' + cargo + '</div>' + (depto ? '<small class="text-muted">' + depto + '</small>' : '');
+                    }
+                },
+                {
+                    title: 'Sede', data: 'sede_ids', className: 'col-emp-sede', orderable: false,
+                    render: function(d, type, row) {
+                        if (type !== 'display') return (row.sede_nombres || []).join(', ');
+                        if (row.sede_nombres && row.sede_nombres.length)
+                            return row.sede_nombres.map(function(n) { return '<span class="badge bg-info text-dark me-1">' + n + '</span>'; }).join('');
+                        if (d && d.length)
+                            return d.map(function(id) { return '<span class="badge bg-info text-dark me-1">' + (sedeMap[id] || id) + '</span>'; }).join('');
+                        return '—';
+                    }
+                },
+                { title: 'Horario',        data: 'horario_id',   className: 'col-emp-horario',      render: function(d) { return d ? (horarioMap[d]   || d) : '—'; } },
+                { title: 'Empleador',      data: 'empleador_id', className: 'col-emp-empleador',    render: function(d) { return d ? (empleadorMap[d] || '—') : '—'; } },
+                { title: 'Líder',         data: 'lider_id',     className: 'col-emp-lider',        render: function(d) { return d ? (liderMap[d]     || '—') : '—'; } },
+                { title: 'Centro de costo', data: 'centro_costo', className: 'col-emp-centro-costo', render: function(d) { return d || '—'; } },
+                { title: 'Ruta',           data: 'ruta',         className: 'col-emp-ruta',         render: function(d) { return d || '—'; } },
+                {
+                    title: 'Estado', data: 'is_active', className: 'col-emp-estado',
+                    render: function(d, type) {
+                        if (type !== 'display') return d ? 1 : 0;
+                        return '<span class="badge ' + (d ? 'bg-success' : 'bg-danger') + '">' + (d ? 'Activo' : 'Inactivo') + '</span>';
+                    }
+                },
+                {
+                    title: 'Rostros', data: 'has_face_descriptor', className: 'col-emp-rostros', orderable: false,
+                    render: function(d, type, row) {
+                        if (type !== 'display') return d ? 1 : 0;
+                        return '<button class="btn btn-sm ' + (d ? 'btn-success' : 'btn-outline-secondary') + '" onclick="verRostros(' + row.id + ',\'' + (row.name||'').replace(/'/g,'') + '\')">'
+                            + '<i class="fa-solid fa-face-smile"></i><span class="ms-1">' + (d ? '✓' : '—') + '</span></button>';
+                    }
+                },
+                {
+                    title: 'Acciones', data: 'id', orderable: false,
+                    render: function(d, type, row) {
+                        var enc = row.encrypted_id;
+                        var e = '<button class="btn btn-sm btn-outline-primary" onclick="this.disabled=true;editEmpleado(' + d + ',\'' + enc + '\').finally(()=>this.disabled=false)" ' + (canEditEmpleado ? '' : 'disabled') + '><i class="fa-solid fa-pen"></i></button>';
+                        var l = '<button class="btn btn-sm btn-outline-secondary" onclick="verLogEmpleado(' + d + ')" title="Historial"><i class="fa-solid fa-clock-rotate-left"></i></button>';
+                        var x = '<button class="btn btn-sm btn-outline-danger" onclick="deleteEmpleado(\'' + enc + '\')" ' + (isSupervisor ? 'disabled' : '') + '><i class="fa-solid fa-trash"></i></button>';
+                        return '<div class="d-flex flex-nowrap gap-1">' + e + l + x + '</div>';
+                    }
+                }
+            ]);
+
+            tablaEmpleados = $('#empleadosTable').DataTable({
+                data: items,
+                processing: true,
+                order: [[1, 'asc']],
+                scrollX: true,
+                pageLength: 25,
+                lengthMenu: [10, 25, 50, 100],
+                language: {
+                    lengthMenu: 'Mostrar _MENU_ registros',
+                    zeroRecords: 'Sin empleados',
+                    info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+                    infoEmpty: 'Mostrando 0 registros',
+                    infoFiltered: '(filtrado de _MAX_ registros)',
+                    search: 'Buscar:',
+                    paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' },
+                    processing: 'Procesando...',
+                },
+                drawCallback: function() {
+                    colVisEmpApply(colVisEmpGetState());
+                },
+                initComplete: function() {
+                    $('#empleadosTable_length select').addClass('form-select form-select-sm d-inline-block w-auto');
+                    $('#empleadosTable_filter input').addClass('form-control form-control-sm d-inline-block w-auto');
+                    $('#empleadosTable_filter').prepend(
+                        '<button class="btn btn-sm btn-outline-secondary me-2" onclick="loadEmpleados()" title="Recargar tabla"><i class="ti ti-refresh"></i></button>'
+                    );
+                },
+                columns: cols
+            });
         }
-        document.getElementById('empleadosInfo').textContent = `${data.total || 0} usuarios`;
-        renderPagination(data);
-        colVisEmpApply(colVisEmpGetState());
-    } catch(e) { console.error(e); }
+    } catch(e) {
+        if (tablaEmpleados) tablaEmpleados.processing(false);
+        console.error(e);
+    }
 }
 
-function renderPagination(data) {
-    const nav = document.getElementById('empleadosPagination');
-    if (!data.last_page || data.last_page <= 1) { nav.innerHTML = ''; return; }
-    const cur = data.current_page;
-    const last = data.last_page;
-    let html = '<nav><ul class="pagination pagination-sm mb-0">';
-    html += `<li class="page-item ${cur === 1 ? 'disabled' : ''}"><a class="page-link" href="#" onclick="loadEmpleados(${cur - 1});return false">&#8249; Anterior</a></li>`;
-    for (let i = 1; i <= last; i++) {
-        html += `<li class="page-item ${i === cur ? 'active' : ''}"><a class="page-link" href="#" onclick="loadEmpleados(${i});return false">${i}</a></li>`;
-    }
-    html += `<li class="page-item ${cur === last ? 'disabled' : ''}"><a class="page-link" href="#" onclick="loadEmpleados(${cur + 1});return false">Siguiente &#8250;</a></li>`;
-    html += '</ul></nav>';
-    nav.innerHTML = html;
+function limpiarFiltros() {
+    document.getElementById('filterSearch').value  = '';
+    document.getElementById('filterDepto').value   = '';
+    document.getElementById('filterSede').value    = '';
+    document.getElementById('filterEstado').value  = '';
+    if (document.getElementById('filterCargo'))     document.getElementById('filterCargo').value     = '';
+    if (document.getElementById('filterHorario'))   document.getElementById('filterHorario').value   = '';
+    if (document.getElementById('filterEmpleador')) document.getElementById('filterEmpleador').value = '';
+    if (document.getElementById('filterLider'))     document.getElementById('filterLider').value     = '';
+    if (isAdminTenant && document.getElementById('filterEmpresa')) document.getElementById('filterEmpresa').value = '';
+    loadEmpleados();
 }
 
 async function editEmpleado(id, encryptedId) {
@@ -969,7 +1079,7 @@ async function saveEmpleado(id) {
         const text = await res.text();
         if (res.ok) {
             bootstrap.Modal.getInstance(document.getElementById('empleadoModal')).hide();
-            loadEmpleados(currentPage);
+            loadEmpleados();
             Swal.fire({ icon: 'success', title: 'Guardado', text: 'Empleado actualizado correctamente.', timer: 1800, showConfirmButton: false });
         } else {
             try {
@@ -1001,7 +1111,7 @@ async function deleteEmpleado(id) {
             headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
         });
         if (res.ok) {
-            loadEmpleados(currentPage);
+            loadEmpleados();
             Swal.fire({ icon: 'success', title: 'Desactivado', text: 'El empleado ha sido desactivado correctamente.', timer: 1800, showConfirmButton: false });
         } else {
             const text = await res.text();
@@ -1082,7 +1192,7 @@ async function eliminarRostro(imageId) {
         });
         if (res.ok) {
             await cargarRostros();
-            loadEmpleados(currentPage); // actualizar badge en tabla
+            loadEmpleados(); // actualizar badge en tabla
         } else {
             const err = await res.json();
             alert(err.message || 'Error al eliminar');
@@ -1269,37 +1379,12 @@ async function verLogEmpleado(id) {
     tbody.innerHTML = rows.join('');
 }
 
-function updateSortIcons() {
-    document.querySelectorAll('th.sortable').forEach(th => {
-        th.querySelectorAll('i.sort-icon').forEach(i => i.remove());
-        const icon = document.createElement('i');
-        if (th.dataset.col === sortBy) {
-            icon.className = `sort-icon fa-solid fa-sort-${sortDir === 'asc' ? 'up' : 'down'} ms-1 text-primary`;
-        } else {
-            icon.className = 'sort-icon fa-solid fa-sort ms-1 text-muted opacity-50';
-        }
-        th.appendChild(icon);
-    });
-}
-
 document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('th.sortable').forEach(th => {
-        th.style.cursor = 'pointer';
-        th.style.userSelect = 'none';
-        th.addEventListener('click', () => {
-            if (sortBy === th.dataset.col) {
-                sortDir = sortDir === 'asc' ? 'desc' : 'asc';
-            } else {
-                sortBy  = th.dataset.col;
-                sortDir = 'asc';
-            }
-            updateSortIcons();
-            loadEmpleados(1);
-        });
-    });
-    updateSortIcons();
     initCatalogos().then(() => loadEmpleados());
     colVisEmpApply(colVisEmpGetState());
+    document.getElementById('filterSearch').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') loadEmpleados();
+    });
     document.addEventListener('click', function(e) {
         if (!e.target.closest('#colVisPanelEmp, #colVisBtnEmp')) {
             document.getElementById('colVisPanelEmp').style.display = 'none';
@@ -1308,9 +1393,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── Visibilidad de columnas (empleados) ─────────────────────────────────────
-var _searchTimer = null;
-function debounceSearch() { clearTimeout(_searchTimer); _searchTimer = setTimeout(() => loadEmpleados(1), 350); }
-
 var COL_VIS_KEY_EMP = 'empleados_col_vis';
 var COL_VIS_DEFS_EMP = [
     { cls: 'col-emp-codigo',       label: 'Código',               default: true,  adminOnly: false },
@@ -1584,7 +1666,7 @@ async function guardarFotoPerfil() {
         if (res.ok) {
             fotoPerfilMap[fotoPerfilUserId] = data.imagen_thumbnail;
             bootstrap.Modal.getInstance(document.getElementById('fotoPerfilModal')).hide();
-            loadEmpleados(currentPage);
+            loadEmpleados();
             Swal.fire({ icon: 'success', title: 'Guardado', text: 'Foto de perfil actualizada.', timer: 1600, showConfirmButton: false });
         } else {
             Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'No se pudo guardar la foto.' });
@@ -1616,7 +1698,7 @@ async function eliminarFotoPerfil() {
         if (res.ok) {
             delete fotoPerfilMap[fotoPerfilUserId];
             bootstrap.Modal.getInstance(document.getElementById('fotoPerfilModal')).hide();
-            loadEmpleados(currentPage);
+            loadEmpleados();
             Swal.fire({ icon: 'success', title: 'Eliminada', text: 'Foto de perfil eliminada.', timer: 1600, showConfirmButton: false });
         } else {
             const data = await res.json();
