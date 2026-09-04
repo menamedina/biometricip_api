@@ -657,8 +657,8 @@ function clearFilters() {
     $('#filterSede').val('');
     $('#filterSearch').val('');
     $('#filterEstado').val('');
-    $('#filterDesde').val('');
-    $('#filterHasta').val('');
+    $('#filterDesde').val(localDateStr());
+    $('#filterHasta').val(localDateStr());
     cargarTabla();
 }
 
