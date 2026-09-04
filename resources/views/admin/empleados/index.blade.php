@@ -757,6 +757,7 @@ async function loadEmpleados() {
 
         if ($.fn.DataTable.isDataTable('#empleadosTable')) {
             tablaEmpleados.clear().rows.add(items).draw();
+            tablaEmpleados.columns.adjust();
         } else {
             var cols = [
                 {
