@@ -260,6 +260,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     cargarFiltros();
     cargarResumen();
+
+    // Cargar empleados al expandir filtros extra
+    document.getElementById('filtrosExtraRes').addEventListener('show.bs.collapse', function() {
+        cargarEmpleadosParaModal();
+    });
     colVisResApply(colVisResGetState());
     document.addEventListener('click', function(e) {
         if (!e.target.closest('#colVisPanelRes, #colVisBtnRes')) {
