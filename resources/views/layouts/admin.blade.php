@@ -320,6 +320,12 @@
                                 <span class="menu-text">Config. Tablas</span>
                             </a>
                         </li>
+                        <li class="side-nav-item">
+                            <a href="{{ route('admin.login-images.index') }}" class="side-nav-link {{ request()->routeIs('admin.login-images.*') ? 'active' : '' }}">
+                                <span class="menu-icon"><i class="ti ti-photo"></i></span>
+                                <span class="menu-text">Imágenes Login</span>
+                            </a>
+                        </li>
                         @endif
                     </ul>
                 </div>

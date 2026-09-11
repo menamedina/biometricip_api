@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\LoginImage;
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
@@ -17,7 +18,9 @@ class LoginController extends Controller
 {
     public function showLogin(): View
     {
-        return view('admin.login');
+        $images = LoginImage::forLogin();
+
+        return view('admin.login', compact('images'));
     }
 
     public function login(Request $request): RedirectResponse

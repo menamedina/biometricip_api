@@ -14,6 +14,8 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\RolesController;
 use App\Http\Controllers\AiConfigController;
 use App\Http\Controllers\AiChatController;
+use App\Http\Controllers\LoginImageController;
+use App\Http\Controllers\AdminLoginImageController;
 use Illuminate\Support\Facades\Route;
 
 // ZKTeco ADMS PUSH — sin autenticación ni CSRF
@@ -96,6 +98,8 @@ Route::get('/politicas-tratamiento-datos', fn () => view('public.politicas'))->n
 Route::get ('/asistencia/{webToken}/{sedeCode}/{token}',                    [PublicAttendanceController::class, 'show'])->name('public.attendance.show');
 Route::post('/asistencia/{webToken}/{sedeCode}/{token}',                    [PublicAttendanceController::class, 'store'])->name('public.attendance.store');
 Route::post('/asistencia/{webToken}/{sedeCode}/{token}/buscar-visitante',   [PublicAttendanceController::class, 'buscarVisitante'])->name('public.attendance.buscar-visitante');
+
+Route::get('/api/login-images', [LoginImageController::class, 'index']);
 
 Route::get('/admin/login',  [LoginController::class, 'showLogin'])->name('admin.login.show');
 Route::post('/admin/login', [LoginController::class, 'login'])->name('admin.login');
@@ -241,6 +245,13 @@ Route::middleware(['auth', 'admin', 'role:admin', 'tenancy.session'])->group(fun
     Route::get ('/admin/ai/config',      [AiConfigController::class, 'index'])->name('admin.ai.config');
     Route::post('/admin/ai/config/save', [AiConfigController::class, 'save']);
     Route::get ('/admin/ai/config/test', [AiConfigController::class, 'test']);
+
+    // Login Images — gestión de imágenes del carrusel
+    Route::get   ('/admin/login-images',             [AdminLoginImageController::class, 'index'])->name('admin.login-images.index');
+    Route::post  ('/admin/login-images',             [AdminLoginImageController::class, 'store']);
+    Route::put   ('/admin/login-images/{id}',        [AdminLoginImageController::class, 'update']);
+    Route::delete('/admin/login-images/{id}',        [AdminLoginImageController::class, 'destroy']);
+    Route::patch ('/admin/login-images/{id}/toggle',  [AdminLoginImageController::class, 'toggleActive']);
 });
 
 // Roles y Permisos — solo admin
