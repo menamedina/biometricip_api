@@ -27,6 +27,16 @@
         margin: 2px;
     }
     .modulo-card { border: 1px solid #e7eaec; border-radius: 6px; padding: 12px 14px; margin-bottom: 12px; }
+    .badge-permiso-no {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: .75rem;
+        font-weight: 500;
+        background: #fde8e8;
+        color: #e74c3c;
+        margin: 2px;
+    }
     .modulo-title { font-size: .85rem; font-weight: 700; color: #555; text-transform: capitalize; margin-bottom: 8px; }
     #panelPermisos { min-height: 200px; }
     .check-group label { font-size: .875rem; cursor: pointer; user-select: none; }
@@ -277,13 +287,24 @@ async function mostrarPermisosRol(id) {
         return;
     }
 
+    // Permisos que tiene el rol (por nombre)
+    const tieneSet = new Set();
+    for (const permisos of Object.values(data.permisos)) {
+        permisos.forEach(p => tieneSet.add(p.name));
+    }
+
+    // Mostrar todos los permisos existentes, verde = tiene, rojo = no tiene
     let html = '<div class="row g-3">';
-    for (const [modulo, permisos] of Object.entries(sortedModulos(data.permisos))) {
+    for (const [modulo, permisos] of Object.entries(sortedModulos(todosPermisos))) {
+        const badges = permisos.map(p => tieneSet.has(p.name)
+            ? `<span class="badge-permiso">${p.accion}</span>`
+            : `<span class="badge-permiso-no">${p.accion}</span>`
+        ).join('');
         html += `
             <div class="col-md-6">
                 <div class="modulo-card">
                     <div class="modulo-title">${moduloLabel(modulo)}</div>
-                    <div>${permisos.map(p => `<span class="badge-permiso">${p.accion}</span>`).join('')}</div>
+                    <div>${badges}</div>
                 </div>
             </div>`;
     }
