@@ -47,7 +47,7 @@ class RolesSeeder extends Seeder
             'festivos.ver', 'festivos.crear', 'festivos.editar', 'festivos.eliminar',
 
             // Reportes
-            'reportes.ver', 'reportes.exportar',
+            'reportes.ver', 'reportes.exportar', 'reportes.crear', 'reportes.editar',
 
             // Notificaciones
             'notificaciones.ver', 'notificaciones.enviar',
@@ -83,7 +83,7 @@ class RolesSeeder extends Seeder
             'departamentos.ver', 'departamentos.crear', 'departamentos.editar', 'departamentos.eliminar',
             'horarios.ver', 'horarios.crear', 'horarios.editar', 'horarios.eliminar',
             'festivos.ver', 'festivos.crear', 'festivos.editar', 'festivos.eliminar',
-            'reportes.ver', 'reportes.exportar',
+            'reportes.ver', 'reportes.exportar', 'reportes.crear', 'reportes.editar',
             'notificaciones.ver', 'notificaciones.enviar',
             'empresa.ver', 'empresa.crear', 'empresa.editar', 'empresa.eliminar', 'empresa.token',
             'roles.ver', 'roles.crear', 'roles.editar', 'roles.eliminar',

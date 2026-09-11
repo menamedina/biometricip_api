@@ -11,14 +11,24 @@
                     <p class="text-muted mb-0">Entradas y salidas agrupadas por empleado y día</p>
                 </div>
                 <div>
-                    @can('asistencia.editar')
+                    @can('reportes.crear')
                     <button class="btn btn-primary btn-sm me-2" onclick="abrirModalManual()">
                         <i class="fa-solid fa-plus me-1"></i> Registro Manual
                     </button>
+                    @else
+                    <button class="btn btn-primary btn-sm me-2" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                        <i class="fa-solid fa-plus me-1"></i> Registro Manual
+                    </button>
                     @endcan
+                    @can('reportes.exportar')
                     <button class="btn btn-success btn-sm" onclick="exportar()">
                         <i class="fa-solid fa-file-csv me-1"></i> Exportar CSV
                     </button>
+                    @else
+                    <button class="btn btn-success btn-sm" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                        <i class="fa-solid fa-file-csv me-1"></i> Exportar CSV
+                    </button>
+                    @endcan
                 </div>
             </div>
         </div>
@@ -293,8 +303,10 @@ div.dataTables_wrapper div.dataTables_info {
 <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script>
 const csrfToken  = '{{ csrf_token() }}';
-const isEmpleado = {{ auth()->user()->cannot('empleados.ver') ? 'true' : 'false' }};
-const isAdmin    = {{ auth()->user()->can('usuarios.editar')  ? 'true' : 'false' }};
+const isEmpleado  = {{ auth()->user()->cannot('empleados.ver')  ? 'true' : 'false' }};
+const canCrearReg = {{ auth()->user()->can('reportes.crear')   ? 'true' : 'false' }};
+const canEditarReg = {{ auth()->user()->can('reportes.editar') ? 'true' : 'false' }};
+const isAdmin     = canEditarReg;
 const myUserId   = {{ auth()->id() }};
 let deptoMap = {};
 let allRegistros = [];
@@ -504,7 +516,7 @@ async function cargarResumen() {
             const fechaFmt    = g.fecha.split('-').reverse().join('/');
 
             // Botón para agregar registro en ese día para ese usuario (solo admin/supervisor)
-            const btnAdd = isEmpleado ? '' : `<button class="btn btn-outline-primary btn-sm py-0 px-1" onclick="abrirModalManualPre(${g.user?.id}, '${g.fecha}')" title="Agregar registro"><i class="fa-solid fa-plus fa-xs"></i></button>`;
+            const btnAdd = (!isEmpleado && canCrearReg) ? `<button class="btn btn-outline-primary btn-sm py-0 px-1" onclick="abrirModalManualPre(${g.user?.id}, '${g.fecha}')" title="Agregar registro"><i class="fa-solid fa-plus fa-xs"></i></button>` : '';
 
             const colCls = ['col-res-e1','col-res-s1','col-res-e2','col-res-s2','col-res-e3','col-res-s3','col-res-e4','col-res-s4'];
             const nombreEsc = (g.user?.name ?? '').replace(/'/g, "\\'");

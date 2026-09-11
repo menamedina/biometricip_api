@@ -318,10 +318,14 @@
             </div>
         </div>
 
-        <div class="content-page">
-            <div class="container-fluid">
+        <div class="content-page d-flex flex-column" style="min-height:calc(100vh - 70px);">
+            <div class="container-fluid flex-grow-1">
                 @yield('content')
             </div>
+            <footer class="d-flex justify-content-between align-items-center px-3 py-2 mt-auto" style="font-size:12px;border-top:1px solid #dee2e6;color:#6c757d;background:#fff;">
+                <span><strong>Copyright</strong> &copy; {{ date('Y') }} BiometricIP &middot; Todos los derechos reservados</span>
+                <span>Bienvenidos a <strong style="color:#1ab394;">Biometric</strong><strong>IP</strong>.</span>
+            </footer>
         </div>
     </div>
 
