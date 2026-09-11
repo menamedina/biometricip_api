@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Spatie\Permission\Models\Role;
 
 class EmpleadoController extends Controller
 {
@@ -174,6 +175,7 @@ class EmpleadoController extends Controller
             ],
             'password'        => 'required|string|min:6',
             'role'            => 'nullable|in:admin,supervisor,empleado',
+            'spatie_role'     => 'nullable|string|exists:roles,name',
             'tipo'            => 'nullable|in:usuario,kiosco',
             'admin_tenant'    => 'nullable|boolean',
             'departamento_id' => 'nullable|integer',
@@ -194,6 +196,9 @@ class EmpleadoController extends Controller
             'crear_empleado'     => 'nullable|boolean',
             'editar_empleado'    => 'nullable|boolean',
         ]);
+
+        $spatieRole = $data['spatie_role'] ?? null;
+        unset($data['spatie_role']);
 
         $user = User::create([
             'name'            => $data['name'],
@@ -221,6 +226,10 @@ class EmpleadoController extends Controller
         ]);
 
         $this->syncSedes($user->id, $empresaId, $data['sede_ids'] ?? []);
+
+        if ($spatieRole) {
+            $user->syncRoles([$spatieRole]);
+        }
 
         return response()->json(['data' => $this->withNames($user)], 201);
     }
@@ -312,6 +321,7 @@ class EmpleadoController extends Controller
                     ->ignore($empleado->id),
             ],
             'role'            => 'nullable|in:admin,supervisor,empleado',
+            'spatie_role'     => 'nullable|string|exists:roles,name',
             'tipo'            => 'nullable|in:usuario,kiosco',
             'admin_tenant'    => 'nullable|boolean',
             'empresa_id'      => 'nullable|integer',
@@ -364,10 +374,17 @@ class EmpleadoController extends Controller
         }
         unset($data['sede_ids']);
 
+        $spatieRole = $data['spatie_role'] ?? null;
+        unset($data['spatie_role']);
+
         DB::transaction(function () use ($empleado, $data) {
             DB::statement('SET @audit_user_id = ?', [auth()->id()]);
             $empleado->update($data);
         });
+
+        if ($spatieRole) {
+            $empleado->syncRoles([$spatieRole]);
+        }
 
         return response()->json(['data' => $this->withNames($empleado->fresh())]);
     }
@@ -668,6 +685,8 @@ class EmpleadoController extends Controller
             ->pluck('sede_id')
             ->values()
             ->all();
+
+        $data['spatie_role'] = $user->getRoleNames()->first();
 
         return $data;
     }

@@ -304,9 +304,7 @@
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Rol</label>
                             <select id="empRole" class="form-select" @cannot('empleados.editar') disabled @endcannot>
-                                <option value="empleado">Empleado</option>
-                                <option value="supervisor">Supervisor</option>
-                                <option value="admin">Administrador</option>
+                                <option value="">— Sin rol —</option>
                             </select>
                         </div>
                         <div class="col-md-4 mb-3 d-flex align-items-end">
@@ -559,7 +557,7 @@ function resetForm() {
     document.getElementById('empleadoForm').reset();
     document.getElementById('empleadoId').value = '';
     document.getElementById('empPassword').required = true;
-    document.getElementById('empRole').value = 'empleado';
+    document.getElementById('empRole').value = '';
     document.getElementById('empCodigoRow').style.display = 'none';
     document.getElementById('empActivo').checked = true;
     document.getElementById('empExportarEmpleados').checked = false;
@@ -580,6 +578,17 @@ function resetForm() {
     }
 }
 
+async function cargarRoles() {
+    const res = await fetch('/admin/roles/list', { headers: { 'Accept': 'application/json' } });
+    if (!res.ok) return;
+    const roles = await res.json();
+    const sel = document.getElementById('empRole');
+    sel.innerHTML = '<option value="">— Sin rol —</option>';
+    (roles || []).forEach(r => {
+        sel.innerHTML += `<option value="${r.name}">${r.name}</option>`;
+    });
+}
+
 async function initCatalogos() {
     if (isAdminTenant) {
         @foreach($empresas as $emp)
@@ -598,7 +607,7 @@ async function initCatalogos() {
         sedes:         @json($sedes),
         empleadores:   @json($empleadores),
     });
-    await cargarLideres();
+    await Promise.all([cargarLideres(), cargarRoles()]);
 }
 
 async function loadCatalogosParaEmpresa(empresaId) {
@@ -972,7 +981,7 @@ async function editEmpleado(id, encryptedId) {
         }
         document.getElementById('empCentroCosto').value  = e.centro_costo || '';
         document.getElementById('empRuta').value         = e.ruta || '';
-        document.getElementById('empRole').value         = e.role || 'empleado';
+        document.getElementById('empRole').value         = e.spatie_role || '';
         document.getElementById('empActivo').checked     = !!e.is_active;
         document.getElementById('empleadoModalTitle').textContent = 'Editar Usuario';
 
@@ -1058,7 +1067,7 @@ async function saveEmpleado(id) {
         centro_costo:     document.getElementById('empCentroCosto').value || null,
         ruta:             document.getElementById('empRuta').value || null,
         sede_ids:         getSelectedSedeIds(),
-        role:             document.getElementById('empRole').value,
+        spatie_role:      document.getElementById('empRole').value || null,
         is_active:        document.getElementById('empActivo').checked,
     };
     if (isAdminTenant) {
