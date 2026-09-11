@@ -52,9 +52,15 @@
                             <button class="btn btn-sm btn-secondary" onclick="clearFilters()">
                                 <i class="ti ti-x me-1"></i> Limpiar
                             </button>
+                            @can('visitantes.exportar')
                             <button class="btn btn-sm btn-success" onclick="exportarExcel()">
                                 <i class="ti ti-file-spreadsheet me-1"></i> Exportar
                             </button>
+                            @else
+                            <button class="btn btn-sm btn-success" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                                <i class="ti ti-file-spreadsheet me-1"></i> Exportar
+                            </button>
+                            @endcan
                         </div>
                     </div>
                     <div class="collapse" id="filtrosExtraVis">
@@ -385,7 +391,9 @@ div.dataTables_wrapper div.dataTables_info {
 <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script>
 var csrfToken = '{{ csrf_token() }}';
-const canEditarVisitante = {{ auth()->user()->can('visitantes.editar') ? 'true' : 'false' }};
+const canEditarVisitante    = {{ auth()->user()->can('visitantes.editar')    ? 'true' : 'false' }};
+const canHistorialVisitante = {{ auth()->user()->can('visitantes.historial') ? 'true' : 'false' }};
+const canExportarVisitante  = {{ auth()->user()->can('visitantes.exportar')  ? 'true' : 'false' }};
 var sedesData = @json($sedes);
 var tabla = null;
 var visitantesData = [];
@@ -637,10 +645,9 @@ function cargarTabla(silent) {
                             var btnEditar = canEditarVisitante
                                 ? '<button class="btn btn-sm btn-outline-secondary me-1" onclick="abrirEdicion(' + row.id + ')" title="Editar"><i class="ti ti-edit"></i></button>'
                                 : '<button class="btn btn-sm btn-outline-secondary me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="ti ti-edit"></i></button>';
-                            var btnLog =
-                                '<button class="btn btn-sm btn-outline-info" onclick="verLog(' + row.id + ')" title="Ver historial">' +
-                                    '<i class="ti ti-history"></i>' +
-                                '</button>';
+                            var btnLog = canHistorialVisitante
+                                ? '<button class="btn btn-sm btn-outline-info" onclick="verLog(' + row.id + ')" title="Ver historial"><i class="ti ti-history"></i></button>'
+                                : '<button class="btn btn-sm btn-outline-info" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="ti ti-history"></i></button>';
                             return btnSalida + btnEditar + btnLog;
                         }
                     }

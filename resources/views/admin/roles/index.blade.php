@@ -157,6 +157,26 @@ let rolIdEliminar = null;
 let rolSeleccionado = null;
 let todosPermisos = {};   // { modulo: [{id, name, accion}] }
 
+const moduloLabels = {
+    sedes:          'Sedes',
+    empleados:      'Empleados',
+    visitantes:     'Visitantes',
+    dispositivos:   'Dispositivos',
+    asistencia:     'Registros',
+    permisos:       'Permisos / Ausencias',
+    empleadores:    'Empleadores',
+    departamentos:  'Deptos. y Cargos',
+    horarios:       'Horarios',
+    festivos:       'Festivos',
+    reportes:       'Resumen Marcación',
+    notificaciones: 'Notificaciones',
+    empresa:        'Mi Empresa',
+    roles:          'Roles y Permisos',
+};
+function moduloLabel(key) {
+    return moduloLabels[key] || key.charAt(0).toUpperCase() + key.slice(1);
+}
+
 // ── Inicialización ────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
     cargarRoles();
@@ -226,7 +246,7 @@ async function mostrarPermisosRol(id) {
         html += `
             <div class="col-md-6">
                 <div class="modulo-card">
-                    <div class="modulo-title">${modulo}</div>
+                    <div class="modulo-title">${moduloLabel(modulo)}</div>
                     <div>${permisos.map(p => `<span class="badge-permiso">${p.accion}</span>`).join('')}</div>
                 </div>
             </div>`;
@@ -281,7 +301,7 @@ function renderPermisosModal(seleccionados) {
         html += `
         <div class="modulo-card mb-2" data-modulo="${modulo}">
             <div class="d-flex align-items-center justify-content-between mb-2">
-                <div class="modulo-title mb-0">${modulo}</div>
+                <div class="modulo-title mb-0">${moduloLabel(modulo)}</div>
                 <button type="button" class="btn btn-link btn-sm p-0 text-success btn-toggle-modulo"
                     data-modulo="${modulo}">
                     <span id="lbl-${modulo}">Marcar todos</span>

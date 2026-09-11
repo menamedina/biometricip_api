@@ -198,24 +198,30 @@
                         @endcan
 
                         {{-- ── Asistencia ──────────────────────────────────── --}}
+                        @canany(['asistencia.ver','reportes.ver','permisos.ver'])
                         <li class="side-nav-title mt-2">Asistencia</li>
+                        @endcanany
+                        @can('asistencia.ver')
                         <li class="side-nav-item">
                             <a href="{{ route('admin.attendance.index') }}" class="side-nav-link {{ request()->routeIs('admin.attendance.*') ? 'active' : '' }}">
                                 <span class="menu-icon"><i class="ti ti-clock"></i></span>
                                 <span class="menu-text">Registros</span>
                             </a>
                         </li>
+                        @endcan
+                        @can('reportes.ver')
                         <li class="side-nav-item">
                             <a href="{{ route('admin.resumen.index') }}" class="side-nav-link {{ request()->routeIs('admin.resumen.*') ? 'active' : '' }}">
                                 <span class="menu-icon"><i class="ti ti-calendar-stats"></i></span>
                                 <span class="menu-text">Resumen Marcación</span>
                             </a>
                         </li>
+                        @endcan
                         @can('permisos.ver')
                         <li class="side-nav-item">
                             <a href="{{ route('admin.permisos.index') }}" class="side-nav-link {{ request()->routeIs('admin.permisos.*') ? 'active' : '' }}">
                                 <span class="menu-icon"><i class="ti ti-file-certificate"></i></span>
-                                <span class="menu-text">Permisos</span>
+                                <span class="menu-text">Permisos / Ausencias</span>
                             </a>
                         </li>
                         @endcan

@@ -480,6 +480,18 @@ function buildSedesColumns() {
                 const webCls    = s.qr_v3_token ? 'btn-outline-info' : 'btn-outline-secondary';
                 const webTit    = s.qr_v3_token ? 'QR Web (sin app)' : 'Habilitar QR Web';
 
+                const btnQr = canEditarSede
+                    ? `<button class="btn btn-sm btn-outline-success me-1" onclick="showQR(${s.id},'${sNom}')" title="QR dinámico (kiosco)"><i class="fa-solid fa-qrcode"></i></button>`
+                    : `<button class="btn btn-sm btn-outline-success me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-qrcode"></i></button>`;
+
+                const btnQrStatic = canEditarSede
+                    ? `<button class="btn btn-sm ${staticCls} me-1" onclick="showStaticQR(${s.id},'${sNom}',${s.qr_static_token ? 'true' : 'false'})" title="${staticTit}"><i class="fa-solid fa-print"></i></button>`
+                    : `<button class="btn btn-sm btn-outline-secondary me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-print"></i></button>`;
+
+                const btnQrWeb = canEditarSede
+                    ? `<button class="btn btn-sm ${webCls} me-1" onclick="showWebQR(${s.id},'${sNom}',${s.qr_v3_token ? 'true' : 'false'})" title="${webTit}"><i class="fa-solid fa-globe"></i></button>`
+                    : `<button class="btn btn-sm btn-outline-secondary me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-globe"></i></button>`;
+
                 const btnEdit = canEditarSede
                     ? `<button class="btn btn-sm btn-outline-primary me-1" onclick="editSedeById(${s.id})"><i class="fa-solid fa-pen"></i></button>`
                     : `<button class="btn btn-sm btn-outline-primary me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-pen"></i></button>`;
@@ -488,10 +500,7 @@ function buildSedesColumns() {
                     ? `<button class="btn btn-sm btn-outline-danger" onclick="deleteSede(${s.id})"><i class="fa-solid fa-trash"></i></button>`
                     : `<button class="btn btn-sm btn-outline-danger" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-trash"></i></button>`;
 
-                return `<button class="btn btn-sm btn-outline-success me-1" onclick="showQR(${s.id},'${sNom}')" title="QR dinámico (kiosco)"><i class="fa-solid fa-qrcode"></i></button>`
-                     + `<button class="btn btn-sm ${staticCls} me-1" onclick="showStaticQR(${s.id},'${sNom}',${s.qr_static_token ? 'true' : 'false'})" title="${staticTit}"><i class="fa-solid fa-print"></i></button>`
-                     + `<button class="btn btn-sm ${webCls} me-1" onclick="showWebQR(${s.id},'${sNom}',${s.qr_v3_token ? 'true' : 'false'})" title="${webTit}"><i class="fa-solid fa-globe"></i></button>`
-                     + btnEdit + btnDel;
+                return btnQr + btnQrStatic + btnQrWeb + btnEdit + btnDel;
             }
         }
     );

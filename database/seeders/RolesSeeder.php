@@ -23,7 +23,7 @@ class RolesSeeder extends Seeder
             'empleados.exportar', 'empleados.importar', 'empleados.historial',
 
             // Visitantes
-            'visitantes.ver', 'visitantes.crear', 'visitantes.editar',
+            'visitantes.ver', 'visitantes.crear', 'visitantes.editar', 'visitantes.historial', 'visitantes.exportar',
 
             // Dispositivos biométricos
             'dispositivos.ver', 'dispositivos.crear', 'dispositivos.editar', 'dispositivos.eliminar', 'dispositivos.vaciar', 'dispositivos.usuarios',
@@ -75,7 +75,7 @@ class RolesSeeder extends Seeder
             'sedes.ver', 'sedes.crear', 'sedes.editar', 'sedes.eliminar',
             'empleados.ver', 'empleados.crear', 'empleados.editar', 'empleados.eliminar',
             'empleados.exportar', 'empleados.importar', 'empleados.historial',
-            'visitantes.ver', 'visitantes.crear', 'visitantes.editar',
+            'visitantes.ver', 'visitantes.crear', 'visitantes.editar', 'visitantes.historial', 'visitantes.exportar',
             'dispositivos.ver', 'dispositivos.crear', 'dispositivos.editar', 'dispositivos.eliminar', 'dispositivos.vaciar', 'dispositivos.usuarios',
             'asistencia.ver', 'asistencia.editar', 'asistencia.exportar',
             'permisos.ver', 'permisos.crear', 'permisos.aprobar', 'permisos.eliminar',
@@ -95,7 +95,7 @@ class RolesSeeder extends Seeder
             'sedes.ver',
             'empleados.ver', 'empleados.editar',
             'empleados.exportar', 'empleados.historial',
-            'visitantes.ver', 'visitantes.crear', 'visitantes.editar',
+            'visitantes.ver', 'visitantes.crear', 'visitantes.editar', 'visitantes.historial', 'visitantes.exportar',
             'dispositivos.ver',
             'asistencia.ver', 'asistencia.editar', 'asistencia.exportar',
             'permisos.ver', 'permisos.crear', 'permisos.aprobar',
