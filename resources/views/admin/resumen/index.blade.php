@@ -35,7 +35,7 @@
     </div>
 
     {{-- Filtros --}}
-    <div class="card mb-3">
+    <div class="card mb-3 shadow-lg border-0">
         <div class="card-body p-2">
             <div class="row g-2 mb-2 align-items-end">
                 <div class="col-md-3">
@@ -79,7 +79,7 @@
     </div>
 
     {{-- Tabla resumen --}}
-    <div class="card">
+    <div class="card shadow-lg border-0">
         <div class="card-body p-0">
             <table class="table table-hover table-sm mb-0 w-100" id="resumenTable">
                 <thead class="table-light">

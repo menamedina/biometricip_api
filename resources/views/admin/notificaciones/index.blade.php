@@ -14,7 +14,7 @@
 
     <div class="row">
         <div class="col-lg-7">
-            <div class="card">
+            <div class="card shadow-lg border-0">
                 <div class="card-header">
                     <h5 class="card-title mb-0"><i class="ti ti-send me-1"></i> Enviar Notificación</h5>
                 </div>
@@ -103,7 +103,7 @@
         </div>
 
         <div class="col-lg-5">
-            <div class="card">
+            <div class="card shadow-lg border-0">
                 <div class="card-header">
                     <h5 class="card-title mb-0"><i class="ti ti-device-mobile me-1"></i> Vista previa</h5>
                 </div>
@@ -128,7 +128,7 @@
                 </div>
             </div>
 
-            <div class="card">
+            <div class="card shadow-lg border-0">
                 <div class="card-header">
                     <h5 class="card-title mb-0"><i class="ti ti-info-circle me-1"></i> Información</h5>
                 </div>
@@ -146,7 +146,7 @@
     {{-- Historial de notificaciones enviadas --}}
     <div class="row mt-4">
         <div class="col-12">
-            <div class="card">
+            <div class="card shadow-lg border-0">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0"><i class="ti ti-history me-1"></i> Historial de notificaciones</h5>
                     <span class="badge bg-secondary" id="historialCount">{{ $historial->count() }} registro(s)</span>
@@ -224,7 +224,7 @@
     {{-- Dispositivos registrados --}}
     <div class="row mt-4">
         <div class="col-12">
-            <div class="card">
+            <div class="card shadow-lg border-0">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0"><i class="ti ti-device-mobile-check me-1"></i> Dispositivos con Token FCM</h5>
                     <span class="badge bg-primary" id="dispositivosCount">{{ $dispositivos->count() }} dispositivo(s)</span>

@@ -21,7 +21,7 @@
         </div>
     </div>
 
-    <div class="card">
+    <div class="card shadow-lg border-0">
         <div class="card-body p-0">
             <table class="table table-hover mb-0 w-100" id="horariosTable">
                 <thead class="table-light">

@@ -62,7 +62,7 @@
 
         {{-- Columna izquierda: Lista de roles --}}
         <div class="col-md-4 col-lg-3">
-            <div class="card shadow-lg">
+            <div class="card shadow-lg border-0">
                 <div class="card-header bg-light py-2">
                     <span class="fw-semibold text-secondary" style="font-size:.85rem;">Roles del sistema</span>
                 </div>
@@ -78,7 +78,7 @@
 
         {{-- Columna derecha: Permisos del rol seleccionado --}}
         <div class="col-md-8 col-lg-9">
-            <div class="card shadow-lg">
+            <div class="card shadow-lg border-0">
                 <div class="card-header bg-light py-2">
                     <span id="panelTitulo" class="fw-semibold text-secondary" style="font-size:.85rem;">
                         Selecciona un rol para ver sus permisos

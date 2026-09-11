@@ -31,7 +31,7 @@
     {{-- Cards resumen --}}
     <div class="row g-3 mb-3" id="statsCards">
         <div class="col-xl-3 col-md-6">
-            <div class="card">
+            <div class="card shadow-lg border-0">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="avatar-sm bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3">
@@ -46,7 +46,7 @@
             </div>
         </div>
         <div class="col-xl-3 col-md-6">
-            <div class="card">
+            <div class="card shadow-lg border-0">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="avatar-sm bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3">
@@ -61,7 +61,7 @@
             </div>
         </div>
         <div class="col-xl-3 col-md-6">
-            <div class="card">
+            <div class="card shadow-lg border-0">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="avatar-sm bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3">
@@ -76,7 +76,7 @@
             </div>
         </div>
         <div class="col-xl-3 col-md-6">
-            <div class="card">
+            <div class="card shadow-lg border-0">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="avatar-sm bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3">
@@ -95,7 +95,7 @@
     {{-- Tabla de dispositivos --}}
     <div class="row">
         <div class="col-12">
-            <div class="card">
+            <div class="card shadow-lg border-0">
                 <div class="card-body p-0">
                     <table class="table table-hover mb-0 w-100" id="devicesTable">
                         <thead class="table-light">

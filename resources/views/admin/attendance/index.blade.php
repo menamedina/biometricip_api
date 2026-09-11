@@ -26,7 +26,7 @@
 
     <div class="row">
         <div class="col-12">
-            <div class="card">
+            <div class="card shadow-lg border-0">
                 <div class="card-body p-2">
                     <div class="row g-2 mb-2 align-items-end">
                         <div class="col-md-3">
@@ -92,7 +92,7 @@
     {{-- Tabla --}}
     <div class="row">
         <div class="col-12">
-            <div class="card">
+            <div class="card shadow-lg border-0">
                 <div class="card-body p-0">
                     <table class="table table-hover mb-0 w-100" id="attendanceTable">
                         <thead class="table-light"></thead>

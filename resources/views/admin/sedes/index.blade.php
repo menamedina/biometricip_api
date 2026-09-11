@@ -35,7 +35,7 @@
 
     <div class="row">
         <div class="col-12">
-            <div class="card">
+            <div class="card shadow-lg border-0">
                 <div class="card-body p-0">
                     <table id="sedesTable" class="table table-hover mb-0 w-100">
                         <thead class="table-light">

@@ -31,7 +31,7 @@
 
     {{-- Vista admin multi-tenant --}}
     @if(auth()->user()->admin_tenant)
-    <div class="card">
+    <div class="card shadow-lg border-0">
         <div class="card-body p-0">
             <table class="table table-hover mb-0 w-100" id="empresasTable">
                 <thead class="table-light">
@@ -61,7 +61,7 @@
 
     {{-- Vista usuario normal: solo su empresa --}}
     @else
-    <div class="card" id="miEmpresaCard">
+    <div class="card shadow-lg border-0" id="miEmpresaCard">
         <div class="card-body text-center py-5">
             <div class="spinner-border text-primary" role="status"></div>
             <p class="text-muted mt-2">Cargando...</p>

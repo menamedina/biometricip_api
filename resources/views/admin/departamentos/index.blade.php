@@ -26,7 +26,7 @@
     <div class="row">
         {{-- Departamentos --}}
         <div class="col-lg-5 mb-4">
-            <div class="card">
+            <div class="card shadow-lg border-0">
                 <div class="card-header d-block">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h5 class="mb-0"><i class="fa-solid fa-building-columns me-1"></i> Departamentos</h5>
@@ -131,7 +131,7 @@
 
         {{-- Cargos --}}
         <div class="col-lg-7 mb-4">
-            <div class="card">
+            <div class="card shadow-lg border-0">
                 <div class="card-header d-block">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h5 class="mb-0"><i class="fa-solid fa-user-tie me-1"></i> Cargos</h5>
