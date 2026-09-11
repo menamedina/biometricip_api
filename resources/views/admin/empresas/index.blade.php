@@ -7,22 +7,30 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h4 class="mb-1"><i class="fa-solid fa-building me-2 text-primary"></i>Empresas</h4>
-                    <p class="text-muted mb-0">Gestión multi-tenant de empresas</p>
+                    <h4 class="mb-1"><i class="fa-solid fa-building me-2 text-primary"></i>
+                        @if(auth()->user()->admin_tenant) Empresas @else Mi Empresa @endif
+                    </h4>
+                    <p class="text-muted mb-0">
+                        @if(auth()->user()->admin_tenant) Gestión multi-tenant de empresas @else Información de tu empresa @endif
+                    </p>
                 </div>
                 @if(auth()->user()->admin_tenant)
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#empresaModal" onclick="resetForm()">
-                    <i class="fa-solid fa-plus me-1"></i> Nueva Empresa
-                </button>
-                @else
-                <button class="btn btn-primary" disabled title="Solo administradores multi-empresa pueden crear empresas">
-                    <i class="fa-solid fa-plus me-1"></i> Nueva Empresa
-                </button>
+                    @can('empresa.crear')
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#empresaModal" onclick="resetForm()">
+                        <i class="fa-solid fa-plus me-1"></i> Nueva Empresa
+                    </button>
+                    @else
+                    <button class="btn btn-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                        <i class="fa-solid fa-plus me-1"></i> Nueva Empresa
+                    </button>
+                    @endcan
                 @endif
             </div>
         </div>
     </div>
 
+    {{-- Vista admin multi-tenant --}}
+    @if(auth()->user()->admin_tenant)
     <div class="card">
         <div class="card-body p-0">
             <table class="table table-hover mb-0 w-100" id="empresasTable">
@@ -40,25 +48,29 @@
                     </tr>
                 </thead>
                 <tbody id="empresasTbody">
-                    @if(!auth()->user()->admin_tenant)
-                    <tr><td colspan="9" class="text-center text-danger py-3">
-                        <i class="fa-solid fa-lock me-2"></i>No tienes permiso para ver esta información.
-                    </td></tr>
-                    @else
                     <tr id="trLoadingEmp">
                         <td colspan="9" class="text-center py-5">
                             <div class="spinner-border text-primary" role="status" style="width:2rem;height:2rem;"></div>
                             <p class="text-muted mt-2 mb-0 small">Cargando empresas...</p>
                         </td>
                     </tr>
-                    @endif
                 </tbody>
             </table>
         </div>
     </div>
+
+    {{-- Vista usuario normal: solo su empresa --}}
+    @else
+    <div class="card" id="miEmpresaCard">
+        <div class="card-body text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="text-muted mt-2">Cargando...</p>
+        </div>
+    </div>
+    @endif
 </div>
 
-<!-- Modal Crear/Editar -->
+{{-- Modal Crear/Editar (solo para admin_tenant o edición propia) --}}
 <div class="modal fade" id="empresaModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -69,6 +81,7 @@
             <div class="modal-body">
                 <form id="empresaForm">
                     <input type="hidden" id="empresaId">
+                    <input type="hidden" id="empresaModoPropio" value="0">
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Nombre de la empresa</label>
@@ -86,17 +99,19 @@
                             <label class="form-label">Teléfono</label>
                             <input type="text" id="frmTelefono" class="form-control">
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Plan</label>
-                            <select id="frmPlan" class="form-select" onchange="updateMaxUsuarios()">
-                                <option value="bronce">Bronce (hasta 50)</option>
-                                <option value="plata">Plata (hasta 200)</option>
-                                <option value="oro">Oro (más de 200)</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Máx. usuarios</label>
-                            <input type="number" id="frmMaxUsuarios" class="form-control" min="1" value="50">
+                        <div id="planFields">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Plan</label>
+                                <select id="frmPlan" class="form-select" onchange="updateMaxUsuarios()">
+                                    <option value="bronce">Bronce (hasta 50)</option>
+                                    <option value="plata">Plata (hasta 200)</option>
+                                    <option value="oro">Oro (más de 200)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Máx. usuarios</label>
+                                <input type="number" id="frmMaxUsuarios" class="form-control" min="1" value="50">
+                            </div>
                         </div>
                     </div>
 
@@ -128,6 +143,8 @@
         </div>
     </div>
 </div>
+
+@if(auth()->user()->admin_tenant)
 <!-- Modal Token Agente -->
 <div class="modal fade" id="tokenModal" tabindex="-1">
     <div class="modal-dialog">
@@ -176,6 +193,7 @@
         </div>
     </div>
 </div>
+@endif
 @endsection
 
 @push('styles')
@@ -213,7 +231,12 @@ div.dataTables_wrapper div.dataTables_info {
 <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script>
-const csrfToken = '{{ csrf_token() }}';
+const csrfToken        = '{{ csrf_token() }}';
+const esAdminTenant    = {{ auth()->user()->admin_tenant ? 'true' : 'false' }};
+const canEditEmpresa   = {{ auth()->user()->can('empresa.editar')   ? 'true' : 'false' }};
+const canCrearEmpresa  = {{ auth()->user()->can('empresa.crear')    ? 'true' : 'false' }};
+const canTokenEmpresa  = {{ auth()->user()->can('empresa.token')    ? 'true' : 'false' }};
+const canToggleEmpresa = {{ auth()->user()->can('empresa.eliminar') ? 'true' : 'false' }};
 var tablaEmpresas = null;
 
 const planBadge = {
@@ -232,11 +255,16 @@ function updateMaxUsuarios() {
 function resetForm() {
     document.getElementById('empresaForm').reset();
     document.getElementById('empresaId').value = '';
+    document.getElementById('empresaModoPropio').value = '0';
     document.getElementById('adminFields').style.display = '';
     document.getElementById('frmAdminEmail').required = true;
     document.getElementById('frmAdminPassword').required = true;
     document.getElementById('empresaModalTitle').textContent = 'Nueva Empresa';
+    var planFields = document.getElementById('planFields');
+    if (planFields) planFields.style.display = '';
 }
+
+// ── Admin multi-tenant: tabla completa ───────────────────────────────────────
 
 async function loadEmpresas() {
     try {
@@ -273,6 +301,11 @@ async function loadEmpresas() {
                     search: 'Buscar:',
                     paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' },
                     processing: 'Procesando...',
+                },
+                drawCallback: function() {
+                    document.querySelectorAll('#empresasTable [data-bs-toggle="tooltip"]').forEach(el => {
+                        bootstrap.Tooltip.getOrCreateInstance(el);
+                    });
                 },
                 initComplete: function() {
                     $('#empresasTable_length select').addClass('form-select form-select-sm d-inline-block w-auto');
@@ -315,11 +348,21 @@ async function loadEmpresas() {
                         render: function(d, type, row) {
                             var tokenMasked = row.agent_token ? '****' + row.agent_token.slice(-6) : null;
                             var vigencia    = row.agent_token_vigencia || null;
-                            var btnEdit  = '<button class="btn btn-sm btn-outline-primary me-1" onclick="editEmpresa(' + row.id + ')"><i class="fa-solid fa-pen"></i></button>';
-                            var btnToken = '<button class="btn btn-sm btn-outline-secondary me-1" onclick="openTokenModal(' + row.id + ',\'' + (row.nombre || '').replace(/'/g,'') + '\',' + JSON.stringify(tokenMasked) + ',' + JSON.stringify(vigencia) + ')" title="Token agente"><i class="fa-solid fa-key"></i></button>';
-                            var btnToggle = row.is_active
-                                ? '<button class="btn btn-sm btn-outline-danger" onclick="deleteEmpresa(' + row.id + ')"><i class="fa-solid fa-ban"></i></button>'
-                                : '<button class="btn btn-sm btn-outline-success" onclick="activarEmpresa(' + row.id + ')"><i class="fa-solid fa-check"></i></button>';
+
+                            var btnEdit = canEditEmpresa
+                                ? '<button class="btn btn-sm btn-outline-primary" onclick="editEmpresa(' + row.id + ')" title="Editar"><i class="fa-solid fa-pen"></i></button>'
+                                : '<button class="btn btn-sm btn-outline-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-pen"></i></button>';
+
+                            var btnToken = canTokenEmpresa
+                                ? '<button class="btn btn-sm btn-outline-secondary" onclick="openTokenModal(' + row.id + ',\'' + (row.nombre || '').replace(/'/g,'') + '\',' + JSON.stringify(tokenMasked) + ',' + JSON.stringify(vigencia) + ')" title="Token agente"><i class="fa-solid fa-key"></i></button>'
+                                : '<button class="btn btn-sm btn-outline-secondary" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-key"></i></button>';
+
+                            var btnToggle = canToggleEmpresa
+                                ? (row.is_active
+                                    ? '<button class="btn btn-sm btn-outline-danger" onclick="deleteEmpresa(' + row.id + ')" title="Desactivar"><i class="fa-solid fa-ban"></i></button>'
+                                    : '<button class="btn btn-sm btn-outline-success" onclick="activarEmpresa(' + row.id + ')" title="Activar"><i class="fa-solid fa-check"></i></button>')
+                                : '<button class="btn btn-sm btn-outline-secondary" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-ban"></i></button>';
+
                             return '<div class="d-flex flex-nowrap gap-1">' + btnEdit + btnToken + btnToggle + '</div>';
                         }
                     }
@@ -337,57 +380,24 @@ async function editEmpresa(id) {
         const data = await res.json();
         const e = data.data;
 
-        document.getElementById('empresaId').value    = e.id;
-        document.getElementById('frmNombre').value    = e.nombre || '';
-        document.getElementById('frmRuc').value        = e.ruc || '';
-        document.getElementById('frmEmail').value      = e.email || '';
-        document.getElementById('frmTelefono').value   = e.telefono || '';
-        document.getElementById('frmPlan').value       = e.plan || 'bronce';
-        document.getElementById('frmMaxUsuarios').value = e.max_usuarios || 50;
+        document.getElementById('empresaId').value       = e.id;
+        document.getElementById('empresaModoPropio').value = '0';
+        document.getElementById('frmNombre').value       = e.nombre || '';
+        document.getElementById('frmRuc').value          = e.ruc || '';
+        document.getElementById('frmEmail').value        = e.email || '';
+        document.getElementById('frmTelefono').value     = e.telefono || '';
+        document.getElementById('frmPlan').value         = e.plan || 'bronce';
+        document.getElementById('frmMaxUsuarios').value  = e.max_usuarios || 50;
 
-        // Ocultar campos de admin al editar
         document.getElementById('adminFields').style.display = 'none';
         document.getElementById('frmAdminEmail').required = false;
         document.getElementById('frmAdminPassword').required = false;
 
+        var planFields = document.getElementById('planFields');
+        if (planFields) planFields.style.display = '';
+
         document.getElementById('empresaModalTitle').textContent = 'Editar Empresa';
         new bootstrap.Modal(document.getElementById('empresaModal')).show();
-    } catch(e) { console.error(e); }
-}
-
-async function saveEmpresa() {
-    const id = document.getElementById('empresaId').value;
-    const payload = {
-        nombre:   document.getElementById('frmNombre').value,
-        ruc:      document.getElementById('frmRuc').value || null,
-        email:    document.getElementById('frmEmail').value || null,
-        telefono: document.getElementById('frmTelefono').value || null,
-        plan:          document.getElementById('frmPlan').value,
-        max_usuarios:  parseInt(document.getElementById('frmMaxUsuarios').value) || 50,
-    };
-
-    if (!id) {
-        payload.admin_name     = document.getElementById('frmAdminName').value || null;
-        payload.admin_email    = document.getElementById('frmAdminEmail').value;
-        payload.admin_password = document.getElementById('frmAdminPassword').value;
-    }
-
-    const url    = id ? `/admin/empresas/${id}` : '/admin/empresas';
-    const method = id ? 'PUT' : 'POST';
-
-    try {
-        const res = await fetch(url, {
-            method,
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-            body: JSON.stringify(payload)
-        });
-        if (res.ok) {
-            bootstrap.Modal.getInstance(document.getElementById('empresaModal')).hide();
-            loadEmpresas();
-        } else {
-            const err = await res.json();
-            alert(Object.values(err.errors || {}).flat().join('\n') || err.message || 'Error');
-        }
     } catch(e) { console.error(e); }
 }
 
@@ -413,12 +423,136 @@ async function activarEmpresa(id) {
     } catch(e) { console.error(e); }
 }
 
+// ── Usuario normal: mi empresa ────────────────────────────────────────────────
+
+async function loadMiEmpresa() {
+    const card = document.getElementById('miEmpresaCard');
+    try {
+        const res = await fetch('/admin/mi-empresa');
+        const data = await res.json();
+        if (!res.ok) {
+            card.innerHTML = '<div class="card-body text-center text-danger py-4"><i class="fa-solid fa-triangle-exclamation me-2"></i>' + (data.message || 'Error al cargar') + '</div>';
+            return;
+        }
+        const e = data.data;
+        const planLabel = { bronce: 'Bronce', plata: 'Plata', oro: 'Oro' };
+        const editBtn = canEditEmpresa
+            ? `<button class="btn btn-outline-primary btn-sm" onclick="editMiEmpresa()"><i class="fa-solid fa-pen me-1"></i>Editar</button>`
+            : '';
+
+        card.innerHTML = `
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h5 class="mb-1"><i class="fa-solid fa-building me-2 text-primary"></i>${e.nombre || '—'}</h5>
+                        <span class="badge bg-secondary">${planLabel[e.plan] || e.plan || '—'}</span>
+                    </div>
+                    ${editBtn}
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <small class="text-muted d-block">RUC / NIT</small>
+                        <span>${e.ruc || '—'}</span>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted d-block">Email</small>
+                        <span>${e.email || '—'}</span>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted d-block">Teléfono</small>
+                        <span>${e.telefono || '—'}</span>
+                    </div>
+                </div>
+            </div>`;
+    } catch(err) {
+        card.innerHTML = '<div class="card-body text-center text-danger py-4"><i class="fa-solid fa-triangle-exclamation me-2"></i>Error al cargar empresa.</div>';
+        console.error(err);
+    }
+}
+
+async function editMiEmpresa() {
+    try {
+        const res = await fetch('/admin/mi-empresa');
+        const data = await res.json();
+        const e = data.data;
+
+        document.getElementById('empresaId').value         = e.id;
+        document.getElementById('empresaModoPropio').value = '1';
+        document.getElementById('frmNombre').value         = e.nombre || '';
+        document.getElementById('frmRuc').value            = e.ruc || '';
+        document.getElementById('frmEmail').value          = e.email || '';
+        document.getElementById('frmTelefono').value       = e.telefono || '';
+
+        // Ocultar campos de plan y admin (no editables por usuario normal)
+        var planFields = document.getElementById('planFields');
+        if (planFields) planFields.style.display = 'none';
+        document.getElementById('adminFields').style.display = 'none';
+        document.getElementById('frmAdminEmail').required = false;
+        document.getElementById('frmAdminPassword').required = false;
+
+        document.getElementById('empresaModalTitle').textContent = 'Editar Mi Empresa';
+        new bootstrap.Modal(document.getElementById('empresaModal')).show();
+    } catch(err) { console.error(err); }
+}
+
+// ── Guardar (admin_tenant o mi empresa) ───────────────────────────────────────
+
+async function saveEmpresa() {
+    const id        = document.getElementById('empresaId').value;
+    const modoPropio = document.getElementById('empresaModoPropio').value === '1';
+
+    const payload = {
+        nombre:   document.getElementById('frmNombre').value,
+        ruc:      document.getElementById('frmRuc').value || null,
+        email:    document.getElementById('frmEmail').value || null,
+        telefono: document.getElementById('frmTelefono').value || null,
+    };
+
+    if (!modoPropio) {
+        payload.plan         = document.getElementById('frmPlan').value;
+        payload.max_usuarios = parseInt(document.getElementById('frmMaxUsuarios').value) || 50;
+    }
+
+    if (!id && !modoPropio) {
+        payload.admin_name     = document.getElementById('frmAdminName').value || null;
+        payload.admin_email    = document.getElementById('frmAdminEmail').value;
+        payload.admin_password = document.getElementById('frmAdminPassword').value;
+    }
+
+    const url    = modoPropio ? '/admin/mi-empresa' : (id ? `/admin/empresas/${id}` : '/admin/empresas');
+    const method = (!id && !modoPropio) ? 'POST' : 'PUT';
+
+    try {
+        const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('empresaModal')).hide();
+            if (modoPropio) {
+                loadMiEmpresa();
+            } else {
+                loadEmpresas();
+            }
+        } else {
+            const err = await res.json();
+            alert(Object.values(err.errors || {}).flat().join('\n') || err.message || 'Error');
+        }
+    } catch(e) { console.error(e); }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    if (esAdminTenant) {
+        loadEmpresas();
+    } else {
+        loadMiEmpresa();
+    }
+});
+
+// ── Token Agente (solo admin_tenant) ─────────────────────────────────────────
+
 @if(auth()->user()->admin_tenant)
-document.addEventListener('DOMContentLoaded', () => loadEmpresas());
-@endif
-
-// --- Token Agente ---
-
 function openTokenModal(id, nombre, tokenMasked, vigencia) {
     document.getElementById('tokenEmpresaId').value        = id;
     document.getElementById('tokenEmpresaNombre').textContent = nombre;
@@ -486,5 +620,6 @@ function copyToken() {
     const val = document.getElementById('tokenNuevoValor').value;
     navigator.clipboard.writeText(val).then(() => alert('Token copiado al portapapeles'));
 }
+@endif
 </script>
 @endpush

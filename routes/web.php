@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\AttendanceController as ApiAttendanceController;
 use App\Http\Controllers\Api\PermisoController as ApiPermisoController;
 use App\Http\Controllers\Api\DeviceController as ApiDeviceController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\RolesController;
 use Illuminate\Support\Facades\Route;
 
 // ZKTeco ADMS PUSH — sin autenticación ni CSRF
@@ -194,6 +195,8 @@ Route::middleware(['auth', 'admin', 'role:admin,supervisor', 'tenancy.session'])
     Route::delete('/admin/festivos/{id}',  [\App\Http\Controllers\Api\FestivoController::class, 'destroy']);
     Route::get   ('/admin/empresas',                    [AdminController::class, 'empresasIndex'])->name('admin.empresas.index');
     Route::get   ('/admin/empresas/list',               [\App\Http\Controllers\Api\EmpresaController::class, 'index']);
+    Route::get   ('/admin/mi-empresa',                  [\App\Http\Controllers\Api\EmpresaController::class, 'miEmpresa']);
+    Route::put   ('/admin/mi-empresa',                  [\App\Http\Controllers\Api\EmpresaController::class, 'updateMiEmpresa']);
     Route::get   ('/admin/empresas/{id}',               [\App\Http\Controllers\Api\EmpresaController::class, 'showById']);
     Route::post  ('/admin/empresas',                    [\App\Http\Controllers\Api\EmpresaController::class, 'store']);
     Route::put   ('/admin/empresas/{id}',               [\App\Http\Controllers\Api\EmpresaController::class, 'updateById']);
@@ -226,6 +229,17 @@ Route::middleware(['auth', 'admin', 'role:admin,supervisor', 'tenancy.session'])
     Route::post  ('/admin/dispositivos/{id}/sync',         [ApiDeviceController::class, 'syncAttendance']);
     Route::post  ('/admin/dispositivos/{id}/clear',        [ApiDeviceController::class, 'clearDevice']);
     Route::get   ('/admin/dispositivos/{id}/sync-history', [ApiDeviceController::class, 'syncHistory']);
+});
+
+// Roles y Permisos — solo admin
+Route::middleware(['auth', 'admin', 'role:admin', 'tenancy.session'])->group(function () {
+    Route::get   ('/admin/roles',             [RolesController::class, 'index'])->name('admin.roles.index');
+    Route::get   ('/admin/roles/list',        [RolesController::class, 'list']);
+    Route::get   ('/admin/roles/permissions', [RolesController::class, 'allPermissions']);
+    Route::post  ('/admin/roles',             [RolesController::class, 'store']);
+    Route::get   ('/admin/roles/{id}',        [RolesController::class, 'show'])->where('id', '[0-9]+');
+    Route::put   ('/admin/roles/{id}',        [RolesController::class, 'update'])->where('id', '[0-9]+');
+    Route::delete('/admin/roles/{id}',        [RolesController::class, 'destroy'])->where('id', '[0-9]+');
 });
 
 Route::middleware(['auth', 'admin', 'admin.tenant', 'tenancy.session'])->group(function () {

@@ -11,15 +11,33 @@
                     <p class="text-muted mb-0">Gestión del personal</p>
                 </div>
                 <div class="d-flex gap-2">
-                    <button class="btn btn-outline-success" onclick="exportarEmpleados()" @if(!auth()->user()->admin_tenant && !auth()->user()->exportar_empleados) disabled @endif>
+                    @can('empleados.exportar')
+                    <button class="btn btn-outline-success" onclick="exportarEmpleados()">
                         <i class="fa-solid fa-file-export me-1"></i> Exportar
                     </button>
-                    <button class="btn btn-outline-secondary" onclick="openImportEmpleados()" @if(!auth()->user()->admin_tenant && !auth()->user()->importar_empleados) disabled @endif>
+                    @else
+                    <button class="btn btn-outline-success" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                        <i class="fa-solid fa-file-export me-1"></i> Exportar
+                    </button>
+                    @endcan
+                    @can('empleados.importar')
+                    <button class="btn btn-outline-secondary" onclick="openImportEmpleados()">
                         <i class="fa-solid fa-file-import me-1"></i> Importar
                     </button>
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#empleadoModal" onclick="resetForm()" @if(!auth()->user()->admin_tenant && !auth()->user()->crear_empleado) disabled @endif>
+                    @else
+                    <button class="btn btn-outline-secondary" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                        <i class="fa-solid fa-file-import me-1"></i> Importar
+                    </button>
+                    @endcan
+                    @can('empleados.crear')
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#empleadoModal" onclick="resetForm()">
                         <i class="fa-solid fa-plus me-1"></i> Nuevo Empleado
                     </button>
+                    @else
+                    <button class="btn btn-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                        <i class="fa-solid fa-plus me-1"></i> Nuevo Empleado
+                    </button>
+                    @endcan
                 </div>
             </div>
         </div>
@@ -285,7 +303,7 @@
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Rol</label>
-                            <select id="empRole" class="form-select" @if(!auth()->user()->isAdmin()) disabled @endif>
+                            <select id="empRole" class="form-select" @cannot('usuarios.editar') disabled @endcannot>
                                 <option value="empleado">Empleado</option>
                                 <option value="supervisor">Supervisor</option>
                                 <option value="admin">Administrador</option>
@@ -309,24 +327,8 @@
                     </div>
                     <hr class="mt-0 mb-2">
                     <div class="row">
-                        <div class="col-12 mb-3 d-flex align-items-center gap-4">
-                            <small class="text-muted fw-bold">Permisos empleados:</small>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="empExportarEmpleados">
-                                <label class="form-check-label">Exportar</label>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="empImportarEmpleados">
-                                <label class="form-check-label">Importar</label>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="empCrearEmpleado">
-                                <label class="form-check-label">Crear</label>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="empEditarEmpleado">
-                                <label class="form-check-label">Editar</label>
-                            </div>
+                        <div class="col-12 mb-1">
+                            <small class="text-muted">Los permisos del usuario se gestionan desde <strong>Roles y Permisos</strong>.</small>
                         </div>
                     </div>
                 </form>
@@ -520,8 +522,9 @@ div.dataTables_wrapper div.dataTables_info {
 
 const csrfToken     = '{{ csrf_token() }}';
 const isAdminTenant = {{ auth()->user()->admin_tenant ? 'true' : 'false' }};
-const isSupervisor  = {{ auth()->user()->role === 'supervisor' ? 'true' : 'false' }};
-const canEditEmpleado = {{ (auth()->user()->admin_tenant || auth()->user()->editar_empleado) ? 'true' : 'false' }};
+const canDeleteEmpleado   = {{ auth()->user()->can('empleados.eliminar') ? 'true' : 'false' }};
+const canEditEmpleado     = {{ auth()->user()->can('empleados.editar') ? 'true' : 'false' }};
+const canHistorialEmpleado = {{ auth()->user()->can('empleados.historial') ? 'true' : 'false' }};
 var tablaEmpleados = null;
 
 let deptoMap      = {};
@@ -840,9 +843,15 @@ async function loadEmpleados() {
                     title: 'Acciones', data: 'id', orderable: false,
                     render: function(d, type, row) {
                         var enc = row.encrypted_id;
-                        var e = '<button class="btn btn-sm btn-outline-primary" onclick="this.disabled=true;editEmpleado(' + d + ',\'' + enc + '\').finally(()=>this.disabled=false)" ' + (canEditEmpleado ? '' : 'disabled') + '><i class="fa-solid fa-pen"></i></button>';
-                        var l = '<button class="btn btn-sm btn-outline-secondary" onclick="verLogEmpleado(' + d + ')" title="Historial"><i class="fa-solid fa-clock-rotate-left"></i></button>';
-                        var x = '<button class="btn btn-sm btn-outline-danger" onclick="deleteEmpleado(\'' + enc + '\')" ' + (isSupervisor ? 'disabled' : '') + '><i class="fa-solid fa-trash"></i></button>';
+                        var e = canEditEmpleado
+                            ? '<button class="btn btn-sm btn-outline-primary" onclick="this.disabled=true;editEmpleado(' + d + ',\'' + enc + '\').finally(()=>this.disabled=false)"><i class="fa-solid fa-pen"></i></button>'
+                            : '<button class="btn btn-sm btn-outline-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-pen"></i></button>';
+                        var l = canHistorialEmpleado
+                            ? '<button class="btn btn-sm btn-outline-secondary" onclick="verLogEmpleado(' + d + ')" title="Historial"><i class="fa-solid fa-clock-rotate-left"></i></button>'
+                            : '<button class="btn btn-sm btn-outline-secondary" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-clock-rotate-left"></i></button>';
+                        var x = canDeleteEmpleado
+                            ? '<button class="btn btn-sm btn-outline-danger" onclick="deleteEmpleado(\'' + enc + '\')"><i class="fa-solid fa-trash"></i></button>'
+                            : '<button class="btn btn-sm btn-outline-danger" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-trash"></i></button>';
                         return '<div class="d-flex flex-nowrap gap-1">' + e + l + x + '</div>';
                     }
                 }
@@ -867,6 +876,9 @@ async function loadEmpleados() {
                 },
                 drawCallback: function() {
                     colVisEmpApply(colVisEmpGetState());
+                    document.querySelectorAll('#empleadosTable [data-bs-toggle="tooltip"]').forEach(el => {
+                        bootstrap.Tooltip.getOrCreateInstance(el);
+                    });
                 },
                 initComplete: function() {
                     $('#empleadosTable_length select').addClass('form-select form-select-sm d-inline-block w-auto');
@@ -962,10 +974,6 @@ async function editEmpleado(id, encryptedId) {
         document.getElementById('empRuta').value         = e.ruta || '';
         document.getElementById('empRole').value         = e.role || 'empleado';
         document.getElementById('empActivo').checked     = !!e.is_active;
-        document.getElementById('empExportarEmpleados').checked = !!e.exportar_empleados;
-        document.getElementById('empImportarEmpleados').checked = !!e.importar_empleados;
-        document.getElementById('empCrearEmpleado').checked = !!e.crear_empleado;
-        document.getElementById('empEditarEmpleado').checked = !!e.editar_empleado;
         document.getElementById('empleadoModalTitle').textContent = 'Editar Usuario';
 
         // Tratamiento de datos
@@ -1052,10 +1060,6 @@ async function saveEmpleado(id) {
         sede_ids:         getSelectedSedeIds(),
         role:             document.getElementById('empRole').value,
         is_active:        document.getElementById('empActivo').checked,
-        exportar_empleados: document.getElementById('empExportarEmpleados').checked,
-        importar_empleados: document.getElementById('empImportarEmpleados').checked,
-        crear_empleado:     document.getElementById('empCrearEmpleado').checked,
-        editar_empleado:    document.getElementById('empEditarEmpleado').checked,
     };
     if (isAdminTenant) {
         const selEmp = document.getElementById('empEmpresaId');
@@ -1315,8 +1319,6 @@ const LOG_LABELS_EMP = {
     empleador_id: 'Empleador', lider_id: 'Líder', codigo_empleado: 'Código',
     departamento_id: 'Departamento', cargo_id: 'Cargo', horario_id: 'Horario', telefono: 'Teléfono',
     centro_costo: 'Centro de costo', ruta: 'Ruta',
-    exportar_empleados: 'Exportar empleados', importar_empleados: 'Importar empleados',
-    crear_empleado: 'Crear empleado', editar_empleado: 'Editar empleado'
 };
 
 async function verLogEmpleado(id) {
@@ -1379,6 +1381,7 @@ async function verLogEmpleado(id) {
 document.addEventListener('DOMContentLoaded', () => {
     initCatalogos().then(() => loadEmpleados());
     colVisEmpApply(colVisEmpGetState());
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
     document.getElementById('filterSearch').addEventListener('keydown', function(e) {
         if (e.key === 'Enter') loadEmpleados();
     });

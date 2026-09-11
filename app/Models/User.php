@@ -9,11 +9,14 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, HasRoles;
+
+    protected string $guard_name = 'web';
 
     protected $connection = 'mysql';
 
@@ -44,10 +47,6 @@ class User extends Authenticatable
         'tratamiento_datos',
         'tratamiento_datos_at',
         'dias_tratamiento_dato',
-        'exportar_empleados',
-        'importar_empleados',
-        'crear_empleado',
-        'editar_empleado',
     ];
 
     protected $hidden = [

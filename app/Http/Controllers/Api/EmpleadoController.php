@@ -83,7 +83,7 @@ class EmpleadoController extends Controller
         $sortDir = $request->dir === 'desc' ? 'desc' : 'asc';
 
         $empleados = $query
-            ->select(['id','name','cedula','email','role','tipo','admin_tenant','is_active','exportar_empleados','importar_empleados','crear_empleado','editar_empleado','empresa_id','empleador_id','lider_id','codigo_empleado','departamento_id','cargo_id','horario_id','telefono','centro_costo','ruta','foto_url','last_login_at','created_at',
+            ->select(['id','name','cedula','email','role','tipo','admin_tenant','is_active','empresa_id','empleador_id','lider_id','codigo_empleado','departamento_id','cargo_id','horario_id','telefono','centro_costo','ruta','foto_url','last_login_at','created_at',
                 DB::raw('(face_descriptor IS NOT NULL) AS has_face_descriptor')])
             ->with('userSedes')
             ->orderBy($sortCol, $sortDir)

@@ -10,9 +10,15 @@
                     <h4 class="mb-1"><i class="ti ti-user-check me-2 text-primary"></i>Visitantes</h4>
                     <p class="text-muted mb-0">Registro de visitas por sede</p>
                 </div>
+                @can('visitantes.crear')
                 <button class="btn btn-primary" onclick="abrirRegistroManual()">
                     <i class="ti ti-plus me-1"></i> Registrar entrada
                 </button>
+                @else
+                <button class="btn btn-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                    <i class="ti ti-plus me-1"></i> Registrar entrada
+                </button>
+                @endcan
             </div>
         </div>
     </div>
@@ -379,6 +385,7 @@ div.dataTables_wrapper div.dataTables_info {
 <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script>
 var csrfToken = '{{ csrf_token() }}';
+const canEditarVisitante = {{ auth()->user()->can('visitantes.editar') ? 'true' : 'false' }};
 var sedesData = @json($sedes);
 var tabla = null;
 var visitantesData = [];
@@ -621,14 +628,15 @@ function cargarTabla(silent) {
                         data: 'hora_salida',
                         orderable: false,
                         render: function(data, type, row) {
-                            var btnSalida = data ? '' :
-                                '<button class="btn btn-sm btn-outline-danger me-1" onclick="forzarSalida(' + row.id + ')" title="Registrar salida">' +
-                                    '<i class="ti ti-door-exit"></i>' +
-                                '</button>';
-                            var btnEditar =
-                                '<button class="btn btn-sm btn-outline-secondary me-1" onclick="abrirEdicion(' + row.id + ')" title="Editar">' +
-                                    '<i class="ti ti-edit"></i>' +
-                                '</button>';
+                            var btnSalida = '';
+                            if (!data) {
+                                btnSalida = canEditarVisitante
+                                    ? '<button class="btn btn-sm btn-outline-danger me-1" onclick="forzarSalida(' + row.id + ')" title="Registrar salida"><i class="ti ti-door-exit"></i></button>'
+                                    : '<button class="btn btn-sm btn-outline-danger me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="ti ti-door-exit"></i></button>';
+                            }
+                            var btnEditar = canEditarVisitante
+                                ? '<button class="btn btn-sm btn-outline-secondary me-1" onclick="abrirEdicion(' + row.id + ')" title="Editar"><i class="ti ti-edit"></i></button>'
+                                : '<button class="btn btn-sm btn-outline-secondary me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="ti ti-edit"></i></button>';
                             var btnLog =
                                 '<button class="btn btn-sm btn-outline-info" onclick="verLog(' + row.id + ')" title="Ver historial">' +
                                     '<i class="ti ti-history"></i>' +
@@ -991,6 +999,8 @@ async function guardarVisitanteManual() {
 }
 
 $(document).ready(function() {
+    // Tooltips en botones del header
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el) { new bootstrap.Tooltip(el); });
     // Cargar sedes
     sedesData.forEach(function(s) {
         $('#filterSede').append('<option value="' + s.id + '">' + s.nombre + '</option>');

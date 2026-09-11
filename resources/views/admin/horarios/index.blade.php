@@ -9,9 +9,15 @@
                 <h4 class="mb-1"><i class="fa-solid fa-clock me-2 text-primary"></i>Horarios</h4>
                 <p class="text-muted mb-0">Turnos y jornadas laborales</p>
             </div>
+            @can('horarios.crear')
             <button class="btn btn-primary" onclick="openModal()">
                 <i class="fa-solid fa-plus me-1"></i> Nuevo Horario
             </button>
+            @else
+            <button class="btn btn-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                <i class="fa-solid fa-plus me-1"></i> Nuevo Horario
+            </button>
+            @endcan
         </div>
     </div>
 
@@ -126,9 +132,12 @@ div.dataTables_wrapper div.dataTables_info {
 <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script>
-const csrfToken = '{{ csrf_token() }}';
+const csrfToken        = '{{ csrf_token() }}';
+const canEditHorario   = {{ auth()->user()->can('horarios.editar')   ? 'true' : 'false' }};
+const canDeleteHorario = {{ auth()->user()->can('horarios.eliminar') ? 'true' : 'false' }};
 const DIAS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
 var tablaHorarios = null;
+var horarioRowCache = {};
 
 function buildDiasRows(diasData = []) {
     const diasMap = {};
@@ -199,6 +208,11 @@ async function loadHorarios() {
                     paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' },
                     processing: 'Procesando...',
                 },
+                drawCallback: function() {
+                    document.querySelectorAll('#horariosTable [data-bs-toggle="tooltip"]').forEach(el => {
+                        bootstrap.Tooltip.getOrCreateInstance(el);
+                    });
+                },
                 initComplete: function() {
                     $('#horariosTable_length select').addClass('form-select form-select-sm d-inline-block w-auto');
                     $('#horariosTable_filter input').addClass('form-control form-control-sm d-inline-block w-auto');
@@ -230,9 +244,17 @@ async function loadHorarios() {
                     {
                         title: 'Acciones', data: null, orderable: false,
                         render: function(d, type, row) {
-                            var h = JSON.stringify(row).replace(/'/g, '&#39;');
-                            return '<button class="btn btn-sm btn-outline-primary me-1" onclick=\'editHorario(' + h + ')\'><i class="fa-solid fa-pen"></i></button>'
-                                 + '<button class="btn btn-sm btn-outline-danger" onclick="deleteHorario(' + row.id + ')"><i class="fa-solid fa-trash"></i></button>';
+                            horarioRowCache[row.id] = row;
+
+                            var btnEdit = canEditHorario
+                                ? '<button class="btn btn-sm btn-outline-primary me-1" onclick="editHorarioById(' + row.id + ')"><i class="fa-solid fa-pen"></i></button>'
+                                : '<button class="btn btn-sm btn-outline-primary me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-pen"></i></button>';
+
+                            var btnDel = canDeleteHorario
+                                ? '<button class="btn btn-sm btn-outline-danger" onclick="deleteHorario(' + row.id + ')"><i class="fa-solid fa-trash"></i></button>'
+                                : '<button class="btn btn-sm btn-outline-danger" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-trash"></i></button>';
+
+                            return btnEdit + btnDel;
                         }
                     }
                 ]
@@ -253,7 +275,7 @@ function openModal(data = null) {
     new bootstrap.Modal(document.getElementById('horarioModal')).show();
 }
 
-function editHorario(h) { openModal(h); }
+function editHorarioById(id) { openModal(horarioRowCache[id]); }
 
 async function saveHorario() {
     const id = document.getElementById('horarioId').value;
@@ -306,6 +328,9 @@ function showError(elId, msg) {
     el.textContent = msg; el.style.display = 'block';
 }
 
-document.addEventListener('DOMContentLoaded', () => loadHorarios());
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
+    loadHorarios();
+});
 </script>
 @endpush

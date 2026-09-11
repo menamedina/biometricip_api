@@ -9,9 +9,15 @@
                 <h4 class="mb-1"><i class="fa-solid fa-file-signature me-2 text-primary"></i>Permisos</h4>
                 <p class="text-muted mb-0">Gestión de permisos de empleados</p>
             </div>
+            @can('permisos.crear')
             <button class="btn btn-primary" onclick="openModal()">
                 <i class="fa-solid fa-plus me-1"></i> Nuevo Permiso
             </button>
+            @else
+            <button class="btn btn-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                <i class="fa-solid fa-plus me-1"></i> Nuevo Permiso
+            </button>
+            @endcan
         </div>
     </div>
 
@@ -165,6 +171,8 @@ div.dataTables_wrapper div.dataTables_info {
 <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script>
 const csrfToken = '{{ csrf_token() }}';
+const canAprobarPermiso  = {{ auth()->user()->can('permisos.aprobar')  ? 'true' : 'false' }};
+const canEliminarPermiso = {{ auth()->user()->can('permisos.eliminar') ? 'true' : 'false' }};
 const tipoLabels = {
     salida_temprana: 'Salida Temprana',
     llegada_tarde:   'Llegada Tarde',
@@ -179,6 +187,7 @@ const estadoBadge = {
 var tablaPermisos = null;
 
 document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
     const hoy   = new Date().toISOString().slice(0,10);
     const inicio = new Date(); inicio.setDate(1);
     document.getElementById('filterFrom').value = inicio.toISOString().slice(0,10);
@@ -240,6 +249,11 @@ async function loadPermisos() {
                     paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' },
                     processing: 'Procesando...',
                 },
+                drawCallback: function() {
+                    document.querySelectorAll('#permisosTable [data-bs-toggle="tooltip"]').forEach(el => {
+                        bootstrap.Tooltip.getOrCreateInstance(el);
+                    });
+                },
                 initComplete: function() {
                     $('#permisosTable_length select').addClass('form-select form-select-sm d-inline-block w-auto');
                     $('#permisosTable_filter input').addClass('form-control form-control-sm d-inline-block w-auto');
@@ -295,10 +309,16 @@ async function loadPermisos() {
                         render: function(data, type, row) {
                             var btns = '';
                             if (row.estado === 'pendiente') {
-                                btns += '<button class="btn btn-sm btn-success me-1" onclick="aprobar(' + data + ')" title="Aprobar"><i class="fa-solid fa-check"></i></button>';
-                                btns += '<button class="btn btn-sm btn-danger me-1" onclick="rechazar(' + data + ')" title="Rechazar"><i class="fa-solid fa-xmark"></i></button>';
+                                btns += canAprobarPermiso
+                                    ? '<button class="btn btn-sm btn-success me-1" onclick="aprobar(' + data + ')" title="Aprobar"><i class="fa-solid fa-check"></i></button>'
+                                    : '<button class="btn btn-sm btn-success me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-check"></i></button>';
+                                btns += canAprobarPermiso
+                                    ? '<button class="btn btn-sm btn-danger me-1" onclick="rechazar(' + data + ')" title="Rechazar"><i class="fa-solid fa-xmark"></i></button>'
+                                    : '<button class="btn btn-sm btn-danger me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-xmark"></i></button>';
                             }
-                            btns += '<button class="btn btn-sm btn-outline-danger" onclick="eliminar(' + data + ')"><i class="fa-solid fa-trash"></i></button>';
+                            btns += canEliminarPermiso
+                                ? '<button class="btn btn-sm btn-outline-danger" onclick="eliminar(' + data + ')"><i class="fa-solid fa-trash"></i></button>'
+                                : '<button class="btn btn-sm btn-outline-danger" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-trash"></i></button>';
                             return btns;
                         }
                     }

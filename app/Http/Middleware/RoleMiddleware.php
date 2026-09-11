@@ -10,7 +10,19 @@ class RoleMiddleware
 {
     public function handle(Request $request, Closure $next, string ...$roles): Response
     {
-        if (!$request->user() || !in_array($request->user()->role, $roles)) {
+        $user = $request->user();
+
+        if (!$user) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'No autenticado.'], 401);
+            }
+            abort(401);
+        }
+
+        // Compatibilidad: verificar rol legacy (string) o rol Spatie
+        $tieneRol = in_array($user->role, $roles) || $user->hasAnyRole($roles);
+
+        if (!$tieneRol) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'No tienes permiso para acceder a esta sección.'], 403);
             }

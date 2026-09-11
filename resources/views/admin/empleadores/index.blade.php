@@ -10,9 +10,15 @@
                     <h4 class="mb-1"><i class="ti ti-briefcase me-2 text-primary"></i>Empleadores</h4>
                     <p class="text-muted mb-0">Gestión de empleadores registrados</p>
                 </div>
+                @can('empleadores.crear')
                 <button class="btn btn-primary btn-sm" onclick="abrirModal()">
                     <i class="ti ti-plus me-1"></i> Nuevo empleador
                 </button>
+                @else
+                <button class="btn btn-primary btn-sm" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                    <i class="ti ti-plus me-1"></i> Nuevo empleador
+                </button>
+                @endcan
             </div>
         </div>
     </div>
@@ -45,16 +51,28 @@
                                         @endif
                                     </td>
                                     <td class="text-end">
+                                        @can('empleadores.editar')
                                         <button class="btn btn-sm btn-outline-primary py-0 px-2"
                                             onclick="abrirModal({{ $e->id }}, '{{ addslashes($e->nombre) }}', '{{ addslashes($e->descripcion ?? '') }}', {{ $e->is_active ? 'true' : 'false' }})"
                                             title="Editar">
                                             <i class="ti ti-edit"></i>
                                         </button>
+                                        @else
+                                        <button class="btn btn-sm btn-outline-primary py-0 px-2" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                                            <i class="ti ti-edit"></i>
+                                        </button>
+                                        @endcan
+                                        @can('empleadores.eliminar')
                                         <button class="btn btn-sm btn-outline-danger py-0 px-2 ms-1"
                                             onclick="eliminar({{ $e->id }}, '{{ addslashes($e->nombre) }}')"
                                             title="Eliminar">
                                             <i class="ti ti-trash"></i>
                                         </button>
+                                        @else
+                                        <button class="btn btn-sm btn-outline-danger py-0 px-2 ms-1" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                                            <i class="ti ti-trash"></i>
+                                        </button>
+                                        @endcan
                                     </td>
                                 </tr>
                                 @empty
@@ -144,6 +162,11 @@ let modalBS = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     modalBS = new bootstrap.Modal(document.getElementById('modalEmpleador'));
+
+    // Inicializar tooltips
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+        new bootstrap.Tooltip(el);
+    });
 
     $('#empleadoresTable').DataTable({
         order: [[0, 'asc']],

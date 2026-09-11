@@ -11,6 +11,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     @stack('styles')
     <style>
+        /* ── Tooltips en botones disabled ────────────────── */
+        .btn:disabled, .btn[disabled] { pointer-events: auto; cursor: not-allowed; }
+
         /* ── Logo en sidebar ─────────────────────────────── */
         .sidenav-menu > a.logo {
             display: flex !important;
@@ -157,36 +160,44 @@
                             </a>
                         </li>
 
-                        @if(in_array($role, ['admin', 'supervisor']))
+                        {{-- ── Administración ──────────────────────────────── --}}
+                        @canany(['sedes.ver','empleados.ver','visitantes.ver','dispositivos.ver'])
                         <li class="side-nav-title mt-2">Administración</li>
+                        @endcanany
+                        @can('sedes.ver')
                         <li class="side-nav-item">
                             <a href="{{ route('admin.sedes.index') }}" class="side-nav-link {{ request()->routeIs('admin.sedes.*') ? 'active' : '' }}">
                                 <span class="menu-icon"><i class="ti ti-building"></i></span>
                                 <span class="menu-text">Sedes</span>
                             </a>
                         </li>
+                        @endcan
+                        @can('empleados.ver')
                         <li class="side-nav-item">
                             <a href="{{ route('admin.empleados.index') }}" class="side-nav-link {{ request()->routeIs('admin.empleados.*') ? 'active' : '' }}">
                                 <span class="menu-icon"><i class="ti ti-users"></i></span>
                                 <span class="menu-text">Empleados</span>
                             </a>
                         </li>
+                        @endcan
+                        @can('visitantes.ver')
                         <li class="side-nav-item">
                             <a href="{{ route('admin.visitantes.index') }}" class="side-nav-link {{ request()->routeIs('admin.visitantes.*') ? 'active' : '' }}">
                                 <span class="menu-icon"><i class="ti ti-user-check"></i></span>
                                 <span class="menu-text">Visitantes</span>
                             </a>
                         </li>
-                        @if($role !== 'supervisor')
+                        @endcan
+                        @can('dispositivos.ver')
                         <li class="side-nav-item">
                             <a href="{{ route('admin.dispositivos.index') }}" class="side-nav-link {{ request()->routeIs('admin.dispositivos.*') ? 'active' : '' }}">
                                 <span class="menu-icon"><i class="ti ti-fingerprint"></i></span>
                                 <span class="menu-text">Dispositivos</span>
                             </a>
                         </li>
-                        @endif
-                        @endif
+                        @endcan
 
+                        {{-- ── Asistencia ──────────────────────────────────── --}}
                         <li class="side-nav-title mt-2">Asistencia</li>
                         <li class="side-nav-item">
                             <a href="{{ route('admin.attendance.index') }}" class="side-nav-link {{ request()->routeIs('admin.attendance.*') ? 'active' : '' }}">
@@ -200,32 +211,38 @@
                                 <span class="menu-text">Resumen Marcación</span>
                             </a>
                         </li>
-
-                        @if(in_array($role, ['admin', 'supervisor']))
+                        @can('permisos.ver')
                         <li class="side-nav-item">
                             <a href="{{ route('admin.permisos.index') }}" class="side-nav-link {{ request()->routeIs('admin.permisos.*') ? 'active' : '' }}">
                                 <span class="menu-icon"><i class="ti ti-file-certificate"></i></span>
                                 <span class="menu-text">Permisos</span>
                             </a>
                         </li>
+                        @endcan
 
+                        {{-- ── Organización ────────────────────────────────── --}}
+                        @canany(['departamentos.ver','empleadores.ver'])
                         <li class="side-nav-title mt-2">Organización</li>
+                        @endcanany
+                        @can('departamentos.ver')
                         <li class="side-nav-item">
                             <a href="{{ route('admin.departamentos.index') }}" class="side-nav-link {{ request()->routeIs('admin.departamentos.*') ? 'active' : '' }}">
                                 <span class="menu-icon"><i class="ti ti-sitemap"></i></span>
                                 <span class="menu-text">Deptos. y Cargos</span>
                             </a>
                         </li>
-                        @if($role !== 'supervisor')
+                        @endcan
+                        @can('empleadores.ver')
                         <li class="side-nav-item">
                             <a href="{{ route('admin.empleadores.index') }}" class="side-nav-link {{ request()->routeIs('admin.empleadores.*') ? 'active' : '' }}">
                                 <span class="menu-icon"><i class="ti ti-briefcase"></i></span>
                                 <span class="menu-text">Empleadores</span>
                             </a>
                         </li>
-                        @endif
+                        @endcan
 
-                        @if($role !== 'supervisor')
+                        {{-- ── Empresa ─────────────────────────────────────── --}}
+                        @can('empresa.ver')
                         <li class="side-nav-title mt-2">Empresa</li>
                         <li class="side-nav-item">
                             <a href="{{ route('admin.empresas.index') }}" class="side-nav-link {{ request()->routeIs('admin.empresas.*') ? 'active' : '' }}">
@@ -233,8 +250,10 @@
                                 <span class="menu-text">Mi Empresa</span>
                             </a>
                         </li>
-                        @endif
+                        @endcan
 
+                        {{-- ── Comunicación ────────────────────────────────── --}}
+                        @can('notificaciones.ver')
                         <li class="side-nav-title mt-2">Comunicación</li>
                         <li class="side-nav-item">
                             <a href="{{ route('admin.notificaciones.index') }}" class="side-nav-link {{ request()->routeIs('admin.notificaciones.*') ? 'active' : '' }}">
@@ -242,18 +261,33 @@
                                 <span class="menu-text">Notificaciones</span>
                             </a>
                         </li>
+                        @endcan
 
+                        {{-- ── Configuración ───────────────────────────────── --}}
+                        @canany(['horarios.ver','festivos.ver','roles.ver'])
                         <li class="side-nav-title mt-2">Configuración</li>
+                        @endcanany
+                        @can('horarios.ver')
                         <li class="side-nav-item">
                             <a href="{{ route('admin.horarios.index') }}" class="side-nav-link {{ request()->routeIs('admin.horarios.*') ? 'active' : '' }}">
                                 <span class="menu-icon"><i class="ti ti-clock-play"></i></span>
                                 <span class="menu-text">Horarios</span>
                             </a>
                         </li>
+                        @endcan
+                        @can('festivos.ver')
                         <li class="side-nav-item">
                             <a href="{{ route('admin.festivos.index') }}" class="side-nav-link {{ request()->routeIs('admin.festivos.*') ? 'active' : '' }}">
                                 <span class="menu-icon"><i class="ti ti-calendar-x"></i></span>
                                 <span class="menu-text">Festivos</span>
+                            </a>
+                        </li>
+                        @endcan
+                        @if($role === 'admin')
+                        <li class="side-nav-item">
+                            <a href="{{ route('admin.roles.index') }}" class="side-nav-link {{ request()->routeIs('admin.roles.*') ? 'active' : '' }}">
+                                <span class="menu-icon"><i class="ti ti-shield-lock"></i></span>
+                                <span class="menu-text">Roles y Permisos</span>
                             </a>
                         </li>
                         @endif

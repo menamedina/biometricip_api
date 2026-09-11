@@ -1,29 +1,16 @@
 -- ============================================================
--- BiometricIP — Audit log de users
--- BD CENTRAL: biometricip
--- No aplica para fotos ni campos sensibles (password, face_descriptor, etc.)
--- El usuario se pasa desde la app con: SET @audit_user_id = ?;
--- Actualizado en script 014: eliminadas columnas legacy de permisos
+-- Script: 014_fix_users_audit_triggers.sql
+-- Descripción: Recrea triggers de auditoría de users sin las
+--              columnas legacy eliminadas en script 012
+--              (exportar_empleados, importar_empleados,
+--               crear_empleado, editar_empleado)
+-- BD: biometricip (central)
 -- ============================================================
 
--- 1. Tabla de log
-CREATE TABLE IF NOT EXISTS `tbl_users_log` (
-    `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `user_id`    BIGINT UNSIGNED NOT NULL,
-    `evento`     ENUM('UPDATE', 'DELETE') NOT NULL,
-    `anterior`   JSON NULL,
-    `nuevo`      JSON NULL,
-    `changed_by` BIGINT UNSIGNED NOT NULL DEFAULT 0,
-    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id`),
-    INDEX `idx_ulog_user`   (`user_id`),
-    INDEX `idx_ulog_evento` (`evento`),
-    INDEX `idx_ulog_fecha`  (`created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+USE `biometricip`;
 
-
--- 2. Trigger UPDATE
-DROP TRIGGER IF EXISTS `trg_users_update`;
+-- Trigger UPDATE
+DROP TRIGGER `trg_users_update`;
 
 DELIMITER $$
 
@@ -82,8 +69,8 @@ END$$
 DELIMITER ;
 
 
--- 3. Trigger DELETE
-DROP TRIGGER IF EXISTS `trg_users_delete`;
+-- Trigger DELETE
+DROP TRIGGER `trg_users_delete`;
 
 DELIMITER $$
 

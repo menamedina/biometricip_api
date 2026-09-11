@@ -38,6 +38,7 @@ class AdminController extends Controller
 
     public function notificacionesIndex(): View
     {
+        abort_unless(auth()->user()->can('notificaciones.ver'), 403, 'No tienes permiso para acceder a esta sección.');
         $isAdminTenant = Auth::user()->admin_tenant;
         $empresas = $isAdminTenant
             ? Empresa::orderBy('nombre')->get(['id', 'nombre'])
@@ -210,6 +211,7 @@ class AdminController extends Controller
 
     public function sedesIndex(): View
     {
+        abort_unless(auth()->user()->can('sedes.ver'), 403, 'No tienes permiso para acceder a esta sección.');
         $empresas = Auth::user()->admin_tenant
             ? Empresa::orderBy('nombre')->get(['id', 'nombre'])
             : collect();
@@ -219,6 +221,7 @@ class AdminController extends Controller
 
     public function empleadosIndex(): View
     {
+        abort_unless(auth()->user()->can('empleados.ver'), 403, 'No tienes permiso para acceder a esta sección.');
         $isAdminTenant = Auth::user()->admin_tenant;
 
         $deptos      = $isAdminTenant ? collect() : Departamento::orderBy('nombre')->get();
@@ -386,6 +389,7 @@ class AdminController extends Controller
 
     public function departamentosIndex(Request $request): View
     {
+        abort_unless(auth()->user()->can('departamentos.ver'), 403, 'No tienes permiso para acceder a esta sección.');
         $searchDepto = $request->input('search_depto', '');
         $searchCargo = $request->input('search_cargo', '');
 
@@ -458,6 +462,7 @@ class AdminController extends Controller
 
     public function empleadoresIndex(): View
     {
+        abort_unless(auth()->user()->can('empleadores.ver'), 403, 'No tienes permiso para acceder a esta sección.');
         $empleadores = Empleador::orderBy('nombre')->get();
         return view('admin.empleadores.index', compact('empleadores'));
     }
@@ -580,26 +585,31 @@ class AdminController extends Controller
 
     public function horariosIndex(): View
     {
+        abort_unless(auth()->user()->can('horarios.ver'), 403, 'No tienes permiso para acceder a esta sección.');
         return view('admin.horarios.index');
     }
 
     public function permisosIndex(): View
     {
+        abort_unless(auth()->user()->can('permisos.ver'), 403, 'No tienes permiso para acceder a esta sección.');
         return view('admin.permisos.index');
     }
 
     public function festivosIndex(): View
     {
+        abort_unless(auth()->user()->can('festivos.ver'), 403, 'No tienes permiso para acceder a esta sección.');
         return view('admin.festivos.index');
     }
 
     public function empresasIndex(): View
     {
+        abort_unless(auth()->user()->can('empresa.ver'), 403, 'No tienes permiso para acceder a esta sección.');
         return view('admin.empresas.index');
     }
 
     public function visitantesIndex(): View
     {
+        abort_unless(auth()->user()->can('visitantes.ver'), 403, 'No tienes permiso para acceder a esta sección.');
         $sedes = Sede::where('is_active', true)->orderBy('nombre')->get(['id', 'nombre']);
         return view('admin.visitantes.index', compact('sedes'));
     }
@@ -932,6 +942,7 @@ class AdminController extends Controller
 
     public function dispositivosIndex(): View
     {
+        abort_unless(auth()->user()->can('dispositivos.ver'), 403, 'No tienes permiso para acceder a esta sección.');
         return view('admin.dispositivos.index');
     }
 

@@ -46,7 +46,11 @@
                             </button>
                             <button class="btn btn-sm btn-primary" onclick="loadRecords()"><i class="fa-solid fa-filter me-1"></i> Filtrar</button>
                             <button class="btn btn-sm btn-secondary" onclick="limpiarFiltros()"><i class="fa-solid fa-xmark me-1"></i> Limpiar</button>
+                            @can('asistencia.exportar')
                             <button class="btn btn-sm btn-success" onclick="exportCSV()"><i class="fa-solid fa-file-csv me-1"></i> Exportar CSV</button>
+                            @else
+                            <button class="btn btn-sm btn-success" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-file-csv me-1"></i> Exportar CSV</button>
+                            @endcan
                         </div>
                     </div>
                     <div class="collapse" id="filtrosExtraAtt">
@@ -194,9 +198,12 @@ div.dataTables_wrapper div.dataTables_info {
 <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script>
 const csrfToken  = '{{ csrf_token() }}';
-const isEmpleado = {{ auth()->user()->role === 'empleado' ? 'true' : 'false' }};
-const canViewPhoto = {{ auth()->user()->role === 'admin' ? 'true' : 'false' }};
+const isEmpleado   = {{ auth()->user()->cannot('empleados.ver') ? 'true' : 'false' }};
+const canViewPhoto = {{ auth()->user()->can('empleados.ver') ? 'true' : 'false' }};
 const myUserId   = {{ auth()->id() }};
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
+});
 var tablaAtt = null;
 
 async function loadRecords() {

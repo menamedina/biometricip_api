@@ -10,13 +10,19 @@
                     <h4 class="mb-1"><i class="fa-solid fa-fingerprint me-2 text-primary"></i>Dispositivos Biométricos</h4>
                     <p class="text-muted mb-0">Gestión de dispositivos ZKTeco y sincronización de asistencias</p>
                 </div>
-                <div>
-                    <button class="btn btn-outline-info me-2" onclick="openPingModal()">
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-info" onclick="openPingModal()">
                         <i class="fa-solid fa-wifi me-1"></i> Probar IP
                     </button>
+                    @can('dispositivos.crear')
                     <button class="btn btn-primary" onclick="openDeviceModal()">
                         <i class="fa-solid fa-plus me-1"></i> Nuevo Dispositivo
                     </button>
+                    @else
+                    <button class="btn btn-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                        <i class="fa-solid fa-plus me-1"></i> Nuevo Dispositivo
+                    </button>
+                    @endcan
                 </div>
             </div>
         </div>
@@ -296,6 +302,8 @@ div.dataTables_wrapper div.dataTables_length label,
 div.dataTables_wrapper div.dataTables_filter label { font-size: 13px; color: #6c757d; margin-bottom: 8px; }
 div.dataTables_wrapper div.dataTables_info { font-size: 13px; color: #6c757d; }
 #devicesTable th, #devicesTable td { font-size: 13px; vertical-align: middle; white-space: nowrap; }
+/* Permite que Bootstrap Tooltip funcione sobre botones disabled */
+.btn:disabled { pointer-events: auto; cursor: not-allowed; }
 </style>
 @endpush
 
@@ -304,8 +312,14 @@ div.dataTables_wrapper div.dataTables_info { font-size: 13px; color: #6c757d; }
 <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script>
-const csrfToken = '{{ csrf_token() }}';
+const csrfToken              = '{{ csrf_token() }}';
+const canCrearDispositivo    = {{ auth()->user()->can('dispositivos.crear')    ? 'true' : 'false' }};
+const canEditarDispositivo   = {{ auth()->user()->can('dispositivos.editar')   ? 'true' : 'false' }};
+const canEliminarDispositivo = {{ auth()->user()->can('dispositivos.eliminar') ? 'true' : 'false' }};
+const canVaciarDispositivo   = {{ auth()->user()->can('dispositivos.vaciar')   ? 'true' : 'false' }};
+const canUsuariosDispositivo = {{ auth()->user()->can('dispositivos.usuarios') ? 'true' : 'false' }};
 let sedesCache = [];
+var deviceRowCache = {};
 
 // ── Cargar sedes para el select ──────────────────────────────────────────────
 async function loadSedes() {
@@ -357,6 +371,11 @@ async function loadDevices() {
                     search: 'Buscar:',
                     paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' },
                     processing: 'Procesando...',
+                },
+                drawCallback: function() {
+                    document.querySelectorAll('#devicesTable [data-bs-toggle="tooltip"]').forEach(el => {
+                        bootstrap.Tooltip.getOrCreateInstance(el);
+                    });
                 },
                 initComplete: function() {
                     $('#devicesTable_length select').addClass('form-select form-select-sm d-inline-block w-auto');
@@ -417,16 +436,33 @@ async function loadDevices() {
                         orderable: false,
                         render: function(data, type, row) {
                             var nombre = row.nombre.replace(/'/g, "\\'");
-                            var rowJson = JSON.stringify(row).replace(/'/g, "&#39;");
-                            return '<div class="btn-group btn-group-sm">' +
-                                '<button class="btn btn-outline-success" onclick="syncDevice(' + data + ',\'' + nombre + '\')" title="Sincronizar"><i class="fa-solid fa-rotate"></i> Sync</button>' +
-                                '<button class="btn btn-outline-danger" onclick="clearDevice(' + data + ',\'' + nombre + '\')" title="Vaciar"><i class="fa-solid fa-trash-can"></i> Vaciar</button>' +
-                                '<button class="btn btn-outline-info" onclick="testDevice(' + data + ')" title="Probar conexión"><i class="fa-solid fa-wifi"></i></button>' +
-                                '<button class="btn btn-outline-primary" onclick="showDeviceUsers(' + data + ',\'' + nombre + '\')" title="Usuarios"><i class="fa-solid fa-users"></i></button>' +
-                                '<button class="btn btn-outline-secondary" onclick="showSyncHistory(' + data + ',\'' + nombre + '\')" title="Historial sync"><i class="fa-solid fa-clock-rotate-left"></i></button>' +
-                                '<button class="btn btn-outline-warning" onclick=\'editDevice(' + rowJson + ')\' title="Editar"><i class="fa-solid fa-pen"></i></button>' +
-                                '<button class="btn btn-outline-danger" onclick="deleteDevice(' + data + ')" title="Eliminar"><i class="fa-solid fa-trash"></i></button>' +
-                                '</div>';
+
+                            // Guardar fila en caché para recuperarla por ID en editDevice
+                            deviceRowCache[data] = row;
+
+                            var btnSync = canEditarDispositivo
+                                ? '<button class="btn btn-outline-success" onclick="syncDevice(' + data + ',\'' + nombre + '\')" title="Sincronizar"><i class="fa-solid fa-rotate"></i> Sync</button>'
+                                : '<button class="btn btn-outline-success" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-rotate"></i> Sync</button>';
+
+                            var btnVaciar = canVaciarDispositivo
+                                ? '<button class="btn btn-outline-danger" onclick="clearDevice(' + data + ',\'' + nombre + '\')" title="Vaciar"><i class="fa-solid fa-trash-can"></i> Vaciar</button>'
+                                : '<button class="btn btn-outline-danger" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-trash-can"></i> Vaciar</button>';
+
+                            var btnTest  = '<button class="btn btn-outline-info" onclick="testDevice(' + data + ')" title="Probar conexión"><i class="fa-solid fa-wifi"></i></button>';
+                            var btnUsers = canUsuariosDispositivo
+                                ? '<button class="btn btn-outline-primary" onclick="showDeviceUsers(' + data + ',\'' + nombre + '\')" title="Usuarios"><i class="fa-solid fa-users"></i></button>'
+                                : '<button class="btn btn-outline-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-users"></i></button>';
+                            var btnHist  = '<button class="btn btn-outline-secondary" onclick="showSyncHistory(' + data + ',\'' + nombre + '\')" title="Historial sync"><i class="fa-solid fa-clock-rotate-left"></i></button>';
+
+                            var btnEdit = canEditarDispositivo
+                                ? '<button class="btn btn-outline-warning" onclick="editDeviceById(' + data + ')" title="Editar"><i class="fa-solid fa-pen"></i></button>'
+                                : '<button class="btn btn-outline-warning" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-pen"></i></button>';
+
+                            var btnDel = canEliminarDispositivo
+                                ? '<button class="btn btn-outline-danger" onclick="deleteDevice(' + data + ')" title="Eliminar"><i class="fa-solid fa-trash"></i></button>'
+                                : '<button class="btn btn-outline-danger" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-trash"></i></button>';
+
+                            return '<div class="btn-group btn-group-sm">' + btnSync + btnVaciar + btnTest + btnUsers + btnHist + btnEdit + btnDel + '</div>';
                         }
                     }
                 ]
@@ -446,6 +482,12 @@ function openDeviceModal(data = null) {
     document.getElementById('deviceActivoGroup').style.display = 'none';
     document.getElementById('deviceFormError').style.display = 'none';
     new bootstrap.Modal(document.getElementById('deviceModal')).show();
+}
+
+function editDeviceById(id) {
+    var d = deviceRowCache[id];
+    if (!d) return;
+    editDevice(d);
 }
 
 function editDevice(d) {
@@ -862,6 +904,7 @@ async function asignarCedula(empleadoId, nombre) {
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
     loadSedes();
     loadDevices();
 });

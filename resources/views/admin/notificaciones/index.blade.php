@@ -89,9 +89,15 @@
                         <small class="text-muted"><span id="charCount">0</span>/1000</small>
                     </div>
 
+                    @can('notificaciones.enviar')
                     <button class="btn btn-primary w-100" id="btnSend" onclick="sendNotification()">
                         <i class="fa-solid fa-paper-plane me-1"></i> Enviar Notificación
                     </button>
+                    @else
+                    <button class="btn btn-primary w-100" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                        <i class="fa-solid fa-paper-plane me-1"></i> Enviar Notificación
+                    </button>
+                    @endcan
                 </div>
             </div>
         </div>
@@ -299,9 +305,15 @@
                                         @endif
                                     </td>
                                     <td class="text-center">
+                                        @can('notificaciones.enviar')
                                         <button class="btn btn-sm btn-outline-danger" onclick="deleteToken({{ $d->id }}, '{{ addslashes($d->name) }}')" title="Eliminar token">
                                             <i class="ti ti-trash"></i>
                                         </button>
+                                        @else
+                                        <button class="btn btn-sm btn-outline-danger" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                                            <i class="ti ti-trash"></i>
+                                        </button>
+                                        @endcan
                                     </td>
                                 </tr>
                                 @endforeach
@@ -374,6 +386,9 @@ div.dataTables_wrapper div.dataTables_info {
 <script>
 const csrfToken = '{{ csrf_token() }}';
 const isAdminTenant = {{ auth()->user()->admin_tenant ? 'true' : 'false' }};
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
+});
 const destSelect = document.getElementById('destinatarios');
 const empContainer = document.getElementById('empleadosSelectContainer');
 const empList = document.getElementById('empleadosList');
@@ -584,6 +599,9 @@ const dtLang = {
 };
 
 $(document).ready(function () {
+    // Tooltips en tabla de dispositivos (Blade server-side)
+    document.querySelectorAll('#dispositivosTable [data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
+
     if ($('#historialTable').length) {
         $('#historialTable').DataTable({
             language: dtLang,

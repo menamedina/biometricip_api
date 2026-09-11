@@ -9,9 +9,15 @@
                 <h4 class="mb-1"><i class="fa-solid fa-calendar-xmark me-2 text-primary"></i>Festivos</h4>
                 <p class="text-muted mb-0">Días no laborables</p>
             </div>
+            @can('festivos.crear')
             <button class="btn btn-primary" onclick="openModal()">
                 <i class="fa-solid fa-plus me-1"></i> Nuevo Festivo
             </button>
+            @else
+            <button class="btn btn-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                <i class="fa-solid fa-plus me-1"></i> Nuevo Festivo
+            </button>
+            @endcan
         </div>
     </div>
 
@@ -123,11 +129,17 @@ div.dataTables_wrapper div.dataTables_info {
 <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script>
-const csrfToken = '{{ csrf_token() }}';
+const csrfToken        = '{{ csrf_token() }}';
+const canEditFestivo   = {{ auth()->user()->can('festivos.editar')   ? 'true' : 'false' }};
+const canDeleteFestivo = {{ auth()->user()->can('festivos.eliminar') ? 'true' : 'false' }};
 var tablaFestivos = null;
+var festivoRowCache = {};
 
 // Llenar select de años
+function editFestivoById(id) { openModal(festivoRowCache[id]); }
+
 document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
     const currentYear = new Date().getFullYear();
     const selYear = document.getElementById('filterYear');
     for (let y = currentYear + 1; y >= currentYear - 2; y--) {
@@ -176,6 +188,11 @@ async function loadFestivos() {
                     paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' },
                     processing: 'Procesando...',
                 },
+                drawCallback: function() {
+                    document.querySelectorAll('#festivosTable [data-bs-toggle="tooltip"]').forEach(el => {
+                        bootstrap.Tooltip.getOrCreateInstance(el);
+                    });
+                },
                 initComplete: function() {
                     $('#festivosTable_length select').addClass('form-select form-select-sm d-inline-block w-auto');
                     $('#festivosTable_filter input').addClass('form-control form-control-sm d-inline-block w-auto');
@@ -203,9 +220,17 @@ async function loadFestivos() {
                     {
                         title: 'Acciones', data: null, orderable: false,
                         render: function(d, type, row) {
-                            var f = JSON.stringify(row).replace(/'/g, '&#39;');
-                            return '<button class="btn btn-sm btn-outline-primary me-1" onclick=\'editFestivo(' + f + ')\'><i class="fa-solid fa-pen"></i></button>'
-                                 + '<button class="btn btn-sm btn-outline-danger" onclick="deleteFestivo(' + row.id + ')"><i class="fa-solid fa-trash"></i></button>';
+                            festivoRowCache[row.id] = row;
+
+                            var btnEdit = canEditFestivo
+                                ? '<button class="btn btn-sm btn-outline-primary me-1" onclick="editFestivoById(' + row.id + ')"><i class="fa-solid fa-pen"></i></button>'
+                                : '<button class="btn btn-sm btn-outline-primary me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-pen"></i></button>';
+
+                            var btnDel = canDeleteFestivo
+                                ? '<button class="btn btn-sm btn-outline-danger" onclick="deleteFestivo(' + row.id + ')"><i class="fa-solid fa-trash"></i></button>'
+                                : '<button class="btn btn-sm btn-outline-danger" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-trash"></i></button>';
+
+                            return btnEdit + btnDel;
                         }
                     }
                 ]
@@ -226,7 +251,6 @@ function openModal(data = null) {
     new bootstrap.Modal(document.getElementById('festivoModal')).show();
 }
 
-function editFestivo(f) { openModal(f); }
 
 async function saveFestivo() {
     const id = document.getElementById('festivoId').value;

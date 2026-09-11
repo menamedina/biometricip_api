@@ -31,13 +31,17 @@
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h5 class="mb-0"><i class="fa-solid fa-building-columns me-1"></i> Departamentos</h5>
                         <div class="d-flex gap-1">
-                            <button class="btn btn-sm btn-outline-secondary" onclick="openImportModal('depto')"
-                                title="Importar CSV">
+                            @can('departamentos.crear')
+                            <button class="btn btn-sm btn-outline-secondary" onclick="openImportModal('depto')" title="Importar CSV">
                                 <i class="fa-solid fa-file-import"></i>
                             </button>
                             <button class="btn btn-sm btn-primary" onclick="openDeptoModal()">
                                 <i class="fa-solid fa-plus me-1"></i> Nuevo
                             </button>
+                            @else
+                            <button class="btn btn-sm btn-outline-secondary" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-file-import"></i></button>
+                            <button class="btn btn-sm btn-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-plus me-1"></i> Nuevo</button>
+                            @endcan
                         </div>
                     </div>
                     <form method="GET" action="{{ route('admin.departamentos.index') }}" id="formSearchDepto">
@@ -89,10 +93,15 @@
                                     </span>
                                 </td>
                                 <td>
+                                    @can('departamentos.editar')
                                     <button class="btn btn-sm btn-outline-primary me-1"
                                         onclick='openDeptoModal({{ json_encode($d) }})'>
                                         <i class="fa-solid fa-pen"></i>
                                     </button>
+                                    @else
+                                    <button class="btn btn-sm btn-outline-primary me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-pen"></i></button>
+                                    @endcan
+                                    @can('departamentos.eliminar')
                                     <form method="POST"
                                         action="{{ route('admin.departamentos.destroy', $d->id) }}"
                                         class="d-inline"
@@ -100,10 +109,11 @@
                                         @csrf @method('DELETE')
                                         <input type="hidden" name="search_depto" value="{{ $searchDepto }}">
                                         <input type="hidden" name="search_cargo" value="{{ $searchCargo }}">
-                                        <button class="btn btn-sm btn-outline-danger" {{ auth()->user()->role === 'supervisor' ? 'disabled' : '' }}>
-                                            <i class="fa-solid fa-trash"></i>
-                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
                                     </form>
+                                    @else
+                                    <button class="btn btn-sm btn-outline-danger" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-trash"></i></button>
+                                    @endcan
                                 </td>
                             </tr>
                             @empty
@@ -126,13 +136,17 @@
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h5 class="mb-0"><i class="fa-solid fa-user-tie me-1"></i> Cargos</h5>
                         <div class="d-flex gap-1">
-                            <button class="btn btn-sm btn-outline-secondary" onclick="openImportModal('cargo')"
-                                title="Importar CSV">
+                            @can('departamentos.crear')
+                            <button class="btn btn-sm btn-outline-secondary" onclick="openImportModal('cargo')" title="Importar CSV">
                                 <i class="fa-solid fa-file-import"></i>
                             </button>
                             <button class="btn btn-sm btn-primary" onclick="openCargoModal()">
                                 <i class="fa-solid fa-plus me-1"></i> Nuevo
                             </button>
+                            @else
+                            <button class="btn btn-sm btn-outline-secondary" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-file-import"></i></button>
+                            <button class="btn btn-sm btn-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-plus me-1"></i> Nuevo</button>
+                            @endcan
                         </div>
                     </div>
                     <form method="GET" action="{{ route('admin.departamentos.index') }}" id="formSearchCargo">
@@ -184,10 +198,15 @@
                                     </span>
                                 </td>
                                 <td>
+                                    @can('departamentos.editar')
                                     <button class="btn btn-sm btn-outline-primary me-1"
                                         onclick='openCargoModal({{ json_encode($c) }})'>
                                         <i class="fa-solid fa-pen"></i>
                                     </button>
+                                    @else
+                                    <button class="btn btn-sm btn-outline-primary me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-pen"></i></button>
+                                    @endcan
+                                    @can('departamentos.eliminar')
                                     <form method="POST"
                                         action="{{ route('admin.cargos.destroy', $c->id) }}"
                                         class="d-inline"
@@ -195,10 +214,11 @@
                                         @csrf @method('DELETE')
                                         <input type="hidden" name="search_depto" value="{{ $searchDepto }}">
                                         <input type="hidden" name="search_cargo" value="{{ $searchCargo }}">
-                                        <button class="btn btn-sm btn-outline-danger" {{ auth()->user()->role === 'supervisor' ? 'disabled' : '' }}>
-                                            <i class="fa-solid fa-trash"></i>
-                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
                                     </form>
+                                    @else
+                                    <button class="btn btn-sm btn-outline-danger" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-trash"></i></button>
+                                    @endcan
                                 </td>
                             </tr>
                             @empty
@@ -525,6 +545,8 @@ const dtLang = {
 };
 
 $(document).ready(function() {
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
+
     $('#deptosTable').DataTable({
         language: dtLang,
         pageLength: 10,

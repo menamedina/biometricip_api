@@ -10,9 +10,15 @@
                     <h4 class="mb-1"><i class="fa-solid fa-building me-2 text-primary"></i>Sedes</h4>
                     <p class="text-muted mb-0">Gestión de oficinas y geocercas</p>
                 </div>
-                <button class="btn btn-primary" {{ auth()->user()->role === 'supervisor' ? 'disabled' : '' }} data-bs-toggle="modal" data-bs-target="#sedeModal" onclick="resetForm()">
+                @can('sedes.crear')
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#sedeModal" onclick="resetForm()">
                     <i class="fa-solid fa-plus me-1"></i> Nueva Sede
                 </button>
+                @else
+                <button class="btn btn-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                    <i class="fa-solid fa-plus me-1"></i> Nueva Sede
+                </button>
+                @endcan
             </div>
             @if(auth()->user()->admin_tenant ?? false)
             <div class="mt-3">
@@ -239,10 +245,12 @@ div.dataTables_wrapper div.dataTables_info { font-size: 13px; color: #6c757d; }
 <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
-const csrfToken    = '{{ csrf_token() }}';
-const isAdminTenant = {{ (auth()->user()->admin_tenant ?? false) ? 'true' : 'false' }};
-const isSupervisor  = {{ auth()->user()->role === 'supervisor' ? 'true' : 'false' }};
-const empresasData  = @json($empresas);
+const csrfToken       = '{{ csrf_token() }}';
+const isAdminTenant   = {{ (auth()->user()->admin_tenant ?? false) ? 'true' : 'false' }};
+const canEditarSede   = {{ auth()->user()->can('sedes.editar')   ? 'true' : 'false' }};
+const canEliminarSede = {{ auth()->user()->can('sedes.eliminar') ? 'true' : 'false' }};
+const empresasData    = @json($empresas);
+var sedeRowCache = {};
 let currentEmpresaId = null;
 
 // ── Mapa Google Maps ──────────────────────────────────────────────────────────
@@ -464,17 +472,26 @@ function buildSedesColumns() {
             data: null,
             orderable: false,
             searchable: false,
-            render: (d, t, s) => {
-                const dis = isSupervisor ? 'disabled' : '';
+            render: function(d, t, s) {
+                sedeRowCache[s.id] = s;
                 const sNom = s.nombre.replace(/'/g, "\\'");
-                const sJson = JSON.stringify(s).replace(/'/g, "&#39;");
-                return `
-                    <button class="btn btn-sm btn-outline-success me-1" onclick="showQR(${s.id},'${sNom}')" title="QR dinámico (kiosco)" ${dis}><i class="fa-solid fa-qrcode"></i></button>
-                    <button class="btn btn-sm ${s.qr_static_token ? 'btn-outline-primary' : 'btn-outline-secondary'} me-1" onclick="showStaticQR(${s.id},'${sNom}',${s.qr_static_token ? 'true' : 'false'})" title="${s.qr_static_token ? 'QR estático (imprimible)' : 'Habilitar QR estático'}" ${dis}><i class="fa-solid fa-print"></i></button>
-                    <button class="btn btn-sm ${s.qr_v3_token ? 'btn-outline-info' : 'btn-outline-secondary'} me-1" onclick="showWebQR(${s.id},'${sNom}',${s.qr_v3_token ? 'true' : 'false'})" title="${s.qr_v3_token ? 'QR Web (sin app)' : 'Habilitar QR Web'}" ${dis}><i class="fa-solid fa-globe"></i></button>
-                    <button class="btn btn-sm btn-outline-primary me-1" onclick='editSede(${sJson})' ${dis}><i class="fa-solid fa-pen"></i></button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteSede(${s.id})" ${dis}><i class="fa-solid fa-trash"></i></button>
-                `;
+                const staticCls = s.qr_static_token ? 'btn-outline-primary' : 'btn-outline-secondary';
+                const staticTit = s.qr_static_token ? 'QR estático (imprimible)' : 'Habilitar QR estático';
+                const webCls    = s.qr_v3_token ? 'btn-outline-info' : 'btn-outline-secondary';
+                const webTit    = s.qr_v3_token ? 'QR Web (sin app)' : 'Habilitar QR Web';
+
+                const btnEdit = canEditarSede
+                    ? `<button class="btn btn-sm btn-outline-primary me-1" onclick="editSedeById(${s.id})"><i class="fa-solid fa-pen"></i></button>`
+                    : `<button class="btn btn-sm btn-outline-primary me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-pen"></i></button>`;
+
+                const btnDel = canEliminarSede
+                    ? `<button class="btn btn-sm btn-outline-danger" onclick="deleteSede(${s.id})"><i class="fa-solid fa-trash"></i></button>`
+                    : `<button class="btn btn-sm btn-outline-danger" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-trash"></i></button>`;
+
+                return `<button class="btn btn-sm btn-outline-success me-1" onclick="showQR(${s.id},'${sNom}')" title="QR dinámico (kiosco)"><i class="fa-solid fa-qrcode"></i></button>`
+                     + `<button class="btn btn-sm ${staticCls} me-1" onclick="showStaticQR(${s.id},'${sNom}',${s.qr_static_token ? 'true' : 'false'})" title="${staticTit}"><i class="fa-solid fa-print"></i></button>`
+                     + `<button class="btn btn-sm ${webCls} me-1" onclick="showWebQR(${s.id},'${sNom}',${s.qr_v3_token ? 'true' : 'false'})" title="${webTit}"><i class="fa-solid fa-globe"></i></button>`
+                     + btnEdit + btnDel;
             }
         }
     );
@@ -515,6 +532,11 @@ async function loadSedes() {
                     paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' },
                     processing: 'Procesando...',
                 },
+                drawCallback: function() {
+                    document.querySelectorAll('#sedesTable [data-bs-toggle="tooltip"]').forEach(el => {
+                        bootstrap.Tooltip.getOrCreateInstance(el);
+                    });
+                },
                 initComplete: function() {
                     $('#sedesTable_length select').addClass('form-select form-select-sm d-inline-block w-auto');
                     $('#sedesTable_filter input').addClass('form-control form-control-sm d-inline-block w-auto');
@@ -528,6 +550,8 @@ async function loadSedes() {
         console.error(e);
     }
 }
+
+function editSedeById(id) { editSede(sedeRowCache[id]); }
 
 function editSede(sede) {
     document.getElementById('sedeId').value = sede.id;
@@ -628,6 +652,7 @@ async function deleteSede(id) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
     loadEmpresas();
     if (!isAdminTenant) loadSedes();
 });

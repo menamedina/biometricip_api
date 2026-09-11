@@ -14,7 +14,7 @@
     </div>
 </div>
 
-@if(auth()->user()->role !== 'empleado')
+@can('empleados.ver')
 {{-- Tarjetas de estadísticas --}}
 <div class="row g-3 mb-3">
     <div class="col-6 col-xl-3">
@@ -119,7 +119,7 @@
 </div>
 
 
-@endif {{-- fin bloque no-empleado --}}
+@endcan {{-- fin bloque empleados.ver --}}
 
 {{-- Resumen de horas semanales (todos los roles) --}}
 <div class="row g-3 mb-3">
@@ -159,7 +159,7 @@
     <div class="col-12">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3">
-                <h5 class="mb-0 fw-semibold"><i class="fa-solid fa-list-check me-1 text-primary"></i> @if(auth()->user()->role === 'empleado') Mis registros de la semana @else Registros de hoy @endif</h5>
+                <h5 class="mb-0 fw-semibold"><i class="fa-solid fa-list-check me-1 text-primary"></i> @cannot('empleados.ver') Mis registros de la semana @else Registros de hoy @endcannot</h5>
                 <span id="recordCount" class="badge bg-secondary rounded-pill">0</span>
             </div>
             <div class="card-body p-0" style="max-height: 400px; overflow-y: auto;">
@@ -226,7 +226,7 @@ function tipoBadge(tipo) {
     return `<span class="badge bg-light text-dark">${tipoLabel(tipo)}</span>`;
 }
 
-const esEmpleado = {{ auth()->user()->role === 'empleado' ? 'true' : 'false' }};
+const esEmpleado = {{ auth()->user()->cannot('empleados.ver') ? 'true' : 'false' }};
 
 async function loadWeeklyHours() {
     try {

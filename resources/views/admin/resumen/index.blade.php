@@ -11,11 +11,11 @@
                     <p class="text-muted mb-0">Entradas y salidas agrupadas por empleado y día</p>
                 </div>
                 <div>
-                    @if(auth()->user()->role !== 'empleado')
+                    @can('asistencia.editar')
                     <button class="btn btn-primary btn-sm me-2" onclick="abrirModalManual()">
                         <i class="fa-solid fa-plus me-1"></i> Registro Manual
                     </button>
-                    @endif
+                    @endcan
                     <button class="btn btn-success btn-sm" onclick="exportar()">
                         <i class="fa-solid fa-file-csv me-1"></i> Exportar CSV
                     </button>
@@ -293,8 +293,8 @@ div.dataTables_wrapper div.dataTables_info {
 <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script>
 const csrfToken  = '{{ csrf_token() }}';
-const isEmpleado = {{ auth()->user()->role === 'empleado' ? 'true' : 'false' }};
-const isAdmin    = {{ auth()->user()->role === 'admin'    ? 'true' : 'false' }};
+const isEmpleado = {{ auth()->user()->cannot('empleados.ver') ? 'true' : 'false' }};
+const isAdmin    = {{ auth()->user()->can('usuarios.editar')  ? 'true' : 'false' }};
 const myUserId   = {{ auth()->id() }};
 let deptoMap = {};
 let allRegistros = [];
