@@ -208,8 +208,36 @@ async function subir() {
         mostrarAlerta('success', data.message);
         modalInstance.hide();
 
-        // Recargar para mostrar la nueva imagen
-        setTimeout(() => location.reload(), 600);
+        // Agregar card sin recargar
+        const empty = document.getElementById('emptyState');
+        if (empty) empty.remove();
+        const html = `<div class="col-lg-3 col-md-4 col-sm-6" id="card-${data.image.id}">
+            <div class="card shadow-lg border-0 h-100">
+                <div class="position-relative">
+                    <a href="${data.image.url}" target="_blank">
+                        <img src="${data.image.url}" class="card-img-top" style="height:180px;object-fit:cover;cursor:pointer;">
+                    </a>
+                </div>
+                <div class="card-body py-2 px-3">
+                    <p class="mb-1 fw-semibold small text-truncate">${data.image.titulo || 'Sin título'}</p>
+                    <span class="text-muted" style="font-size:.75rem;">Orden: ${data.image.orden}</span>
+                </div>
+                <div class="card-footer bg-transparent border-0 py-2 px-3 d-flex justify-content-between">
+                    <div>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="toggleActivo(${data.image.id})" title="Activar/Desactivar">
+                            <i class="ti ti-eye" id="toggleIcon-${data.image.id}"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary" onclick="abrirEditar(${data.image.id}, '${(data.image.titulo||'').replace(/'/g,"\\'")}', ${data.image.orden}, '${data.image.url}')" title="Editar">
+                            <i class="ti ti-edit"></i>
+                        </button>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger" onclick="eliminar(${data.image.id})">
+                        <i class="ti ti-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>`;
+        document.getElementById('listaImagenes').insertAdjacentHTML('beforeend', html);
     } catch (e) {
         mostrarAlerta('danger', 'Error: ' + e.message);
     } finally {
@@ -296,7 +324,22 @@ async function guardarEditar() {
 
         mostrarAlerta('success', data.message);
         modalEditarInstance.hide();
-        setTimeout(() => location.reload(), 600);
+
+        // Actualizar card sin recargar
+        const card = document.getElementById('card-' + id);
+        if (card) {
+            const titulo = document.getElementById('editTitulo').value || 'Sin título';
+            const orden  = document.getElementById('editOrden').value;
+            card.querySelector('.card-body p').textContent = titulo;
+            card.querySelector('.card-body span').textContent = 'Orden: ' + orden;
+            // Si cambió imagen, actualizar src
+            if (data.url) {
+                const img = card.querySelector('.card-img-top');
+                const link = card.querySelector('a');
+                if (img) img.src = data.url;
+                if (link) link.href = data.url;
+            }
+        }
     } catch (e) {
         mostrarAlerta('danger', 'Error: ' + e.message);
     } finally {

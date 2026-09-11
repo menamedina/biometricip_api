@@ -81,7 +81,11 @@ class AdminLoginImageController extends Controller
             'imagen'     => $image->imagen,
         ]);
 
-        return response()->json(['message' => 'Imagen actualizada']);
+        $response = ['message' => 'Imagen actualizada'];
+        if ($request->hasFile('imagen')) {
+            $response['url'] = asset('storage/' . $image->imagen);
+        }
+        return response()->json($response);
     }
 
     public function destroy(int $id): JsonResponse
