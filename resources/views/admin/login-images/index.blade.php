@@ -40,6 +40,9 @@
                         <button class="btn btn-sm btn-outline-secondary" onclick="toggleActivo({{ $img->id }})" title="Activar/Desactivar">
                             <i class="ti {{ $img->activo ? 'ti-eye' : 'ti-eye-off' }}" id="toggleIcon-{{ $img->id }}"></i>
                         </button>
+                        <button class="btn btn-sm btn-outline-primary" onclick="abrirEditar({{ $img->id }}, '{{ addslashes($img->titulo) }}', {{ $img->orden }}, '{{ asset('storage/' . $img->imagen) }}')" title="Editar">
+                            <i class="ti ti-edit"></i>
+                        </button>
                     </div>
                     <button class="btn btn-sm btn-outline-danger" onclick="eliminar({{ $img->id }})">
                         <i class="ti ti-trash"></i>
@@ -102,12 +105,53 @@
         </div>
     </div>
 </div>
+{{-- Modal editar imagen --}}
+<div class="modal fade" id="modalEditar" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="ti ti-edit me-2"></i>Editar imagen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editId">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Imagen actual</label>
+                    <div>
+                        <img id="editImgPreview" src="" class="rounded w-100" style="max-height:200px;object-fit:cover;">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Cambiar imagen</label>
+                    <input type="file" class="form-control" id="editImagen" accept="image/jpeg,image/png,image/webp">
+                    <div class="form-text">Dejar vacío para mantener la actual</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Título</label>
+                    <input type="text" class="form-control" id="editTitulo" maxlength="150">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Orden</label>
+                    <input type="number" class="form-control" id="editOrden" min="0">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnEditar" onclick="guardarEditar()">
+                    <i class="ti ti-device-floppy me-1" id="btnEditarIcon"></i>
+                    <span id="btnEditarText">Guardar</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
 <script>
 const CSRF = '{{ csrf_token() }}';
 let modalInstance = null;
+let modalEditarInstance = null;
 
 function abrirModal() {
     document.getElementById('formImagen').reset();
@@ -208,6 +252,57 @@ async function eliminar(id) {
         mostrarAlerta('success', data.message);
     } catch (e) {
         mostrarAlerta('danger', 'Error: ' + e.message);
+    }
+}
+
+function abrirEditar(id, titulo, orden, imgUrl) {
+    document.getElementById('editId').value = id;
+    document.getElementById('editTitulo').value = titulo;
+    document.getElementById('editOrden').value = orden;
+    document.getElementById('editImgPreview').src = imgUrl;
+    document.getElementById('editImagen').value = '';
+    if (!modalEditarInstance) modalEditarInstance = new bootstrap.Modal(document.getElementById('modalEditar'));
+    modalEditarInstance.show();
+}
+
+async function guardarEditar() {
+    const btn  = document.getElementById('btnEditar');
+    const icon = document.getElementById('btnEditarIcon');
+    const text = document.getElementById('btnEditarText');
+    const id   = document.getElementById('editId').value;
+
+    btn.disabled = true;
+    icon.className = 'spinner-border spinner-border-sm me-1';
+    text.textContent = 'Guardando...';
+
+    try {
+        const fd = new FormData();
+        fd.append('_method', 'PUT');
+        fd.append('titulo', document.getElementById('editTitulo').value);
+        fd.append('orden', document.getElementById('editOrden').value);
+
+        const fileInput = document.getElementById('editImagen');
+        if (fileInput.files.length) {
+            fd.append('imagen', fileInput.files[0]);
+        }
+
+        const res = await fetch(`/admin/login-images/${id}`, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': CSRF },
+            body: fd,
+        });
+        const data = await res.json();
+        if (!res.ok) { mostrarAlerta('danger', data.message); return; }
+
+        mostrarAlerta('success', data.message);
+        modalEditarInstance.hide();
+        setTimeout(() => location.reload(), 600);
+    } catch (e) {
+        mostrarAlerta('danger', 'Error: ' + e.message);
+    } finally {
+        btn.disabled = false;
+        icon.className = 'ti ti-device-floppy me-1';
+        text.textContent = 'Guardar';
     }
 }
 

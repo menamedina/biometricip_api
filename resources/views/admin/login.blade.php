@@ -10,82 +10,104 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
         html, body {
-            height: 100%;
-            margin: 0;
-            background-color: #f3f3f4;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background-color: #f3f3f4 !important;
+            overflow-x: hidden !important;
         }
         body {
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
         }
         .login-outer {
-            width: 100%;
-            max-width: 1100px;
-            padding: 24px;
+            width: 100% !important;
+            max-width: 1100px !important;
+            padding: 24px !important;
         }
         .login-card {
-            border-radius: 1rem;
-            overflow: hidden;
-            box-shadow: 0 4px 24px rgba(0,0,0,.10);
-            background: #fff;
-            min-height: 560px;
-            display: flex;
+            border-radius: 1rem !important;
+            overflow: hidden !important;
+            box-shadow: 0 4px 24px rgba(0,0,0,.10) !important;
+            background: #fff !important;
+            min-height: 560px !important;
+            display: flex !important;
+            flex-direction: row !important;
         }
         .col-form {
-            flex: 0 0 50%;
-            padding: 48px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
+            flex: 0 0 50% !important;
+            max-width: 50% !important;
+            padding: 48px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: center !important;
+            background: #fff !important;
+            position: relative !important;
+            z-index: 2 !important;
         }
         .col-img {
-            flex: 0 0 50%;
-            position: relative;
-            border-radius: 0 1rem 1rem 0;
-            overflow: hidden;
-            background: #dee2e6;
+            flex: 0 0 50% !important;
+            max-width: 50% !important;
+            position: relative !important;
+            border-radius: 0 1rem 1rem 0 !important;
+            overflow: hidden !important;
+            background: #dee2e6 !important;
+            min-height: 560px !important;
         }
         .carrusel-slide {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-size: cover;
-            background-position: center;
-            opacity: 0;
-            transition: opacity 1s ease-in-out;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            opacity: 0 !important;
+            transition: opacity 1s ease-in-out !important;
+            display: block !important;
+            text-decoration: none !important;
+            cursor: pointer !important;
         }
-        .carrusel-slide.active { opacity: 1; }
+        .carrusel-slide.active { opacity: 1 !important; }
+        .carrusel-slide img {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            object-position: center !important;
+            display: block !important;
+        }
         .col-img-placeholder {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            color: #adb5bd;
-            font-size: 4rem;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            height: 100% !important;
+            color: #adb5bd !important;
+            font-size: 4rem !important;
         }
-        .form-control {
-            height: 44px;
+        .login-card .form-control {
+            height: 44px !important;
         }
-        .input-group-text {
-            background: #f8f9fa;
-            width: 44px;
-            justify-content: center;
+        .login-card .input-group-text {
+            background: #f8f9fa !important;
+            width: 44px !important;
+            display: flex !important;
+            justify-content: center !important;
         }
         .btn-login {
-            border-radius: .5rem;
-            padding: 11px;
-            font-weight: 600;
-            font-size: 1rem;
-            background: #1ab394;
-            border-color: #1ab394;
+            border-radius: .5rem !important;
+            padding: 11px !important;
+            font-weight: 600 !important;
+            font-size: 1rem !important;
+            background: #1ab394 !important;
+            border-color: #1ab394 !important;
+            color: #fff !important;
         }
         .btn-login:hover {
-            background: #17a07d;
-            border-color: #17a07d;
+            background: #17a07d !important;
+            border-color: #17a07d !important;
         }
         @media (max-width: 767px) {
-            .col-img { display: none; }
-            .col-form { flex: 0 0 100%; padding: 32px 24px; }
+            .col-img { display: none !important; }
+            .col-form { flex: 0 0 100% !important; max-width: 100% !important; padding: 32px 24px !important; }
         }
     </style>
 </head>
@@ -170,8 +192,10 @@
             <div class="col-img" id="loginCarrusel">
                 @if($images->count())
                     @foreach($images as $i => $img)
-                        <div class="carrusel-slide {{ $i === 0 ? 'active' : '' }}"
-                             style="background-image:url('{{ asset('storage/' . $img->imagen) }}')"></div>
+                        <a href="{{ asset('storage/' . $img->imagen) }}" target="_blank"
+                           class="carrusel-slide {{ $i === 0 ? 'active' : '' }}">
+                            <img src="{{ asset('storage/' . $img->imagen) }}" alt="{{ $img->titulo }}">
+                        </a>
                     @endforeach
                 @else
                     <div class="col-img-placeholder">
@@ -194,7 +218,7 @@
                 slides[current].classList.remove('active');
                 current = (current + 1) % slides.length;
                 slides[current].classList.add('active');
-            }, 5000);
+            }, 8000);
         })();
     </script>
 </body>

@@ -59,16 +59,26 @@ class AdminLoginImageController extends Controller
             'titulo'     => 'nullable|string|max:150',
             'orden'      => 'nullable|integer|min:0',
             'activo'     => 'nullable|boolean',
+            'imagen'     => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['message' => $validator->errors()->first()], 422);
         }
 
+        // Si se sube nueva imagen, eliminar la anterior
+        if ($request->hasFile('imagen')) {
+            if ($image->imagen) {
+                Storage::disk('public')->delete($image->imagen);
+            }
+            $image->imagen = $request->file('imagen')->store('login-images', 'public');
+        }
+
         $image->update([
             'titulo'     => $request->input('titulo', $image->titulo),
             'orden'      => $request->input('orden', $image->orden),
             'activo'     => $request->has('activo') ? $request->boolean('activo') : $image->activo,
+            'imagen'     => $image->imagen,
         ]);
 
         return response()->json(['message' => 'Imagen actualizada']);
