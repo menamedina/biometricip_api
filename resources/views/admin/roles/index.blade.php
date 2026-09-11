@@ -188,6 +188,8 @@ const moduloLabels = {
     horarios:       'Horarios',
     festivos:       'Festivos',
     roles:          'Roles y Permisos',
+    ia:             'Asistente IA',
+    // ia.chat = usar el widget, ia.ver = ver config, ia.configurar = editar config
 };
 const moduloOrden = [
     'sedes','empleados','visitantes','dispositivos',
@@ -195,7 +197,7 @@ const moduloOrden = [
     'departamentos','empleadores',
     'empresa',
     'notificaciones',
-    'horarios','festivos','roles',
+    'horarios','festivos','roles','ia',
 ];
 const moduloSecciones = {
     sedes:          'Administración',
@@ -212,6 +214,7 @@ const moduloSecciones = {
     horarios:       'Configuración',
     festivos:       'Configuración',
     roles:          'Configuración',
+    ia:             'Configuración',
 };
 function moduloLabel(key) {
     return moduloLabels[key] || key.charAt(0).toUpperCase() + key.slice(1);

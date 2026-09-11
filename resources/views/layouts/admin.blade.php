@@ -270,7 +270,7 @@
                         @endcan
 
                         {{-- ── Configuración ───────────────────────────────── --}}
-                        @canany(['horarios.ver','festivos.ver','roles.ver'])
+                        @canany(['horarios.ver','festivos.ver','roles.ver','ia.ver'])
                         <li class="side-nav-title mt-2">Configuración</li>
                         @endcanany
                         @can('horarios.ver')
@@ -297,6 +297,14 @@
                             </a>
                         </li>
                         @endif
+                        @can('ia.ver')
+                        <li class="side-nav-item">
+                            <a href="{{ route('admin.ai.config') }}" class="side-nav-link {{ request()->routeIs('admin.ai.*') ? 'active' : '' }}">
+                                <span class="menu-icon"><i class="ti ti-robot"></i></span>
+                                <span class="menu-text">Asistente IA</span>
+                            </a>
+                        </li>
+                        @endcan
 
                         @if(auth()->user()->admin_tenant ?? false)
                         <li class="side-nav-title mt-2">Super Admin</li>
@@ -460,5 +468,117 @@
     </script>
 
     @stack('scripts')
+
+    {{-- ── Widget Chat IA ──────────────────────────────────────────── --}}
+
+    @if(auth()->check() && auth()->user()->can('ia.chat'))
+    {{-- Panel del chat — posicionado independiente del botón --}}
+    <div id="aiChatPanel" style="display:none;position:fixed;bottom:110px;right:24px;z-index:1051;width:340px;border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.18);background:#fff;flex-direction:column;">
+        {{-- Header --}}
+        <div style="background:#1ab394;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;">
+            <div class="d-flex align-items-center gap-2">
+                <i class="ti ti-robot text-white" style="font-size:1.2rem;"></i>
+                <span class="text-white fw-semibold" style="font-size:.95rem;">Asistente BiometricIP</span>
+            </div>
+            <button onclick="toggleChat()" style="background:none;border:none;color:#fff;font-size:1.1rem;line-height:1;cursor:pointer;">
+                <i class="ti ti-x"></i>
+            </button>
+        </div>
+        {{-- Mensajes --}}
+        <div id="aiMessages" style="overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;height:320px;">
+            <div class="ai-msg ai-msg-bot">
+                Hola, soy el asistente de BiometricIP. ¿En qué te puedo ayudar?
+            </div>
+        </div>
+        {{-- Input --}}
+        <div style="padding:10px 12px;border-top:1px solid #e9ecef;display:flex;gap:8px;">
+            <input type="text" id="aiInput" class="form-control form-control-sm"
+                placeholder="Escribe un mensaje..."
+                onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();sendAiMessage();}">
+            <button onclick="sendAiMessage()" style="background:#1ab394;border:none;border-radius:6px;color:#fff;padding:0 14px;cursor:pointer;">
+                <i class="ti ti-send"></i>
+            </button>
+        </div>
+    </div>
+
+    {{-- Botón flotante — fijo en esquina inferior derecha --}}
+    <button onclick="toggleChat()" id="aiFloatBtn"
+        style="position:fixed;bottom:46px;right:20px;z-index:1050;width:48px;height:48px;border-radius:50%;background:#1ab394;border:none;color:#fff;font-size:1.3rem;box-shadow:0 4px 12px rgba(26,179,148,.5);display:flex;align-items:center;justify-content:center;cursor:pointer;">
+        <i class="ti ti-message-chatbot"></i>
+    </button>
+    @endif
+
+    <style>
+    .ai-msg { padding:8px 12px; border-radius:10px; font-size:.85rem; max-width:85%; line-height:1.4; }
+    .ai-msg-bot { background:#f0faf8; color:#1a3c34; align-self:flex-start; border-bottom-left-radius:2px; }
+    .ai-msg-user { background:#1ab394; color:#fff; align-self:flex-end; border-bottom-right-radius:2px; }
+    .ai-msg-typing { background:#f0faf8; color:#999; align-self:flex-start; font-style:italic; }
+    </style>
+
+    <script>
+    const AI_CSRF = '{{ csrf_token() }}';
+    let aiMessages = [];
+    let aiPanelOpen = false;
+
+    function toggleChat() {
+        aiPanelOpen = !aiPanelOpen;
+        const panel = document.getElementById('aiChatPanel');
+        panel.style.display = aiPanelOpen ? 'flex' : 'none';
+        panel.style.flexDirection = 'column';
+        if (aiPanelOpen) document.getElementById('aiInput').focus();
+    }
+
+    function appendMsg(role, text) {
+        const el = document.getElementById('aiMessages');
+        const div = document.createElement('div');
+        div.className = 'ai-msg ' + (role === 'user' ? 'ai-msg-user' : 'ai-msg-bot');
+        div.textContent = text;
+        el.appendChild(div);
+        el.scrollTop = el.scrollHeight;
+        return div;
+    }
+
+    async function sendAiMessage() {
+        const inp = document.getElementById('aiInput');
+        const text = inp.value.trim();
+        if (!text) return;
+
+        inp.value = '';
+        inp.disabled = true;
+
+        appendMsg('user', text);
+        aiMessages.push({ role: 'user', content: text });
+
+        // Indicador de escritura
+        const typing = document.getElementById('aiMessages');
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'ai-msg ai-msg-typing';
+        typingDiv.textContent = 'Escribiendo...';
+        typing.appendChild(typingDiv);
+        typing.scrollTop = typing.scrollHeight;
+
+        try {
+            const res = await fetch('/admin/ai/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': AI_CSRF },
+                body: JSON.stringify({ messages: aiMessages }),
+            });
+            const data = await res.json();
+            typingDiv.remove();
+
+            const reply = res.ok ? (data.reply || '—') : (data.message || 'Error al conectar.');
+            appendMsg('assistant', reply);
+            if (res.ok) aiMessages.push({ role: 'assistant', content: reply });
+
+        } catch (e) {
+            typingDiv.remove();
+            appendMsg('assistant', 'Error de conexión.');
+        }
+
+        inp.disabled = false;
+        inp.focus();
+    }
+    </script>
+
 </body>
 </html>

@@ -12,6 +12,8 @@ use App\Http\Controllers\Api\PermisoController as ApiPermisoController;
 use App\Http\Controllers\Api\DeviceController as ApiDeviceController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\RolesController;
+use App\Http\Controllers\AiConfigController;
+use App\Http\Controllers\AiChatController;
 use Illuminate\Support\Facades\Route;
 
 // ZKTeco ADMS PUSH — sin autenticación ni CSRF
@@ -229,6 +231,16 @@ Route::middleware(['auth', 'admin', 'role:admin,supervisor', 'tenancy.session'])
     Route::post  ('/admin/dispositivos/{id}/sync',         [ApiDeviceController::class, 'syncAttendance']);
     Route::post  ('/admin/dispositivos/{id}/clear',        [ApiDeviceController::class, 'clearDevice']);
     Route::get   ('/admin/dispositivos/{id}/sync-history', [ApiDeviceController::class, 'syncHistory']);
+});
+
+// IA — configuración (solo admin) y chat (todos los usuarios autenticados)
+Route::middleware(['auth', 'admin', 'tenancy.session'])->group(function () {
+    Route::post('/admin/ai/chat', [AiChatController::class, 'chat']);
+});
+Route::middleware(['auth', 'admin', 'role:admin', 'tenancy.session'])->group(function () {
+    Route::get ('/admin/ai/config',      [AiConfigController::class, 'index'])->name('admin.ai.config');
+    Route::post('/admin/ai/config/save', [AiConfigController::class, 'save']);
+    Route::get ('/admin/ai/config/test', [AiConfigController::class, 'test']);
 });
 
 // Roles y Permisos — solo admin

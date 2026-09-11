@@ -240,7 +240,7 @@
 
 {{-- Botón flotante visibilidad de columnas --}}
 <div id="colVisBtnRes" title="Mostrar / ocultar columnas"
-     style="position:fixed;bottom:70px;right:28px;z-index:1055;cursor:pointer;
+     style="position:fixed;bottom:106px;right:20px;z-index:1055;cursor:pointer;
             width:48px;height:48px;border-radius:50%;background:#1ab394;
             display:flex;align-items:center;justify-content:center;
             box-shadow:0 4px 14px rgba(0,0,0,.25);transition:background .2s;"
@@ -250,7 +250,7 @@
 </div>
 
 <div id="colVisPanelRes"
-     style="display:none;position:fixed;bottom:128px;right:28px;z-index:1056;
+     style="display:none;position:fixed;bottom:166px;right:20px;z-index:1056;
             background:#fff;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.18);
             min-width:220px;padding:14px 16px;">
     <div class="d-flex align-items-center justify-content-between mb-2">
@@ -422,8 +422,10 @@ async function cargarResumen() {
 
         if (!registros.length) {
             tbody.innerHTML = '<tr><td colspan="14" class="text-center text-muted py-4">Sin registros para el período seleccionado</td></tr>';
-            document.getElementById('resumenInfo').textContent  = '';
-            document.getElementById('resumenTotal').textContent = '';
+            const elInfo  = document.getElementById('resumenInfo');
+            const elTotal = document.getElementById('resumenTotal');
+            if (elInfo)  elInfo.textContent  = '';
+            if (elTotal) elTotal.textContent = '';
             return;
         }
 
