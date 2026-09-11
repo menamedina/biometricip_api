@@ -94,7 +94,7 @@
                         <i class="fa-solid fa-paper-plane me-1"></i> Enviar Notificación
                     </button>
                     @else
-                    <button class="btn btn-primary w-100" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                    <button class="btn btn-primary w-100" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;">
                         <i class="fa-solid fa-paper-plane me-1"></i> Enviar Notificación
                     </button>
                     @endcan
@@ -310,7 +310,7 @@
                                             <i class="ti ti-trash"></i>
                                         </button>
                                         @else
-                                        <button class="btn btn-sm btn-outline-danger" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                                        <button class="btn btn-sm btn-outline-danger" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;">
                                             <i class="ti ti-trash"></i>
                                         </button>
                                         @endcan

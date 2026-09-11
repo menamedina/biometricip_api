@@ -16,7 +16,7 @@
                         <i class="fa-solid fa-file-export me-1"></i> Exportar
                     </button>
                     @else
-                    <button class="btn btn-outline-success" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                    <button class="btn btn-outline-success" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;">
                         <i class="fa-solid fa-file-export me-1"></i> Exportar
                     </button>
                     @endcan
@@ -25,7 +25,7 @@
                         <i class="fa-solid fa-file-import me-1"></i> Importar
                     </button>
                     @else
-                    <button class="btn btn-outline-secondary" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                    <button class="btn btn-outline-secondary" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;">
                         <i class="fa-solid fa-file-import me-1"></i> Importar
                     </button>
                     @endcan
@@ -34,7 +34,7 @@
                         <i class="fa-solid fa-plus me-1"></i> Nuevo Empleado
                     </button>
                     @else
-                    <button class="btn btn-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                    <button class="btn btn-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;">
                         <i class="fa-solid fa-plus me-1"></i> Nuevo Empleado
                     </button>
                     @endcan
@@ -303,7 +303,7 @@
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Rol</label>
-                            <select id="empRole" class="form-select" @cannot('usuarios.editar') disabled @endcannot>
+                            <select id="empRole" class="form-select" @cannot('empleados.editar') disabled @endcannot>
                                 <option value="empleado">Empleado</option>
                                 <option value="supervisor">Supervisor</option>
                                 <option value="admin">Administrador</option>
@@ -845,13 +845,13 @@ async function loadEmpleados() {
                         var enc = row.encrypted_id;
                         var e = canEditEmpleado
                             ? '<button class="btn btn-sm btn-outline-primary" onclick="this.disabled=true;editEmpleado(' + d + ',\'' + enc + '\').finally(()=>this.disabled=false)"><i class="fa-solid fa-pen"></i></button>'
-                            : '<button class="btn btn-sm btn-outline-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-pen"></i></button>';
+                            : '<button class="btn btn-sm btn-outline-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;"><i class="fa-solid fa-pen"></i></button>';
                         var l = canHistorialEmpleado
                             ? '<button class="btn btn-sm btn-outline-secondary" onclick="verLogEmpleado(' + d + ')" title="Historial"><i class="fa-solid fa-clock-rotate-left"></i></button>'
-                            : '<button class="btn btn-sm btn-outline-secondary" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-clock-rotate-left"></i></button>';
+                            : '<button class="btn btn-sm btn-outline-secondary" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;"><i class="fa-solid fa-clock-rotate-left"></i></button>';
                         var x = canDeleteEmpleado
                             ? '<button class="btn btn-sm btn-outline-danger" onclick="deleteEmpleado(\'' + enc + '\')"><i class="fa-solid fa-trash"></i></button>'
-                            : '<button class="btn btn-sm btn-outline-danger" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-trash"></i></button>';
+                            : '<button class="btn btn-sm btn-outline-danger" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;"><i class="fa-solid fa-trash"></i></button>';
                         return '<div class="d-flex flex-nowrap gap-1">' + e + l + x + '</div>';
                     }
                 }

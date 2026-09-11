@@ -15,7 +15,7 @@
                     <i class="ti ti-plus me-1"></i> Nuevo empleador
                 </button>
                 @else
-                <button class="btn btn-primary btn-sm" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                <button class="btn btn-primary btn-sm" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;">
                     <i class="ti ti-plus me-1"></i> Nuevo empleador
                 </button>
                 @endcan
@@ -58,7 +58,7 @@
                                             <i class="ti ti-edit"></i>
                                         </button>
                                         @else
-                                        <button class="btn btn-sm btn-outline-primary py-0 px-2" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                                        <button class="btn btn-sm btn-outline-primary py-0 px-2" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;">
                                             <i class="ti ti-edit"></i>
                                         </button>
                                         @endcan
@@ -69,7 +69,7 @@
                                             <i class="ti ti-trash"></i>
                                         </button>
                                         @else
-                                        <button class="btn btn-sm btn-outline-danger py-0 px-2 ms-1" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                                        <button class="btn btn-sm btn-outline-danger py-0 px-2 ms-1" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;">
                                             <i class="ti ti-trash"></i>
                                         </button>
                                         @endcan

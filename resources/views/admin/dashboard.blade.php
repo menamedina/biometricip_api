@@ -18,7 +18,7 @@
 {{-- Tarjetas de estadísticas --}}
 <div class="row g-3 mb-3">
     <div class="col-6 col-xl-3">
-        <div class="card h-100 border-0 shadow-sm" style="border-left: 4px solid #4F46E5 !important;">
+        <div class="card h-100 border-0 shadow-lg" style="border-left: 4px solid #4F46E5 !important;">
             <div class="card-body d-flex align-items-center gap-3 py-3">
                 <span class="avatar-title bg-primary bg-opacity-10 text-primary rounded-2 fs-3" style="width:52px;height:52px;min-width:52px;">
                     <i class="fa-solid fa-users"></i>
@@ -31,7 +31,7 @@
         </div>
     </div>
     <div class="col-6 col-xl-3">
-        <div class="card h-100 border-0 shadow-sm" style="border-left: 4px solid #0acf97 !important;">
+        <div class="card h-100 border-0 shadow-lg" style="border-left: 4px solid #0acf97 !important;">
             <div class="card-body d-flex align-items-center gap-3 py-3">
                 <span class="avatar-title bg-success bg-opacity-10 text-success rounded-2 fs-3" style="width:52px;height:52px;min-width:52px;">
                     <i class="fa-solid fa-user-check"></i>
@@ -44,7 +44,7 @@
         </div>
     </div>
     <div class="col-6 col-xl-3">
-        <div class="card h-100 border-0 shadow-sm" style="border-left: 4px solid #ed5565 !important;">
+        <div class="card h-100 border-0 shadow-lg" style="border-left: 4px solid #ed5565 !important;">
             <div class="card-body d-flex align-items-center gap-3 py-3">
                 <span class="avatar-title bg-danger bg-opacity-10 text-danger rounded-2 fs-3" style="width:52px;height:52px;min-width:52px;">
                     <i class="fa-solid fa-user-xmark"></i>
@@ -57,7 +57,7 @@
         </div>
     </div>
     <div class="col-6 col-xl-3">
-        <div class="card h-100 border-0 shadow-sm" style="border-left: 4px solid #f8ac59 !important;">
+        <div class="card h-100 border-0 shadow-lg" style="border-left: 4px solid #f8ac59 !important;">
             <div class="card-body d-flex align-items-center gap-3 py-3">
                 <span class="avatar-title bg-warning bg-opacity-10 text-warning rounded-2 fs-3" style="width:52px;height:52px;min-width:52px;">
                     <i class="fa-solid fa-clock"></i>
@@ -78,7 +78,7 @@
         <h6 class="text-muted fw-semibold mb-0"><i class="fa-solid fa-id-card-clip me-1"></i> Visitantes</h6>
     </div>
     <div class="col-6 col-xl-4">
-        <div class="card h-100 border-0 shadow-sm" style="border-left: 4px solid #23c6c8 !important;">
+        <div class="card h-100 border-0 shadow-lg" style="border-left: 4px solid #23c6c8 !important;">
             <div class="card-body d-flex align-items-center gap-3 py-3">
                 <span class="avatar-title bg-info bg-opacity-10 text-info rounded-2 fs-3" style="width:52px;height:52px;min-width:52px;">
                     <i class="fa-solid fa-building-user"></i>
@@ -91,7 +91,7 @@
         </div>
     </div>
     <div class="col-6 col-xl-4">
-        <div class="card h-100 border-0 shadow-sm" style="border-left: 4px solid #6f42c1 !important;">
+        <div class="card h-100 border-0 shadow-lg" style="border-left: 4px solid #6f42c1 !important;">
             <div class="card-body d-flex align-items-center gap-3 py-3">
                 <span class="avatar-title rounded-2 fs-3" style="width:52px;height:52px;min-width:52px;background:rgba(111,66,193,.1);color:#6f42c1;">
                     <i class="fa-solid fa-calendar-day"></i>
@@ -104,7 +104,7 @@
         </div>
     </div>
     <div class="col-6 col-xl-4">
-        <div class="card h-100 border-0 shadow-sm" style="border-left: 4px solid #e83e8c !important;">
+        <div class="card h-100 border-0 shadow-lg" style="border-left: 4px solid #e83e8c !important;">
             <div class="card-body d-flex align-items-center gap-3 py-3">
                 <span class="avatar-title rounded-2 fs-3" style="width:52px;height:52px;min-width:52px;background:rgba(232,62,140,.1);color:#e83e8c;">
                     <i class="fa-solid fa-calendar-check"></i>
@@ -127,7 +127,7 @@
         <h6 class="text-muted fw-semibold mb-0"><i class="fa-solid fa-calendar-week me-1"></i> Resumen semana</h6>
     </div>
     <div class="col-6 col-xl-6">
-        <div class="card h-100 border-0 shadow-sm" style="border-left: 4px solid #4F46E5 !important;">
+        <div class="card h-100 border-0 shadow-lg" style="border-left: 4px solid #4F46E5 !important;">
             <div class="card-body d-flex align-items-center gap-3 py-3">
                 <span class="avatar-title bg-primary bg-opacity-10 text-primary rounded-2 fs-3" style="width:52px;height:52px;min-width:52px;">
                     <i class="fa-solid fa-clock-rotate-left"></i>
@@ -140,7 +140,7 @@
         </div>
     </div>
     <div class="col-6 col-xl-6">
-        <div class="card h-100 border-0 shadow-sm" style="border-left: 4px solid #0acf97 !important;">
+        <div class="card h-100 border-0 shadow-lg" style="border-left: 4px solid #0acf97 !important;">
             <div class="card-body d-flex align-items-center gap-3 py-3">
                 <span class="avatar-title bg-success bg-opacity-10 text-success rounded-2 fs-3" style="width:52px;height:52px;min-width:52px;">
                     <i class="fa-solid fa-hourglass-half"></i>
@@ -157,7 +157,7 @@
 {{-- Contenido principal --}}
 <div class="row g-3">
     <div class="col-12">
-        <div class="card border-0 shadow-sm h-100">
+        <div class="card border-0 shadow-lg h-100">
             <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3">
                 <h5 class="mb-0 fw-semibold"><i class="fa-solid fa-list-check me-1 text-primary"></i> @cannot('empleados.ver') Mis registros de la semana @else Registros de hoy @endcannot</h5>
                 <span id="recordCount" class="badge bg-secondary rounded-pill">0</span>

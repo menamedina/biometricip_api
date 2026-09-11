@@ -15,7 +15,7 @@
                     <i class="ti ti-plus me-1"></i> Registrar entrada
                 </button>
                 @else
-                <button class="btn btn-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                <button class="btn btn-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;">
                     <i class="ti ti-plus me-1"></i> Registrar entrada
                 </button>
                 @endcan
@@ -57,7 +57,7 @@
                                 <i class="ti ti-file-spreadsheet me-1"></i> Exportar
                             </button>
                             @else
-                            <button class="btn btn-sm btn-success" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                            <button class="btn btn-sm btn-success" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;">
                                 <i class="ti ti-file-spreadsheet me-1"></i> Exportar
                             </button>
                             @endcan
@@ -640,14 +640,14 @@ function cargarTabla(silent) {
                             if (!data) {
                                 btnSalida = canEditarVisitante
                                     ? '<button class="btn btn-sm btn-outline-danger me-1" onclick="forzarSalida(' + row.id + ')" title="Registrar salida"><i class="ti ti-door-exit"></i></button>'
-                                    : '<button class="btn btn-sm btn-outline-danger me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="ti ti-door-exit"></i></button>';
+                                    : '<button class="btn btn-sm btn-outline-danger me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;"><i class="ti ti-door-exit"></i></button>';
                             }
                             var btnEditar = canEditarVisitante
                                 ? '<button class="btn btn-sm btn-outline-secondary me-1" onclick="abrirEdicion(' + row.id + ')" title="Editar"><i class="ti ti-edit"></i></button>'
-                                : '<button class="btn btn-sm btn-outline-secondary me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="ti ti-edit"></i></button>';
+                                : '<button class="btn btn-sm btn-outline-secondary me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;"><i class="ti ti-edit"></i></button>';
                             var btnLog = canHistorialVisitante
                                 ? '<button class="btn btn-sm btn-outline-info" onclick="verLog(' + row.id + ')" title="Ver historial"><i class="ti ti-history"></i></button>'
-                                : '<button class="btn btn-sm btn-outline-info" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="ti ti-history"></i></button>';
+                                : '<button class="btn btn-sm btn-outline-info" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;"><i class="ti ti-history"></i></button>';
                             return btnSalida + btnEditar + btnLog;
                         }
                     }

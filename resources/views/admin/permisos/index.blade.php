@@ -14,7 +14,7 @@
                 <i class="fa-solid fa-plus me-1"></i> Nuevo Permiso
             </button>
             @else
-            <button class="btn btn-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+            <button class="btn btn-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;">
                 <i class="fa-solid fa-plus me-1"></i> Nuevo Permiso
             </button>
             @endcan
@@ -311,14 +311,14 @@ async function loadPermisos() {
                             if (row.estado === 'pendiente') {
                                 btns += canAprobarPermiso
                                     ? '<button class="btn btn-sm btn-success me-1" onclick="aprobar(' + data + ')" title="Aprobar"><i class="fa-solid fa-check"></i></button>'
-                                    : '<button class="btn btn-sm btn-success me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-check"></i></button>';
+                                    : '<button class="btn btn-sm btn-success me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;"><i class="fa-solid fa-check"></i></button>';
                                 btns += canAprobarPermiso
                                     ? '<button class="btn btn-sm btn-danger me-1" onclick="rechazar(' + data + ')" title="Rechazar"><i class="fa-solid fa-xmark"></i></button>'
-                                    : '<button class="btn btn-sm btn-danger me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-xmark"></i></button>';
+                                    : '<button class="btn btn-sm btn-danger me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;"><i class="fa-solid fa-xmark"></i></button>';
                             }
                             btns += canEliminarPermiso
                                 ? '<button class="btn btn-sm btn-outline-danger" onclick="eliminar(' + data + ')"><i class="fa-solid fa-trash"></i></button>'
-                                : '<button class="btn btn-sm btn-outline-danger" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-trash"></i></button>';
+                                : '<button class="btn btn-sm btn-outline-danger" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;"><i class="fa-solid fa-trash"></i></button>';
                             return btns;
                         }
                     }

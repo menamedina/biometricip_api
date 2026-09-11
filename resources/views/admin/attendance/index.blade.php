@@ -49,7 +49,7 @@
                             @can('asistencia.exportar')
                             <button class="btn btn-sm btn-success" onclick="exportCSV()"><i class="fa-solid fa-file-csv me-1"></i> Exportar CSV</button>
                             @else
-                            <button class="btn btn-sm btn-success" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-file-csv me-1"></i> Exportar CSV</button>
+                            <button class="btn btn-sm btn-success" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;"><i class="fa-solid fa-file-csv me-1"></i> Exportar CSV</button>
                             @endcan
                         </div>
                     </div>
@@ -384,7 +384,7 @@ async function loadRecords() {
                             return data === 'base64'
                                 ? (canViewPhoto
                                     ? '<button class="btn btn-sm btn-outline-primary" onclick="verFoto(' + r.id + ')" title="Ver foto"><i class="fa-solid fa-camera"></i></button>'
-                                    : '<button class="btn btn-sm btn-outline-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-camera"></i></button>')
+                                    : '<button class="btn btn-sm btn-outline-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;"><i class="fa-solid fa-camera"></i></button>')
                                 : '<span class="text-muted">—</span>';
                         }
                     }

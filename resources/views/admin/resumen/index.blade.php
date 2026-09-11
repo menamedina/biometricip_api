@@ -16,7 +16,7 @@
                         <i class="fa-solid fa-plus me-1"></i> Registro Manual
                     </button>
                     @else
-                    <button class="btn btn-primary btn-sm me-2" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                    <button class="btn btn-primary btn-sm me-2" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;">
                         <i class="fa-solid fa-plus me-1"></i> Registro Manual
                     </button>
                     @endcan
@@ -25,7 +25,7 @@
                         <i class="fa-solid fa-file-csv me-1"></i> Exportar CSV
                     </button>
                     @else
-                    <button class="btn btn-success btn-sm" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                    <button class="btn btn-success btn-sm" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;">
                         <i class="fa-solid fa-file-csv me-1"></i> Exportar CSV
                     </button>
                     @endcan
@@ -178,7 +178,7 @@
                             oninput="filtrarEmpleados(this.value)">
                         <input type="hidden" id="manualEmpleado">
                         <div id="manualEmpleadoDropdown"
-                            class="d-none position-absolute w-100 bg-white border rounded shadow-sm"
+                            class="d-none position-absolute w-100 bg-white border rounded shadow-lg"
                             style="z-index:1060;max-height:200px;overflow-y:auto;top:100%"></div>
                     </div>
                     <div id="manualEmpleadoSeleccionado" class="form-text text-success d-none"></div>
@@ -516,7 +516,11 @@ async function cargarResumen() {
             const fechaFmt    = g.fecha.split('-').reverse().join('/');
 
             // Botón para agregar registro en ese día para ese usuario (solo admin/supervisor)
-            const btnAdd = (!isEmpleado && canCrearReg) ? `<button class="btn btn-outline-primary btn-sm py-0 px-1" onclick="abrirModalManualPre(${g.user?.id}, '${g.fecha}')" title="Agregar registro"><i class="fa-solid fa-plus fa-xs"></i></button>` : '';
+            const btnAdd = !isEmpleado
+                ? (canCrearReg
+                    ? `<button class="btn btn-outline-primary btn-sm py-0 px-1" onclick="abrirModalManualPre(${g.user?.id}, '${g.fecha}')" title="Agregar registro"><i class="fa-solid fa-plus fa-xs"></i></button>`
+                    : `<button class="btn btn-outline-primary btn-sm py-0 px-1" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;"><i class="fa-solid fa-plus fa-xs"></i></button>`)
+                : '';
 
             const colCls = ['col-res-e1','col-res-s1','col-res-e2','col-res-s2','col-res-e3','col-res-s3','col-res-e4','col-res-s4'];
             const nombreEsc = (g.user?.name ?? '').replace(/'/g, "\\'");

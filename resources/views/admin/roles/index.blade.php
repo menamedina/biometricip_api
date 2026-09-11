@@ -37,7 +37,7 @@
 <div class="container-fluid">
 
     {{-- Header --}}
-    <div class="row mb-3">
+    <div class="row mb-3 p-2">
         <div class="col-12 d-flex align-items-center justify-content-between">
             <div>
                 <h4 class="mb-0">Roles y Permisos</h4>
@@ -45,6 +45,10 @@
             </div>
             @can('roles.crear')
             <button class="btn btn-primary btn-sm" onclick="abrirModalCrear()">
+                <i class="ti ti-plus me-1"></i> Nuevo rol
+            </button>
+            @else
+            <button class="btn btn-primary btn-sm" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;">
                 <i class="ti ti-plus me-1"></i> Nuevo rol
             </button>
             @endcan
@@ -58,7 +62,7 @@
 
         {{-- Columna izquierda: Lista de roles --}}
         <div class="col-md-4 col-lg-3">
-            <div class="card shadow-sm">
+            <div class="card shadow-lg">
                 <div class="card-header bg-light py-2">
                     <span class="fw-semibold text-secondary" style="font-size:.85rem;">Roles del sistema</span>
                 </div>
@@ -74,7 +78,7 @@
 
         {{-- Columna derecha: Permisos del rol seleccionado --}}
         <div class="col-md-8 col-lg-9">
-            <div class="card shadow-sm">
+            <div class="card shadow-lg">
                 <div class="card-header bg-light py-2">
                     <span id="panelTitulo" class="fw-semibold text-secondary" style="font-size:.85rem;">
                         Selecciona un rol para ver sus permisos
@@ -152,6 +156,8 @@
 @push('scripts')
 <script>
 const CSRF = document.querySelector('meta[name="csrf-token"]')?.content ?? '{{ csrf_token() }}';
+const canEditarRol   = {{ auth()->user()->can('roles.editar')   ? 'true' : 'false' }};
+const canEliminarRol = {{ auth()->user()->can('roles.eliminar') ? 'true' : 'false' }};
 let rolIdEditar   = null;
 let rolIdEliminar = null;
 let rolSeleccionado = null;
@@ -235,19 +241,19 @@ function renderListaRoles(roles) {
                 <div class="role-count">${r.permissions_count} permiso${r.permissions_count !== 1 ? 's' : ''}</div>
             </div>
             <div class="d-flex gap-1 ms-2">
-                @can('roles.editar')
-                <button class="btn btn-sm btn-link p-0 text-muted" title="Editar" onclick="event.stopPropagation(); abrirModalEditar(${r.id}, '${escHtml(r.name)}')">
-                    <i class="ti ti-pencil" style="font-size:1rem;"></i>
-                </button>
-                @endcan
-                @can('roles.eliminar')
-                <button class="btn btn-sm btn-link p-0 text-muted text-danger-hover" title="Eliminar" onclick="event.stopPropagation(); pedirEliminar(${r.id}, '${escHtml(r.name)}')">
-                    <i class="ti ti-trash" style="font-size:1rem;"></i>
-                </button>
-                @endcan
+                ${canEditarRol
+                    ? `<button class="btn btn-sm btn-link p-0 text-muted" title="Editar" onclick="event.stopPropagation(); abrirModalEditar(${r.id}, '${escHtml(r.name)}')"><i class="ti ti-pencil" style="font-size:1rem;"></i></button>`
+                    : `<button class="btn btn-sm btn-link p-0 text-muted" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;"><i class="ti ti-pencil" style="font-size:1rem;"></i></button>`}
+                ${canEliminarRol
+                    ? `<button class="btn btn-sm btn-link p-0 text-danger" title="Eliminar" onclick="event.stopPropagation(); pedirEliminar(${r.id}, '${escHtml(r.name)}')"><i class="ti ti-trash" style="font-size:1rem;"></i></button>`
+                    : `<button class="btn btn-sm btn-link p-0 text-danger" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;"><i class="ti ti-trash" style="font-size:1rem;"></i></button>`}
             </div>
         </div>
     `).join('');
+    // Init tooltips en botones deshabilitados
+    document.querySelectorAll('#listaRoles [data-bs-toggle="tooltip"]').forEach(el => {
+        bootstrap.Tooltip.getOrCreateInstance(el);
+    });
 }
 
 async function seleccionarRol(id) {

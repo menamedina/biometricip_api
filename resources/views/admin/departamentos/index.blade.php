@@ -39,8 +39,8 @@
                                 <i class="fa-solid fa-plus me-1"></i> Nuevo
                             </button>
                             @else
-                            <button class="btn btn-sm btn-outline-secondary" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-file-import"></i></button>
-                            <button class="btn btn-sm btn-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-plus me-1"></i> Nuevo</button>
+                            <button class="btn btn-sm btn-outline-secondary" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;"><i class="fa-solid fa-file-import"></i></button>
+                            <button class="btn btn-sm btn-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;"><i class="fa-solid fa-plus me-1"></i> Nuevo</button>
                             @endcan
                         </div>
                     </div>
@@ -99,7 +99,7 @@
                                         <i class="fa-solid fa-pen"></i>
                                     </button>
                                     @else
-                                    <button class="btn btn-sm btn-outline-primary me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-pen"></i></button>
+                                    <button class="btn btn-sm btn-outline-primary me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;"><i class="fa-solid fa-pen"></i></button>
                                     @endcan
                                     @can('departamentos.eliminar')
                                     <form method="POST"
@@ -112,7 +112,7 @@
                                         <button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
                                     </form>
                                     @else
-                                    <button class="btn btn-sm btn-outline-danger" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-trash"></i></button>
+                                    <button class="btn btn-sm btn-outline-danger" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;"><i class="fa-solid fa-trash"></i></button>
                                     @endcan
                                 </td>
                             </tr>
@@ -144,8 +144,8 @@
                                 <i class="fa-solid fa-plus me-1"></i> Nuevo
                             </button>
                             @else
-                            <button class="btn btn-sm btn-outline-secondary" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-file-import"></i></button>
-                            <button class="btn btn-sm btn-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-plus me-1"></i> Nuevo</button>
+                            <button class="btn btn-sm btn-outline-secondary" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;"><i class="fa-solid fa-file-import"></i></button>
+                            <button class="btn btn-sm btn-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;"><i class="fa-solid fa-plus me-1"></i> Nuevo</button>
                             @endcan
                         </div>
                     </div>
@@ -204,7 +204,7 @@
                                         <i class="fa-solid fa-pen"></i>
                                     </button>
                                     @else
-                                    <button class="btn btn-sm btn-outline-primary me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-pen"></i></button>
+                                    <button class="btn btn-sm btn-outline-primary me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;"><i class="fa-solid fa-pen"></i></button>
                                     @endcan
                                     @can('departamentos.eliminar')
                                     <form method="POST"
@@ -217,7 +217,7 @@
                                         <button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
                                     </form>
                                     @else
-                                    <button class="btn btn-sm btn-outline-danger" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-trash"></i></button>
+                                    <button class="btn btn-sm btn-outline-danger" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;"><i class="fa-solid fa-trash"></i></button>
                                     @endcan
                                 </td>
                             </tr>

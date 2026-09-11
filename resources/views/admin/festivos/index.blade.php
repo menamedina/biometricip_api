@@ -14,7 +14,7 @@
                 <i class="fa-solid fa-plus me-1"></i> Nuevo Festivo
             </button>
             @else
-            <button class="btn btn-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+            <button class="btn btn-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;">
                 <i class="fa-solid fa-plus me-1"></i> Nuevo Festivo
             </button>
             @endcan
@@ -224,11 +224,11 @@ async function loadFestivos() {
 
                             var btnEdit = canEditFestivo
                                 ? '<button class="btn btn-sm btn-outline-primary me-1" onclick="editFestivoById(' + row.id + ')"><i class="fa-solid fa-pen"></i></button>'
-                                : '<button class="btn btn-sm btn-outline-primary me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-pen"></i></button>';
+                                : '<button class="btn btn-sm btn-outline-primary me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;"><i class="fa-solid fa-pen"></i></button>';
 
                             var btnDel = canDeleteFestivo
                                 ? '<button class="btn btn-sm btn-outline-danger" onclick="deleteFestivo(' + row.id + ')"><i class="fa-solid fa-trash"></i></button>'
-                                : '<button class="btn btn-sm btn-outline-danger" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-trash"></i></button>';
+                                : '<button class="btn btn-sm btn-outline-danger" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;"><i class="fa-solid fa-trash"></i></button>';
 
                             return btnEdit + btnDel;
                         }

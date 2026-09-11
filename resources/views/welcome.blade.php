@@ -47,7 +47,7 @@
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-lg">
         <div class="container">
             <a class="navbar-brand" href="/">
                 <img src="{{ asset('logos/logo.png') }}" alt="BiometricIP" style="height:40px; object-fit:contain;">
@@ -84,7 +84,7 @@
 
         <div class="row g-4">
             <div class="col-md-6 col-lg-3">
-                <div class="card border-0 shadow-sm h-100">
+                <div class="card border-0 shadow-lg h-100">
                     <div class="card-body p-4">
                         <div class="feature-icon purple"><i class="fa-solid fa-qrcode"></i></div>
                         <h5 class="fw-bold">QR Dinámico</h5>
@@ -93,7 +93,7 @@
                 </div>
             </div>
             <div class="col-md-6 col-lg-3">
-                <div class="card border-0 shadow-sm h-100">
+                <div class="card border-0 shadow-lg h-100">
                     <div class="card-body p-4">
                         <div class="feature-icon green"><i class="fa-solid fa-location-crosshairs"></i></div>
                         <h5 class="fw-bold">Geocerca</h5>
@@ -102,7 +102,7 @@
                 </div>
             </div>
             <div class="col-md-6 col-lg-3">
-                <div class="card border-0 shadow-sm h-100">
+                <div class="card border-0 shadow-lg h-100">
                     <div class="card-body p-4">
                         <div class="feature-icon orange"><i class="fa-solid fa-shield-halved"></i></div>
                         <h5 class="fw-bold">Anti-fraude</h5>
@@ -111,7 +111,7 @@
                 </div>
             </div>
             <div class="col-md-6 col-lg-3">
-                <div class="card border-0 shadow-sm h-100">
+                <div class="card border-0 shadow-lg h-100">
                     <div class="card-body p-4">
                         <div class="feature-icon blue"><i class="fa-solid fa-file-excel"></i></div>
                         <h5 class="fw-bold">Reportes</h5>

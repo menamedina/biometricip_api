@@ -20,7 +20,7 @@
                         <i class="fa-solid fa-plus me-1"></i> Nueva Empresa
                     </button>
                     @else
-                    <button class="btn btn-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso">
+                    <button class="btn btn-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;">
                         <i class="fa-solid fa-plus me-1"></i> Nueva Empresa
                     </button>
                     @endcan
@@ -351,17 +351,17 @@ async function loadEmpresas() {
 
                             var btnEdit = canEditEmpresa
                                 ? '<button class="btn btn-sm btn-outline-primary" onclick="editEmpresa(' + row.id + ')" title="Editar"><i class="fa-solid fa-pen"></i></button>'
-                                : '<button class="btn btn-sm btn-outline-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-pen"></i></button>';
+                                : '<button class="btn btn-sm btn-outline-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;"><i class="fa-solid fa-pen"></i></button>';
 
                             var btnToken = canTokenEmpresa
                                 ? '<button class="btn btn-sm btn-outline-secondary" onclick="openTokenModal(' + row.id + ',\'' + (row.nombre || '').replace(/'/g,'') + '\',' + JSON.stringify(tokenMasked) + ',' + JSON.stringify(vigencia) + ')" title="Token agente"><i class="fa-solid fa-key"></i></button>'
-                                : '<button class="btn btn-sm btn-outline-secondary" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-key"></i></button>';
+                                : '<button class="btn btn-sm btn-outline-secondary" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;"><i class="fa-solid fa-key"></i></button>';
 
                             var btnToggle = canToggleEmpresa
                                 ? (row.is_active
                                     ? '<button class="btn btn-sm btn-outline-danger" onclick="deleteEmpresa(' + row.id + ')" title="Desactivar"><i class="fa-solid fa-ban"></i></button>'
                                     : '<button class="btn btn-sm btn-outline-success" onclick="activarEmpresa(' + row.id + ')" title="Activar"><i class="fa-solid fa-check"></i></button>')
-                                : '<button class="btn btn-sm btn-outline-secondary" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-ban"></i></button>';
+                                : '<button class="btn btn-sm btn-outline-secondary" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;"><i class="fa-solid fa-ban"></i></button>';
 
                             return '<div class="d-flex flex-nowrap gap-1">' + btnEdit + btnToken + btnToggle + '</div>';
                         }
