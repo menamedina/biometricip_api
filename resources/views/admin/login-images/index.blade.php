@@ -23,8 +23,10 @@
         <div class="col-lg-3 col-md-4 col-sm-6" id="card-{{ $img->id }}">
             <div class="card shadow-lg border-0 h-100">
                 <div class="position-relative">
-                    <img src="{{ asset('storage/' . $img->imagen) }}" class="card-img-top"
-                         style="height:180px;object-fit:cover;" alt="{{ $img->titulo }}">
+                    <a href="{{ asset('storage/' . $img->imagen) }}" target="_blank">
+                        <img src="{{ asset('storage/' . $img->imagen) }}" class="card-img-top"
+                             style="height:180px;object-fit:cover;cursor:pointer;" alt="{{ $img->titulo }}">
+                    </a>
                     @if(!$img->activo)
                     <span class="badge bg-danger position-absolute top-0 end-0 m-2">Inactiva</span>
                     @endif
