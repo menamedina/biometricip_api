@@ -29,7 +29,7 @@ class RolesSeeder extends Seeder
             'dispositivos.ver', 'dispositivos.crear', 'dispositivos.editar', 'dispositivos.eliminar', 'dispositivos.vaciar', 'dispositivos.usuarios',
 
             // Asistencia
-            'asistencia.ver', 'asistencia.editar', 'asistencia.exportar',
+            'asistencia.ver', 'asistencia.exportar', 'asistencia.foto',
 
             // Permisos/ausencias
             'permisos.ver', 'permisos.crear', 'permisos.aprobar', 'permisos.eliminar',
@@ -77,7 +77,7 @@ class RolesSeeder extends Seeder
             'empleados.exportar', 'empleados.importar', 'empleados.historial',
             'visitantes.ver', 'visitantes.crear', 'visitantes.editar', 'visitantes.historial', 'visitantes.exportar',
             'dispositivos.ver', 'dispositivos.crear', 'dispositivos.editar', 'dispositivos.eliminar', 'dispositivos.vaciar', 'dispositivos.usuarios',
-            'asistencia.ver', 'asistencia.editar', 'asistencia.exportar',
+            'asistencia.ver', 'asistencia.exportar', 'asistencia.foto',
             'permisos.ver', 'permisos.crear', 'permisos.aprobar', 'permisos.eliminar',
             'empleadores.ver', 'empleadores.crear', 'empleadores.editar', 'empleadores.eliminar',
             'departamentos.ver', 'departamentos.crear', 'departamentos.editar', 'departamentos.eliminar',
@@ -97,7 +97,7 @@ class RolesSeeder extends Seeder
             'empleados.exportar', 'empleados.historial',
             'visitantes.ver', 'visitantes.crear', 'visitantes.editar', 'visitantes.historial', 'visitantes.exportar',
             'dispositivos.ver',
-            'asistencia.ver', 'asistencia.editar', 'asistencia.exportar',
+            'asistencia.ver', 'asistencia.exportar', 'asistencia.foto',
             'permisos.ver', 'permisos.crear', 'permisos.aprobar',
             'empleadores.ver',
             'departamentos.ver',

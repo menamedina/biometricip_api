@@ -163,18 +163,48 @@ const moduloLabels = {
     visitantes:     'Visitantes',
     dispositivos:   'Dispositivos',
     asistencia:     'Registros',
+    reportes:       'Resumen Marcación',
     permisos:       'Permisos / Ausencias',
-    empleadores:    'Empleadores',
     departamentos:  'Deptos. y Cargos',
+    empleadores:    'Empleadores',
+    empresa:        'Mi Empresa',
+    notificaciones: 'Notificaciones',
     horarios:       'Horarios',
     festivos:       'Festivos',
-    reportes:       'Resumen Marcación',
-    notificaciones: 'Notificaciones',
-    empresa:        'Mi Empresa',
     roles:          'Roles y Permisos',
+};
+const moduloOrden = [
+    'sedes','empleados','visitantes','dispositivos',
+    'asistencia','reportes','permisos',
+    'departamentos','empleadores',
+    'empresa',
+    'notificaciones',
+    'horarios','festivos','roles',
+];
+const moduloSecciones = {
+    sedes:          'Administración',
+    empleados:      'Administración',
+    visitantes:     'Administración',
+    dispositivos:   'Administración',
+    asistencia:     'Asistencia',
+    reportes:       'Asistencia',
+    permisos:       'Asistencia',
+    departamentos:  'Organización',
+    empleadores:    'Organización',
+    empresa:        'Empresa',
+    notificaciones: 'Comunicación',
+    horarios:       'Configuración',
+    festivos:       'Configuración',
+    roles:          'Configuración',
 };
 function moduloLabel(key) {
     return moduloLabels[key] || key.charAt(0).toUpperCase() + key.slice(1);
+}
+function sortedModulos(obj) {
+    const sorted = {};
+    moduloOrden.forEach(k => { if (obj[k]) sorted[k] = obj[k]; });
+    Object.keys(obj).forEach(k => { if (!sorted[k]) sorted[k] = obj[k]; });
+    return sorted;
 }
 
 // ── Inicialización ────────────────────────────────────────────
@@ -242,7 +272,7 @@ async function mostrarPermisosRol(id) {
     }
 
     let html = '<div class="row g-3">';
-    for (const [modulo, permisos] of Object.entries(data.permisos)) {
+    for (const [modulo, permisos] of Object.entries(sortedModulos(data.permisos))) {
         html += `
             <div class="col-md-6">
                 <div class="modulo-card">
@@ -296,7 +326,13 @@ function renderPermisosModal(seleccionados) {
         return;
     }
     let html = '';
-    for (const [modulo, permisos] of Object.entries(todosPermisos)) {
+    let seccionActual = null;
+    for (const [modulo, permisos] of Object.entries(sortedModulos(todosPermisos))) {
+        const seccion = moduloSecciones[modulo] || '';
+        if (seccion && seccion !== seccionActual) {
+            seccionActual = seccion;
+            html += `<div class="text-uppercase fw-bold small text-muted mt-3 mb-1" style="letter-spacing:.08em;font-size:.72rem;">${seccion}</div>`;
+        }
         const todos = permisos.map(p => p.name);
         html += `
         <div class="modulo-card mb-2" data-modulo="${modulo}">

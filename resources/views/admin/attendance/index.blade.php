@@ -1,5 +1,5 @@
 @extends('layouts.admin')
-@section('title', 'Registros de Asistencia')
+@section('title', 'Registros')
 
 @section('content')
 <!-- Modal Foto -->
@@ -19,7 +19,7 @@
 <div class="container-fluid">
     <div class="row mb-3 mt-3">
         <div class="col-12">
-            <h4 class="mb-1"><i class="fa-solid fa-clock me-2 text-primary"></i>Registros de Asistencia</h4>
+            <h4 class="mb-1"><i class="fa-solid fa-clock me-2 text-primary"></i>Registros</h4>
             <p class="text-muted mb-0">Historial completo de entradas y salidas</p>
         </div>
     </div>
@@ -199,7 +199,7 @@ div.dataTables_wrapper div.dataTables_info {
 <script>
 const csrfToken  = '{{ csrf_token() }}';
 const isEmpleado   = {{ auth()->user()->cannot('empleados.ver') ? 'true' : 'false' }};
-const canViewPhoto = {{ auth()->user()->can('empleados.ver') ? 'true' : 'false' }};
+const canViewPhoto = {{ auth()->user()->can('asistencia.foto') ? 'true' : 'false' }};
 const myUserId   = {{ auth()->id() }};
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
@@ -382,7 +382,9 @@ async function loadRecords() {
                         render: function(data, type, r) {
                             if (type !== 'display') return data || '';
                             return data === 'base64'
-                                ? '<button class="btn btn-sm btn-outline-primary" onclick="verFoto(' + r.id + ')" title="Ver foto" ' + (canViewPhoto ? '' : 'disabled') + '><i class="fa-solid fa-camera"></i></button>'
+                                ? (canViewPhoto
+                                    ? '<button class="btn btn-sm btn-outline-primary" onclick="verFoto(' + r.id + ')" title="Ver foto"><i class="fa-solid fa-camera"></i></button>'
+                                    : '<button class="btn btn-sm btn-outline-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-camera"></i></button>')
                                 : '<span class="text-muted">—</span>';
                         }
                     }
