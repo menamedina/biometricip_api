@@ -10,8 +10,9 @@
                 <h4 class="mb-1"><i class="ti ti-robot me-2 text-primary"></i>Asistente IA</h4>
                 <p class="text-muted mb-0">Configura el proveedor y modelo de inteligencia artificial</p>
             </div>
-            <button class="btn btn-outline-secondary btn-sm" onclick="testConexion()">
-                <i class="ti ti-plug me-1"></i> Probar conexión
+            <button class="btn btn-outline-secondary btn-sm" id="btnTest" onclick="testConexion()">
+                <i class="ti ti-plug me-1" id="btnTestIcon"></i>
+                <span id="btnTestText">Probar conexión</span>
             </button>
         </div>
     </div>
@@ -78,8 +79,9 @@
                     </div>
 
                     <div class="d-flex justify-content-end">
-                        <button class="btn btn-primary" onclick="guardar()">
-                            <i class="ti ti-device-floppy me-1"></i> Guardar configuración
+                        <button class="btn btn-primary" id="btnGuardar" onclick="guardar()">
+                            <i class="ti ti-device-floppy me-1" id="btnGuardarIcon"></i>
+                            <span id="btnGuardarText">Guardar configuración</span>
                         </button>
                     </div>
 
@@ -165,29 +167,60 @@ function toggleApiKey() {
 }
 
 async function guardar() {
-    const payload = {
-        proveedor:     document.getElementById('proveedor').value,
-        modelo:        document.getElementById('modelo').value,
-        api_key:       document.getElementById('apiKey').value || null,
-        system_prompt: document.getElementById('systemPrompt').value || null,
-        activo:        document.getElementById('activo').checked ? 1 : 0,
-    };
+    const btn  = document.getElementById('btnGuardar');
+    const icon = document.getElementById('btnGuardarIcon');
+    const text = document.getElementById('btnGuardarText');
 
-    const res = await fetch('/admin/ai/config/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-        body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    mostrarAlerta(res.ok ? 'success' : 'danger', data.message);
+    btn.disabled = true;
+    icon.className = 'spinner-border spinner-border-sm me-1';
+    text.textContent = 'Guardando...';
+
+    try {
+        const payload = {
+            proveedor:     document.getElementById('proveedor').value,
+            modelo:        document.getElementById('modelo').value,
+            api_key:       document.getElementById('apiKey').value || null,
+            system_prompt: document.getElementById('systemPrompt').value || null,
+            activo:        document.getElementById('activo').checked ? 1 : 0,
+        };
+
+        const res = await fetch('/admin/ai/config/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+            body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        mostrarAlerta(res.ok ? 'success' : 'danger', data.message);
+    } catch (e) {
+        mostrarAlerta('danger', 'Error de conexión: ' + e.message);
+    } finally {
+        btn.disabled = false;
+        icon.className = 'ti ti-device-floppy me-1';
+        text.textContent = 'Guardar configuración';
+    }
 }
 
 async function testConexion() {
-    const prov = document.getElementById('proveedor').value;
-    mostrarAlerta('info', 'Probando conexión...');
-    const res = await fetch(`/admin/ai/config/test?proveedor=${prov}`);
-    const data = await res.json();
-    mostrarAlerta(res.ok ? 'success' : 'danger', data.message);
+    const btn  = document.getElementById('btnTest');
+    const icon = document.getElementById('btnTestIcon');
+    const text = document.getElementById('btnTestText');
+
+    btn.disabled = true;
+    icon.className = 'spinner-border spinner-border-sm me-1';
+    text.textContent = 'Probando...';
+
+    try {
+        const prov = document.getElementById('proveedor').value;
+        const res = await fetch(`/admin/ai/config/test?proveedor=${prov}`);
+        const data = await res.json();
+        mostrarAlerta(res.ok ? 'success' : 'danger', data.message);
+    } catch (e) {
+        mostrarAlerta('danger', 'Error de conexión: ' + e.message);
+    } finally {
+        btn.disabled = false;
+        icon.className = 'ti ti-plug me-1';
+        text.textContent = 'Probar conexión';
+    }
 }
 
 function mostrarAlerta(tipo, msg) {
