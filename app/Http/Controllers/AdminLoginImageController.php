@@ -11,6 +11,11 @@ use Illuminate\View\View;
 
 class AdminLoginImageController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
     public function index(): View
     {
         $images = LoginImage::orderBy('orden')->get();
