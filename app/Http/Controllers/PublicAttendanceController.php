@@ -185,24 +185,26 @@ class PublicAttendanceController extends Controller
             : [null, null];
 
         $fechaHora = now();
+        $hoy       = now()->toDateString();
 
-        // Buscar último registro para determinar sede anterior
-        $ultimoRegistro = AttendanceRecord::where('user_id', $user->id)
+        // Buscar último registro del DÍA ACTUAL
+        $ultimoHoy  = AttendanceRecord::where('user_id', $user->id)
+            ->whereDate('fecha_hora', $hoy)
             ->orderBy('fecha_hora', 'desc')
             ->first();
 
-        $sedeAnterior = $ultimoRegistro ? Sede::find($ultimoRegistro->sede_id) : null;
+        $sedeAnterior = $ultimoHoy ? Sede::find($ultimoHoy->sede_id) : null;
+        $ultimoTipo   = $ultimoHoy?->tipo;
 
-        // Si ya está en esta misma sede, buscar la última sede DIFERENTE en el historial
-        // para hacer salida de aquí + entrada allá (regreso)
-        if ($sedeAnterior && $sedeAnterior->id === $sede->id) {
-            $registroAnteriorDistinto = AttendanceRecord::where('user_id', $user->id)
+        // ── Caso 3: ya tiene ENTRADA en esta misma sede → SALIDA aquí + ENTRADA a sede anterior del día
+        if ($sedeAnterior && $sedeAnterior->id === $sede->id && $ultimoTipo === 'entrada') {
+            $sedeDestinoId = AttendanceRecord::where('user_id', $user->id)
+                ->whereDate('fecha_hora', $hoy)
                 ->where('sede_id', '!=', $sede->id)
                 ->orderBy('fecha_hora', 'desc')
-                ->first();
-            $sedeDestino = $registroAnteriorDistinto ? Sede::find($registroAnteriorDistinto->sede_id) : null;
+                ->value('sede_id');
+            $sedeDestino = $sedeDestinoId ? Sede::find($sedeDestinoId) : null;
 
-            // Salida de la sede actual (Gimnasio)
             AttendanceRecord::create([
                 'user_id'               => $user->id,
                 'sede_id'               => $sede->id,
@@ -216,37 +218,36 @@ class PublicAttendanceController extends Controller
                 'fecha_hora'            => $fechaHora,
             ]);
 
-            // Entrada a la sede anterior (empresa)
-            $record = AttendanceRecord::create([
-                'user_id'               => $user->id,
-                'sede_id'               => $sedeDestino ? $sedeDestino->id : $sede->id,
-                'horario_id'            => $user->horario_id ?: null,
-                'tipo'                  => 'entrada',
-                'metodo'                => 'qr_web',
-                'qr_validado'           => true,
-                'geocerca_validada'     => true,
-                'distancia_oficina_mts' => round($distancia),
-                'foto_evidencia'        => $fotoFull ? 'base64' : null,
-                'fecha_hora'            => $fechaHora,
-            ]);
-
-            if ($fotoFull) {
-                AttendancePhoto::create([
-                    'attendance_record_id' => $record->id,
-                    'foto_base64'          => $fotoFull,
-                    'thumbnail_base64'     => $fotoThumb ?? $fotoFull,
+            if ($sedeDestino) {
+                $record = AttendanceRecord::create([
+                    'user_id'               => $user->id,
+                    'sede_id'               => $sedeDestino->id,
+                    'horario_id'            => $user->horario_id ?: null,
+                    'tipo'                  => 'entrada',
+                    'metodo'                => 'qr_web',
+                    'qr_validado'           => true,
+                    'geocerca_validada'     => true,
+                    'distancia_oficina_mts' => round($distancia),
+                    'foto_evidencia'        => $fotoFull ? 'base64' : null,
+                    'fecha_hora'            => $fechaHora,
                 ]);
+                if ($fotoFull) {
+                    AttendancePhoto::create([
+                        'attendance_record_id' => $record->id,
+                        'foto_base64'          => $fotoFull,
+                        'thumbnail_base64'     => $fotoThumb ?? $fotoFull,
+                    ]);
+                }
+                $mensaje = "¡Salida de {$sede->nombre} y entrada a {$sedeDestino->nombre} registradas!";
+            } else {
+                $mensaje = "¡Salida de {$sede->nombre} registrada!";
             }
-
-            $mensaje = $sedeDestino
-                ? "¡Salida de {$sede->nombre} y entrada a {$sedeDestino->nombre} registradas!"
-                : "¡Salida de {$sede->nombre} registrada!";
 
             return response()->json(['success' => true, 'message' => $mensaje, 'nombre' => $user->name]);
         }
 
-        // Sede anterior diferente: salida de allá + entrada aquí
-        if ($sedeAnterior && $sedeAnterior->id !== $sede->id) {
+        // ── Caso 2: tiene ENTRADA en sede diferente → SALIDA allá + ENTRADA aquí
+        if ($sedeAnterior && $sedeAnterior->id !== $sede->id && $ultimoTipo === 'entrada') {
             AttendanceRecord::create([
                 'user_id'               => $user->id,
                 'sede_id'               => $sedeAnterior->id,
@@ -261,7 +262,7 @@ class PublicAttendanceController extends Controller
             ]);
         }
 
-        // Entrada a la sede actual
+        // ── Caso 1, 2 y 4: ENTRADA a la sede actual
         $record = AttendanceRecord::create([
             'user_id'               => $user->id,
             'sede_id'               => $sede->id,
@@ -283,7 +284,7 @@ class PublicAttendanceController extends Controller
             ]);
         }
 
-        $mensaje = $sedeAnterior && $sedeAnterior->id !== $sede->id
+        $mensaje = ($sedeAnterior && $sedeAnterior->id !== $sede->id && $ultimoTipo === 'entrada')
             ? "¡Salida de {$sedeAnterior->nombre} y entrada a {$sede->nombre} registradas!"
             : "¡Entrada a {$sede->nombre} registrada!";
 
