@@ -133,6 +133,9 @@ Route::middleware(['auth', 'admin', 'role:admin,supervisor', 'tenancy.session'])
     Route::put   ('/admin/sedes/{sede}',                     [ApiSedeController::class, 'update']);
     Route::delete('/admin/sedes/{sede}',                     [ApiSedeController::class, 'destroy']);
     Route::get   ('/admin/sedes/{sede}/qr',                  [ApiSedeController::class, 'qr']);
+    Route::get   ('/admin/sedes/{sede}/qr-doble',            [ApiSedeController::class, 'qrDoble']);
+    Route::post  ('/admin/sedes/{sede}/qr-doble/enable',    [ApiSedeController::class, 'enableQRDoble']);
+    Route::post  ('/admin/sedes/{sede}/qr-doble/regenerar', [ApiSedeController::class, 'regenerateQRDoble']);
     Route::get   ('/admin/sedes/{sede}/qr-static',           [ApiSedeController::class, 'qrStatic']);
     Route::post  ('/admin/sedes/{sede}/qr-static/enable',    [ApiSedeController::class, 'enableStaticQR']);
     Route::post  ('/admin/sedes/{sede}/qr-static/regenerar', [ApiSedeController::class, 'regenerateStaticQR']);

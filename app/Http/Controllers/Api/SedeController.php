@@ -138,9 +138,55 @@ class SedeController extends Controller
                 'codigo' => $sede->codigo,
                 'nombre' => $sede->nombre,
             ],
-            'qr_value'          => $qrValue,
-            'time_slot'         => $timeSlot,
+            'qr_value'           => $qrValue,
+            'time_slot'          => $timeSlot,
             'expires_in_seconds' => 30 - (time() % 30),
+        ]);
+    }
+
+    public function qrDoble(int $id): JsonResponse
+    {
+        $sede = Sede::findOrFail($id);
+
+        if (!$sede->doble_registro) {
+            return response()->json(['message' => 'Esta sede no tiene doble registro habilitado.'], 422);
+        }
+
+        if (!$sede->qr_doble_token) {
+            return response()->json(['message' => 'QR de doble registro no habilitado para esta sede.'], 404);
+        }
+
+        return response()->json([
+            'sede'     => ['id' => $sede->id, 'codigo' => $sede->codigo, 'nombre' => $sede->nombre],
+            'qr_value' => $sede->generateDobleRegistroStaticQRValue(),
+            'tipo'     => 'doble',
+        ]);
+    }
+
+    public function enableQRDoble(int $id): JsonResponse
+    {
+        $sede = Sede::findOrFail($id);
+
+        if (!$sede->doble_registro) {
+            return response()->json(['message' => 'Esta sede no tiene doble registro habilitado.'], 422);
+        }
+
+        $sede->update(['qr_doble_token' => bin2hex(random_bytes(16))]);
+
+        return response()->json([
+            'message'  => 'QR de doble registro habilitado.',
+            'qr_value' => $sede->generateDobleRegistroStaticQRValue(),
+        ]);
+    }
+
+    public function regenerateQRDoble(int $id): JsonResponse
+    {
+        $sede = Sede::findOrFail($id);
+        $sede->update(['qr_doble_token' => bin2hex(random_bytes(16))]);
+
+        return response()->json([
+            'message'  => 'QR de doble registro regenerado. Los QR impresos anteriores ya no son válidos.',
+            'qr_value' => $sede->generateDobleRegistroStaticQRValue(),
         ]);
     }
 

@@ -139,6 +139,41 @@
     </div>
 </div>
 
+{{-- Modal QR Doble Registro --}}
+<div class="modal fade" id="qrDobleModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa-solid fa-right-left me-2 text-warning"></i>QR Doble Registro — <span id="qrDobleSedeName"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="qrDobleNotEnabled" class="text-center py-4 d-none">
+                    <p class="text-muted">Esta sede no tiene QR de doble registro habilitado.</p>
+                    <button class="btn btn-warning" onclick="enableQRDoble()">
+                        <i class="fa-solid fa-toggle-on me-1"></i> Habilitar QR Doble Registro
+                    </button>
+                </div>
+                <div id="qrDobleContent" class="d-none">
+                    <div class="alert alert-warning py-2 mb-3">
+                        <i class="fa-solid fa-circle-info me-1"></i>
+                        Este QR es <strong>imprimible y permanente</strong>. Al escanearlo registra automáticamente <strong>salida de la sede anterior + entrada aquí</strong>, sin preguntar al empleado. Si se compromete, usa "Regenerar".
+                    </div>
+                    <div class="text-center py-2" id="qrDobleCanvas"></div>
+                    <div class="d-flex justify-content-center gap-2 mt-3">
+                        <button class="btn btn-warning" onclick="printQRDoble()">
+                            <i class="fa-solid fa-print me-1"></i> Imprimir
+                        </button>
+                        <button class="btn btn-danger" onclick="regenerateQRDoble()">
+                            <i class="fa-solid fa-rotate me-1"></i> Regenerar (invalida QRs anteriores)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- Modal QR estático (imprimible) --}}
 <div class="modal fade" id="staticQrModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -497,6 +532,12 @@ function buildSedesColumns() {
                     ? `<button class="btn btn-sm btn-outline-success me-1" onclick="showQR(${s.id},'${sNom}')" title="QR dinámico (kiosco)"><i class="fa-solid fa-qrcode"></i></button>`
                     : `<button class="btn btn-sm btn-outline-success me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-qrcode"></i></button>`;
 
+                const btnQrDoble = s.doble_registro
+                    ? (canEditarSede
+                        ? `<button class="btn btn-sm btn-outline-warning me-1" onclick="showQRDoble(${s.id},'${sNom}',${s.qr_doble_token ? 'true' : 'false'})" title="QR Doble Registro (imprimible)"><i class="fa-solid fa-right-left"></i></button>`
+                        : `<button class="btn btn-sm btn-outline-warning me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-right-left"></i></button>`)
+                    : '';
+
                 const btnQrStatic = canEditarSede
                     ? `<button class="btn btn-sm ${staticCls} me-1" onclick="showStaticQR(${s.id},'${sNom}',${s.qr_static_token ? 'true' : 'false'})" title="${staticTit}"><i class="fa-solid fa-print"></i></button>`
                     : `<button class="btn btn-sm btn-outline-secondary me-1" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-print"></i></button>`;
@@ -513,7 +554,7 @@ function buildSedesColumns() {
                     ? `<button class="btn btn-sm btn-outline-danger" onclick="deleteSede(${s.id})"><i class="fa-solid fa-trash"></i></button>`
                     : `<button class="btn btn-sm btn-outline-danger" disabled data-bs-toggle="tooltip" title="No tiene permiso"><i class="fa-solid fa-trash"></i></button>`;
 
-                return btnQr + btnQrStatic + btnQrWeb + btnEdit + btnDel;
+                return btnQr + btnQrDoble + btnQrStatic + btnQrWeb + btnEdit + btnDel;
             }
         }
     );
@@ -721,6 +762,65 @@ async function refreshQR() {
         const remaining = data.expires_in_seconds;
         document.getElementById('qrCountdown').textContent = remaining + 's';
     } catch(e) { console.error('Error generando QR', e); }
+}
+
+// ── QR Doble Registro ─────────────────────────────────────────────────────────
+let qrDobleSedeId = null;
+
+async function showQRDoble(sedeId, sedeName, isEnabled) {
+    qrDobleSedeId = sedeId;
+    document.getElementById('qrDobleSedeName').textContent = sedeName;
+    document.getElementById('qrDobleCanvas').innerHTML = '';
+    document.getElementById('qrDobleNotEnabled').classList.add('d-none');
+    document.getElementById('qrDobleContent').classList.add('d-none');
+
+    const modal = new bootstrap.Modal(document.getElementById('qrDobleModal'));
+    modal.show();
+
+    if (!isEnabled) {
+        document.getElementById('qrDobleNotEnabled').classList.remove('d-none');
+        return;
+    }
+
+    const res  = await fetch(`/admin/sedes/${sedeId}/qr-doble`, { headers: buildHeaders() });
+    if (!res.ok) {
+        document.getElementById('qrDobleNotEnabled').classList.remove('d-none');
+        return;
+    }
+    const data = await res.json();
+    document.getElementById('qrDobleContent').classList.remove('d-none');
+    new QRCode(document.getElementById('qrDobleCanvas'), { text: data.qr_value, width: 220, height: 220 });
+}
+
+async function enableQRDoble() {
+    const res  = await fetch(`/admin/sedes/${qrDobleSedeId}/qr-doble/enable`, { method: 'POST', headers: buildHeaders() });
+    const data = await res.json();
+    document.getElementById('qrDobleNotEnabled').classList.add('d-none');
+    document.getElementById('qrDobleContent').classList.remove('d-none');
+    document.getElementById('qrDobleCanvas').innerHTML = '';
+    new QRCode(document.getElementById('qrDobleCanvas'), { text: data.qr_value, width: 220, height: 220 });
+}
+
+async function regenerateQRDoble() {
+    const ok = await Swal.fire({
+        title: '¿Regenerar QR de doble registro?',
+        text: 'Los QR impresos anteriores dejarán de funcionar.',
+        icon: 'warning', showCancelButton: true,
+        confirmButtonText: 'Sí, regenerar', cancelButtonText: 'Cancelar',
+    });
+    if (!ok.isConfirmed) return;
+    const res  = await fetch(`/admin/sedes/${qrDobleSedeId}/qr-doble/regenerar`, { method: 'POST', headers: buildHeaders() });
+    const data = await res.json();
+    document.getElementById('qrDobleCanvas').innerHTML = '';
+    new QRCode(document.getElementById('qrDobleCanvas'), { text: data.qr_value, width: 220, height: 220 });
+}
+
+function printQRDoble() {
+    const canvas = document.querySelector('#qrDobleCanvas canvas') || document.querySelector('#qrDobleCanvas img');
+    const src = canvas?.toDataURL ? canvas.toDataURL() : canvas?.src;
+    if (!src) return;
+    const w = window.open('');
+    w.document.write(`<img src="${src}" onload="window.print();window.close();">`);
 }
 
 // ── QR Estático ───────────────────────────────────────────────────────────────

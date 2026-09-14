@@ -101,7 +101,7 @@ class AttendanceController extends Controller
             'accuracy'       => 'nullable|integer|min:0',
             'metodo'         => 'required|in:qr,biometrico,reconocimiento_facial,foto',
             'foto_evidencia' => 'nullable|string',
-            'tipo'           => 'required|in:entrada,salida',
+            'tipo'           => 'nullable|in:entrada,salida',
             'kiosco_user_id' => 'nullable|integer',
         ]);
 
@@ -127,6 +127,7 @@ class AttendanceController extends Controller
 
         $qrValidado = false;
         $sede = null;
+        $qrData = null;
 
         if ($request->metodo === 'reconocimiento_facial') {
             // En modo kiosco: usar la sede asignada al kiosco o al empleado
@@ -163,11 +164,13 @@ class AttendanceController extends Controller
                 return response()->json(['message' => 'Sede no encontrada o inactiva.'], 422);
             }
 
-            $qrData2 = json_decode($request->qr_value, true);
-            $isStatic = ($qrData2['v'] ?? 1) === 2;
-            $qrValidado = $isStatic
-                ? $sede->validateStaticQRValue($request->qr_value)
-                : $sede->validateQRValue($request->qr_value);
+            $isStatic   = ($qrData['v'] ?? 1) === 2;
+            $isDoble    = $isStatic && ($qrData['dr'] ?? 0) === 1;
+            $qrValidado = $isDoble
+                ? $sede->validateDobleRegistroStaticQRValue($request->qr_value)
+                : ($isStatic
+                    ? $sede->validateStaticQRValue($request->qr_value)
+                    : $sede->validateQRValue($request->qr_value));
             if (!$qrValidado) {
                 return response()->json(['message' => 'El código QR no es válido o ha expirado.'], 422);
             }
@@ -211,15 +214,17 @@ class AttendanceController extends Controller
         $fechaHora = Carbon::now(config('app.timezone'));
 
         // ── Doble registro automático ────────────────────────────────────────
-        // Se activa si la sede actual tiene doble_registro=1 O si la última
-        // sede del empleado tiene doble_registro=1 (para el viaje de regreso).
+        // Se activa si el QR escaneado tiene dr:1 (QR especial de doble registro)
+        // O si la última sede del empleado tiene doble_registro=1 (viaje de regreso).
+        $qrEsDoble = isset($qrData['dr']) && $qrData['dr'] === 1;
+
         $ultimoRegistro = AttendanceRecord::where('user_id', $user->id)
             ->orderBy('fecha_hora', 'desc')
             ->first();
 
         $sedeAnterior = $ultimoRegistro ? Sede::find($ultimoRegistro->sede_id) : null;
 
-        $activarDoble = $sede->doble_registro
+        $activarDoble = $qrEsDoble
             || ($sedeAnterior && $sedeAnterior->doble_registro);
 
         if ($activarDoble && $sedeAnterior && $sedeAnterior->id !== $sede->id) {
