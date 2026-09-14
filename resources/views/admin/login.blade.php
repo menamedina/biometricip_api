@@ -54,7 +54,6 @@
             overflow: hidden !important;
             background: #dee2e6 !important;
             min-height: 560px !important;
-            max-height: 560px !important;
         }
         .carrusel-slide {
             position: absolute !important;
@@ -72,7 +71,7 @@
         .carrusel-slide img {
             width: 100% !important;
             height: 100% !important;
-            object-fit: contain !important;
+            object-fit: cover !important;
             object-position: center !important;
             display: block !important;
         }
