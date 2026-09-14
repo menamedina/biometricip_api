@@ -872,6 +872,7 @@ async function loadEmpleados() {
                 processing: true,
                 order: [[1, 'asc']],
                 scrollX: true,
+                autoWidth: false,
                 pageLength: 25,
                 lengthMenu: [10, 25, 50, 100],
                 language: {
@@ -885,6 +886,7 @@ async function loadEmpleados() {
                     processing: 'Procesando...',
                 },
                 drawCallback: function() {
+                    this.api().columns.adjust();
                     colVisEmpApply(colVisEmpGetState());
                     document.querySelectorAll('#empleadosTable [data-bs-toggle="tooltip"]').forEach(el => {
                         bootstrap.Tooltip.getOrCreateInstance(el);
