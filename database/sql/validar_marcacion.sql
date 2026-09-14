@@ -28,7 +28,7 @@
       metodo,
       fecha_hora
   FROM tbl_registros_asistencia r
-  WHERE user_id = 2
+  WHERE user_id = 2 AND DATE(fecha_hora) = '2026-09-14';
   ORDER BY fecha_hora DESC
   LIMIT 20;
 

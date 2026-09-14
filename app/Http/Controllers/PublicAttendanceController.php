@@ -115,6 +115,135 @@ class PublicAttendanceController extends Controller
         return $this->registrarVisitante($request, $sede, $fotoFull, $fotoThumb);
     }
 
+    // ── Doble Registro ───────────────────────────────────────────────────────────
+
+    public function showDoble(string $webToken, string $sedeCode, string $token): View
+    {
+        $empresaId = $this->resolveEmpresaId($webToken);
+        abort_if(!$empresaId, 404);
+
+        TenantHelper::switchTenant($empresaId);
+
+        $sede = Sede::where('codigo', $sedeCode)->where('is_active', true)->firstOrFail();
+
+        abort_if(!$sede->doble_registro || !$sede->validateDobleRegistroToken($token), 404);
+
+        return view('public.attendance_doble', compact('sede', 'webToken', 'sedeCode', 'token'));
+    }
+
+    public function storeDoble(Request $request, string $webToken, string $sedeCode, string $token): JsonResponse
+    {
+        $empresaId = $this->resolveEmpresaId($webToken);
+        if (!$empresaId) return response()->json(['message' => 'QR inválido.'], 404);
+
+        TenantHelper::switchTenant($empresaId);
+
+        $sede = Sede::where('codigo', $sedeCode)->where('is_active', true)->first();
+        if (!$sede || !$sede->doble_registro || !$sede->validateDobleRegistroToken($token)) {
+            return response()->json(['message' => 'QR inválido o expirado.'], 422);
+        }
+
+        $request->validate([
+            'cedula'         => 'required|string|max:20',
+            'foto_evidencia' => 'nullable|string',
+            'lat'            => 'required|numeric|between:-90,90',
+            'lng'            => 'required|numeric|between:-180,180',
+            'accuracy'       => 'nullable|integer|min:0',
+        ], [
+            'cedula.required' => 'La cédula es obligatoria.',
+            'lat.required'    => 'No se pudo obtener tu ubicación GPS.',
+            'lng.required'    => 'No se pudo obtener tu ubicación GPS.',
+        ]);
+
+        // Validar geocerca
+        $distancia = $this->haversineDistance(
+            (float) $request->lat, (float) $request->lng,
+            (float) $sede->lat,    (float) $sede->lng
+        );
+        $accuracy = min((int) $request->input('accuracy', 0), 250);
+        if ($distancia > $sede->radio_mts + $accuracy) {
+            return response()->json([
+                'success' => false,
+                'message' => "Estás a " . round($distancia) . " m de la sede. Debes estar dentro del radio de {$sede->radio_mts} m.",
+            ], 422);
+        }
+
+        $user = User::where('cedula', $request->cedula)
+            ->where('empresa_id', $empresaId)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se encontró ningún empleado con esa cédula.',
+            ], 404);
+        }
+
+        [$fotoFull, $fotoThumb] = $request->foto_evidencia
+            ? $this->procesarFoto($request->foto_evidencia)
+            : [null, null];
+
+        $fechaHora = now();
+
+        // Buscar último registro para determinar sede anterior
+        $ultimoRegistro = AttendanceRecord::where('user_id', $user->id)
+            ->orderBy('fecha_hora', 'desc')
+            ->first();
+
+        $sedeAnterior = $ultimoRegistro ? Sede::find($ultimoRegistro->sede_id) : null;
+
+        $registros = [];
+
+        if ($sedeAnterior && $sedeAnterior->id !== $sede->id) {
+            // Salida automática de la sede anterior
+            $registros[] = AttendanceRecord::create([
+                'user_id'               => $user->id,
+                'sede_id'               => $sedeAnterior->id,
+                'horario_id'            => $user->horario_id ?: null,
+                'tipo'                  => 'salida',
+                'metodo'                => 'qr_web',
+                'qr_validado'           => true,
+                'geocerca_validada'     => true,
+                'distancia_oficina_mts' => round($distancia),
+                'foto_evidencia'        => null,
+                'fecha_hora'            => $fechaHora,
+            ]);
+        }
+
+        // Entrada a la sede actual
+        $record = AttendanceRecord::create([
+            'user_id'               => $user->id,
+            'sede_id'               => $sede->id,
+            'horario_id'            => $user->horario_id ?: null,
+            'tipo'                  => 'entrada',
+            'metodo'                => 'qr_web',
+            'qr_validado'           => true,
+            'geocerca_validada'     => true,
+            'distancia_oficina_mts' => round($distancia),
+            'foto_evidencia'        => $fotoFull ? 'base64' : null,
+            'fecha_hora'            => $fechaHora,
+        ]);
+
+        if ($fotoFull) {
+            AttendancePhoto::create([
+                'attendance_record_id' => $record->id,
+                'foto_base64'          => $fotoFull,
+                'thumbnail_base64'     => $fotoThumb ?? $fotoFull,
+            ]);
+        }
+
+        $mensaje = $sedeAnterior && $sedeAnterior->id !== $sede->id
+            ? "¡Salida de {$sedeAnterior->nombre} y entrada a {$sede->nombre} registradas!"
+            : "¡Entrada a {$sede->nombre} registrada!";
+
+        return response()->json([
+            'success' => true,
+            'message' => $mensaje,
+            'nombre'  => $user->name,
+        ]);
+    }
+
     public function buscarVisitante(Request $request, string $webToken, string $sedeCode, string $token): JsonResponse
     {
         $empresaId = $this->resolveEmpresaId($webToken);

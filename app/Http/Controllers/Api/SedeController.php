@@ -144,7 +144,7 @@ class SedeController extends Controller
         ]);
     }
 
-    public function qrDoble(int $id): JsonResponse
+    public function qrDoble(Request $request, int $id): JsonResponse
     {
         $sede = Sede::findOrFail($id);
 
@@ -156,14 +156,23 @@ class SedeController extends Controller
             return response()->json(['message' => 'QR de doble registro no habilitado para esta sede.'], 404);
         }
 
+        $user = $request->user();
+        if ($user->admin_tenant) {
+            $empresaId = (int) $request->header('X-Empresa-Id', 0);
+            if (!$empresaId) return response()->json(['message' => 'Empresa no especificada.'], 422);
+            TenantHelper::switchTenant($empresaId);
+        }
+
+        $webToken = $this->getWebToken($user->empresa_id ?? ($empresaId ?? 0));
+
         return response()->json([
             'sede'     => ['id' => $sede->id, 'codigo' => $sede->codigo, 'nombre' => $sede->nombre],
-            'qr_value' => $sede->generateDobleRegistroStaticQRValue(),
+            'qr_value' => $sede->generateDobleRegistroUrl($webToken),
             'tipo'     => 'doble',
         ]);
     }
 
-    public function enableQRDoble(int $id): JsonResponse
+    public function enableQRDoble(Request $request, int $id): JsonResponse
     {
         $sede = Sede::findOrFail($id);
 
@@ -173,21 +182,41 @@ class SedeController extends Controller
 
         $sede->update(['qr_doble_token' => bin2hex(random_bytes(16))]);
 
+        $user = $request->user();
+        $empresaId = $user->admin_tenant
+            ? (int) $request->header('X-Empresa-Id', 0)
+            : ($user->empresa_id ?? 0);
+
+        $webToken = $this->getWebToken($empresaId);
+
         return response()->json([
             'message'  => 'QR de doble registro habilitado.',
-            'qr_value' => $sede->generateDobleRegistroStaticQRValue(),
+            'qr_value' => $sede->generateDobleRegistroUrl($webToken),
         ]);
     }
 
-    public function regenerateQRDoble(int $id): JsonResponse
+    public function regenerateQRDoble(Request $request, int $id): JsonResponse
     {
         $sede = Sede::findOrFail($id);
         $sede->update(['qr_doble_token' => bin2hex(random_bytes(16))]);
 
+        $user = $request->user();
+        $empresaId = $user->admin_tenant
+            ? (int) $request->header('X-Empresa-Id', 0)
+            : ($user->empresa_id ?? 0);
+
+        $webToken = $this->getWebToken($empresaId);
+
         return response()->json([
             'message'  => 'QR de doble registro regenerado. Los QR impresos anteriores ya no son válidos.',
-            'qr_value' => $sede->generateDobleRegistroStaticQRValue(),
+            'qr_value' => $sede->generateDobleRegistroUrl($webToken),
         ]);
+    }
+
+    private function getWebToken(int $empresaId): string
+    {
+        $encrypted = Crypt::encryptString((string) $empresaId);
+        return rtrim(strtr(base64_encode($encrypted), '+/', '-_'), '=');
     }
 
     public function qrStatic(int $id): JsonResponse

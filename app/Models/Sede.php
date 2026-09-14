@@ -130,37 +130,16 @@ class Sede extends Model
         return hash_equals($expected, $data['tok']);
     }
 
-    public function generateDobleRegistroStaticQRValue(): string
+    public function generateDobleRegistroUrl(string $webToken): string
     {
         $tok = substr(hash_hmac('sha256', $this->codigo . $this->secret_key, $this->qr_doble_token), 0, 32);
-        return json_encode([
-            'v'   => 2,
-            's'   => $this->codigo,
-            'n'   => $this->nombre,
-            'lat' => $this->lat,
-            'lng' => $this->lng,
-            'r'   => $this->radio_mts,
-            'tok' => $tok,
-            'dr'  => 1,
-        ]);
+        return rtrim(config('app.url'), '/') . '/asistencia-dr/' . $webToken . '/' . $this->codigo . '/' . $tok;
     }
 
-    public function validateDobleRegistroStaticQRValue(string $qrValue): bool
+    public function validateDobleRegistroToken(string $token): bool
     {
-        if (!$this->qr_doble_token) {
-            return false;
-        }
-
-        $data = json_decode($qrValue, true);
-        if (!$data || ($data['v'] ?? null) !== 2 || !isset($data['s'], $data['tok']) || ($data['dr'] ?? 0) !== 1) {
-            return false;
-        }
-
-        if ($data['s'] !== $this->codigo) {
-            return false;
-        }
-
+        if (!$this->qr_doble_token) return false;
         $expected = substr(hash_hmac('sha256', $this->codigo . $this->secret_key, $this->qr_doble_token), 0, 32);
-        return hash_equals($expected, $data['tok']);
+        return hash_equals($expected, $token);
     }
 }

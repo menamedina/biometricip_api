@@ -99,6 +99,10 @@ Route::get ('/asistencia/{webToken}/{sedeCode}/{token}',                    [Pub
 Route::post('/asistencia/{webToken}/{sedeCode}/{token}',                    [PublicAttendanceController::class, 'store'])->name('public.attendance.store');
 Route::post('/asistencia/{webToken}/{sedeCode}/{token}/buscar-visitante',   [PublicAttendanceController::class, 'buscarVisitante'])->name('public.attendance.buscar-visitante');
 
+// QR Doble Registro — página pública sin autenticación
+Route::get ('/asistencia-dr/{webToken}/{sedeCode}/{token}',  [PublicAttendanceController::class, 'showDoble'])->name('public.attendance.doble.show');
+Route::post('/asistencia-dr/{webToken}/{sedeCode}/{token}',  [PublicAttendanceController::class, 'storeDoble'])->name('public.attendance.doble.store');
+
 Route::get('/api/login-images', [LoginImageController::class, 'index']);
 
 Route::get('/admin/login',  [LoginController::class, 'showLogin'])->name('admin.login.show');
