@@ -37,8 +37,8 @@
     AND DATE(fecha_hora) = '2026-09-14';
 
 DELETE FROM tbl_registros_asistencia
-  WHERE id in (2100,2101,2102,2103,2104,2105,2106);
+  WHERE id in (2107,2108,2109,2111,2112,2113);
 
 DELETE FROM tbl_registros_asistencia_log
-  WHERE registro_id in (2100,2101,2102,2103,2104,2105,2106);
+  WHERE registro_id in (2107,2108,2109,2111,2112,2113);
 

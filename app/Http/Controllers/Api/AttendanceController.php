@@ -220,6 +220,7 @@ class AttendanceController extends Controller
 
         $ultimoRegistro = AttendanceRecord::where('user_id', $user->id)
             ->orderBy('fecha_hora', 'desc')
+            ->orderBy('id', 'desc')
             ->first();
 
         $sedeAnterior = $ultimoRegistro ? Sede::find($ultimoRegistro->sede_id) : null;
@@ -386,6 +387,7 @@ class AttendanceController extends Controller
         $ultimoTipo = AttendanceRecord::where('user_id', $user->id)
             ->where('fecha_hora', '<', $fechaHoraQr)
             ->orderBy('fecha_hora', 'desc')
+            ->orderBy('id', 'desc')
             ->value('tipo');
 
         $permitidos = match ($ultimoTipo) {
@@ -562,6 +564,7 @@ class AttendanceController extends Controller
             ->where('user_id', $user->id)
             ->whereDate('fecha_hora', $date)
             ->orderBy('fecha_hora', 'desc')
+            ->orderBy('id', 'desc')
             ->get();
 
         return response()->json(['data' => $records]);
