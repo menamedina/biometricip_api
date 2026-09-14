@@ -35,3 +35,7 @@
   DELETE FROM tbl_registros_asistencia
   WHERE user_id = 2
     AND DATE(fecha_hora) = '2026-09-14';
+
+DELETE FROM tbl_registros_asistencia
+  WHERE id in (2087, 2088, 2089, 2090)
+

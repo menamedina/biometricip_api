@@ -193,11 +193,61 @@ class PublicAttendanceController extends Controller
 
         $sedeAnterior = $ultimoRegistro ? Sede::find($ultimoRegistro->sede_id) : null;
 
-        $registros = [];
+        // Si ya está en esta misma sede, buscar la última sede DIFERENTE en el historial
+        // para hacer salida de aquí + entrada allá (regreso)
+        if ($sedeAnterior && $sedeAnterior->id === $sede->id) {
+            $registroAnteriorDistinto = AttendanceRecord::where('user_id', $user->id)
+                ->where('sede_id', '!=', $sede->id)
+                ->orderBy('fecha_hora', 'desc')
+                ->first();
+            $sedeDestino = $registroAnteriorDistinto ? Sede::find($registroAnteriorDistinto->sede_id) : null;
 
+            // Salida de la sede actual (Gimnasio)
+            AttendanceRecord::create([
+                'user_id'               => $user->id,
+                'sede_id'               => $sede->id,
+                'horario_id'            => $user->horario_id ?: null,
+                'tipo'                  => 'salida',
+                'metodo'                => 'qr_web',
+                'qr_validado'           => true,
+                'geocerca_validada'     => true,
+                'distancia_oficina_mts' => round($distancia),
+                'foto_evidencia'        => null,
+                'fecha_hora'            => $fechaHora,
+            ]);
+
+            // Entrada a la sede anterior (empresa)
+            $record = AttendanceRecord::create([
+                'user_id'               => $user->id,
+                'sede_id'               => $sedeDestino ? $sedeDestino->id : $sede->id,
+                'horario_id'            => $user->horario_id ?: null,
+                'tipo'                  => 'entrada',
+                'metodo'                => 'qr_web',
+                'qr_validado'           => true,
+                'geocerca_validada'     => true,
+                'distancia_oficina_mts' => round($distancia),
+                'foto_evidencia'        => $fotoFull ? 'base64' : null,
+                'fecha_hora'            => $fechaHora,
+            ]);
+
+            if ($fotoFull) {
+                AttendancePhoto::create([
+                    'attendance_record_id' => $record->id,
+                    'foto_base64'          => $fotoFull,
+                    'thumbnail_base64'     => $fotoThumb ?? $fotoFull,
+                ]);
+            }
+
+            $mensaje = $sedeDestino
+                ? "¡Salida de {$sede->nombre} y entrada a {$sedeDestino->nombre} registradas!"
+                : "¡Salida de {$sede->nombre} registrada!";
+
+            return response()->json(['success' => true, 'message' => $mensaje, 'nombre' => $user->name]);
+        }
+
+        // Sede anterior diferente: salida de allá + entrada aquí
         if ($sedeAnterior && $sedeAnterior->id !== $sede->id) {
-            // Salida automática de la sede anterior
-            $registros[] = AttendanceRecord::create([
+            AttendanceRecord::create([
                 'user_id'               => $user->id,
                 'sede_id'               => $sedeAnterior->id,
                 'horario_id'            => $user->horario_id ?: null,
