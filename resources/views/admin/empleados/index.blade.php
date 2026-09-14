@@ -597,6 +597,7 @@ async function initCatalogos() {
         document.getElementById('filterEmpresa').innerHTML += `<option value="{{ $emp->id }}">{{ $emp->nombre }}</option>`;
         @endforeach
         document.getElementById('empEmpresaId').addEventListener('change', e => loadCatalogosParaEmpresa(e.target.value));
+        await cargarRoles();
         return;
     }
 
