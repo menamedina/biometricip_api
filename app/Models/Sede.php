@@ -19,6 +19,7 @@ class Sede extends Model
             'lng' => 'float',
             'radio_mts' => 'integer',
             'is_active' => 'boolean',
+            'doble_registro' => 'boolean',
         ];
     }
 

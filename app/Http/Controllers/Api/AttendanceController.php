@@ -208,26 +208,92 @@ class AttendanceController extends Controller
             [$fotoBase64, $thumbBase64] = $this->procesarFoto($request->foto_evidencia);
         }
 
+        $fechaHora = Carbon::now(config('app.timezone'));
+
+        // ── Doble registro automático ────────────────────────────────────────
+        // Se activa si la sede actual tiene doble_registro=1 O si la última
+        // sede del empleado tiene doble_registro=1 (para el viaje de regreso).
+        $ultimoRegistro = AttendanceRecord::where('user_id', $user->id)
+            ->orderBy('fecha_hora', 'desc')
+            ->first();
+
+        $sedeAnterior = $ultimoRegistro ? Sede::find($ultimoRegistro->sede_id) : null;
+
+        $activarDoble = $sede->doble_registro
+            || ($sedeAnterior && $sedeAnterior->doble_registro);
+
+        if ($activarDoble && $sedeAnterior && $sedeAnterior->id !== $sede->id) {
+            // 1. Salida automática de la sede anterior
+            $recordSalida = AttendanceRecord::create([
+                'user_id'               => $user->id,
+                'sede_id'               => $sedeAnterior->id,
+                'horario_id'            => $horario?->id,
+                'tipo'                  => 'salida',
+                'lat'                   => $request->lat,
+                'lng'                   => $request->lng,
+                'foto_evidencia'        => null,
+                'metodo'                => $request->metodo,
+                'qr_validado'           => $qrValidado,
+                'geocerca_validada'     => $geocercaValidada,
+                'distancia_oficina_mts' => round($distancia, 2),
+                'fecha_hora'            => $fechaHora,
+            ]);
+
+            // 2. Entrada a la sede actual
+            $record = AttendanceRecord::create([
+                'user_id'               => $user->id,
+                'sede_id'               => $sede->id,
+                'horario_id'            => $horario?->id,
+                'tipo'                  => 'entrada',
+                'lat'                   => $request->lat,
+                'lng'                   => $request->lng,
+                'foto_evidencia'        => $fotoBase64 ? 'base64' : null,
+                'metodo'                => $request->metodo,
+                'qr_validado'           => $qrValidado,
+                'geocerca_validada'     => $geocercaValidada,
+                'distancia_oficina_mts' => round($distancia, 2),
+                'fecha_hora'            => $fechaHora,
+            ]);
+
+            if ($fotoBase64 && $thumbBase64) {
+                AttendancePhoto::create([
+                    'attendance_record_id' => $record->id,
+                    'foto_base64'          => $fotoBase64,
+                    'thumbnail_base64'     => $thumbBase64,
+                ]);
+            }
+
+            $record->load(['user', 'sede']);
+
+            return response()->json([
+                'message'        => 'Asistencia registrada correctamente.',
+                'doble_registro' => true,
+                'data'           => $record,
+                'data_salida'    => $recordSalida,
+            ], 201);
+        }
+        // ── Registro normal (un solo registro) ──────────────────────────────
+
         $record = AttendanceRecord::create([
-            'user_id'    => $user->id,
-            'sede_id'    => $sede->id,
-            'horario_id' => $horario?->id,
-            'tipo'       => $request->tipo,
-            'lat' => $request->lat,
-            'lng' => $request->lng,
-            'foto_evidencia' => $fotoBase64 ? 'base64' : null,
-            'metodo' => $request->metodo,
-            'qr_validado' => $qrValidado,
-            'geocerca_validada' => $geocercaValidada,
+            'user_id'               => $user->id,
+            'sede_id'               => $sede->id,
+            'horario_id'            => $horario?->id,
+            'tipo'                  => $request->tipo,
+            'lat'                   => $request->lat,
+            'lng'                   => $request->lng,
+            'foto_evidencia'        => $fotoBase64 ? 'base64' : null,
+            'metodo'                => $request->metodo,
+            'qr_validado'           => $qrValidado,
+            'geocerca_validada'     => $geocercaValidada,
             'distancia_oficina_mts' => round($distancia, 2),
-            'fecha_hora' => Carbon::now(config('app.timezone')),
+            'fecha_hora'            => $fechaHora,
         ]);
 
         if ($fotoBase64 && $thumbBase64) {
             AttendancePhoto::create([
                 'attendance_record_id' => $record->id,
-                'foto_base64' => $fotoBase64,
-                'thumbnail_base64' => $thumbBase64,
+                'foto_base64'          => $fotoBase64,
+                'thumbnail_base64'     => $thumbBase64,
             ]);
         }
 
@@ -235,7 +301,7 @@ class AttendanceController extends Controller
 
         return response()->json([
             'message' => 'Asistencia registrada correctamente.',
-            'data' => $record,
+            'data'    => $record,
         ], 201);
     }
 

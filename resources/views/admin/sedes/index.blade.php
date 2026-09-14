@@ -116,6 +116,13 @@
                                 <label class="form-check-label">Activo</label>
                             </div>
                         </div>
+                        <div class="col-12 mb-2">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="sedeDobleRegistro">
+                                <label class="form-check-label fw-semibold" for="sedeDobleRegistro">Doble registro (salida/entrada automático)</label>
+                            </div>
+                            <div class="form-text">Al escanear en esta sede se registra automáticamente la salida de la sede anterior y la entrada aquí (y viceversa al regresar).</div>
+                        </div>
                     </div>
                 </form>
                 <!-- Mapa -->
@@ -236,6 +243,7 @@ div.dataTables_wrapper div.dataTables_filter label { font-size: 13px; color: #6c
 div.dataTables_wrapper div.dataTables_info { font-size: 13px; color: #6c757d; }
 #sedesTable th, #sedesTable td { font-size: 13px; vertical-align: middle; white-space: nowrap; }
 .pac-container { z-index: 1060 !important; }
+#sedeDireccion { padding-left: 2rem !important; }
 </style>
 @endpush
 
@@ -400,7 +408,8 @@ function resetForm() {
     document.getElementById('sedeForm').reset();
     document.getElementById('sedeId').value = '';
     document.getElementById('sedeModalTitle').textContent = 'Nueva Sede';
-    document.getElementById('sedeActivo').checked = true;
+    document.getElementById('sedeActivo').checked        = true;
+    document.getElementById('sedeDobleRegistro').checked = false;
     document.getElementById('sedeRadio').value = 150;
     document.getElementById('sedeCodigo').value = getNextSedeCodigo();
     clearSedeError();
@@ -466,7 +475,11 @@ function buildSedesColumns() {
         { data: 'radio_mts', render: d => `${d}m` },
         {
             data: 'is_active',
-            render: d => `<span class="badge ${d ? 'bg-success' : 'bg-danger'}">${d ? 'Activo' : 'Inactivo'}</span>`
+            render: (d, t, s) => {
+                let badges = `<span class="badge ${d ? 'bg-success' : 'bg-danger'}">${d ? 'Activo' : 'Inactivo'}</span>`;
+                if (s.doble_registro) badges += ` <span class="badge bg-warning text-dark ms-1" title="Doble registro automático"><i class="fa-solid fa-right-left"></i> Doble</span>`;
+                return badges;
+            }
         },
         {
             data: null,
@@ -570,7 +583,8 @@ function editSede(sede) {
     document.getElementById('sedeLat').value = sede.lat;
     document.getElementById('sedeLng').value = sede.lng;
     document.getElementById('sedeRadio').value = sede.radio_mts;
-    document.getElementById('sedeActivo').checked = sede.is_active;
+    document.getElementById('sedeActivo').checked        = sede.is_active;
+    document.getElementById('sedeDobleRegistro').checked = !!sede.doble_registro;
     document.getElementById('sedeModalTitle').textContent = 'Editar Sede';
     if (isAdminTenant) {
         const sel = document.getElementById('sedeEmpresaId');
@@ -607,7 +621,8 @@ async function saveSede() {
         lat,
         lng,
         radio_mts: parseInt(document.getElementById('sedeRadio').value) || 150,
-        is_active: document.getElementById('sedeActivo').checked,
+        is_active:      document.getElementById('sedeActivo').checked,
+        doble_registro: document.getElementById('sedeDobleRegistro').checked,
     };
 
     const url    = id ? `/admin/sedes/${id}` : '/admin/sedes';
