@@ -198,11 +198,20 @@ class PublicAttendanceController extends Controller
 
         // ── Caso 3: ya tiene ENTRADA en esta misma sede → SALIDA aquí + ENTRADA a sede anterior del día
         if ($sedeAnterior && $sedeAnterior->id === $sede->id && $ultimoTipo === 'entrada') {
+            // Buscar sede destino: primero en el día, si no en todo el historial
             $sedeDestinoId = AttendanceRecord::where('user_id', $user->id)
                 ->whereDate('fecha_hora', $hoy)
                 ->where('sede_id', '!=', $sede->id)
                 ->orderBy('fecha_hora', 'desc')
                 ->value('sede_id');
+
+            if (!$sedeDestinoId) {
+                $sedeDestinoId = AttendanceRecord::where('user_id', $user->id)
+                    ->where('sede_id', '!=', $sede->id)
+                    ->orderBy('fecha_hora', 'desc')
+                    ->value('sede_id');
+            }
+
             $sedeDestino = $sedeDestinoId ? Sede::find($sedeDestinoId) : null;
 
             AttendanceRecord::create([
