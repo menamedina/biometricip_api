@@ -55,6 +55,10 @@ class AttendanceController extends Controller
             $query->where('user_id', $request->user_id);
         }
 
+        if ($request->filled('horario_id')) {
+            $query->where('horario_id', $request->horario_id);
+        }
+
         if ($request->filled('search')) {
             $search = $request->search;
             $userIds = User::where('name', 'like', "%{$search}%")

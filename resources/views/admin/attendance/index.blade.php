@@ -82,6 +82,14 @@
                                     <option value="">Todos los empleados</option>
                                 </select>
                             </div>
+                            <div class="col-md-2">
+                                <select class="form-select form-select-sm" id="filterHorario">
+                                    <option value="">Todos los horarios</option>
+                                    @foreach($horarios as $h)
+                                        <option value="{{ $h->id }}">{{ $h->nombre }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -220,6 +228,8 @@ async function loadRecords() {
     if (metodo) url += `&metodo=${metodo}`;
     if (empId)  url += `&user_id=${empId}`;
     if (search) url += `&search=${encodeURIComponent(search)}`;
+    const horarioId = document.getElementById('filterHorario').value;
+    if (horarioId) url += `&horario_id=${horarioId}`;
 
     try {
         const res  = await fetch(url, { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
@@ -237,7 +247,7 @@ async function loadRecords() {
             tablaAtt = $('#attendanceTable').DataTable({
                 data: datos,
                 processing: true,
-                order: [[4, 'desc']],
+                order: [[5, 'desc']],
                 scrollX: true,
                 pageLength: 20,
                 lengthMenu: [10, 20, 50, 100],
@@ -297,6 +307,15 @@ async function loadRecords() {
                         render: function(data, type) {
                             if (type !== 'display') return data ? data.codigo_empleado : '';
                             return data ? '<span class="badge bg-primary">' + (data.codigo_empleado || '—') + '</span>' : '—';
+                        }
+                    },
+                    {
+                        title: 'Horario',
+                        data: 'horario',
+                        className: 'col-att-horario',
+                        render: function(data, type) {
+                            if (type !== 'display') return data ? data.nombre : '';
+                            return data ? '<small class="text-muted text-truncate d-inline-block" style="max-width:90px;vertical-align:middle;" title="' + data.nombre + '">' + data.nombre + '</small>' : '—';
                         }
                     },
                     {
@@ -406,6 +425,7 @@ function limpiarFiltros() {
     document.getElementById('filterTipo').value = '';
     document.getElementById('filterMetodo').value = '';
     if (!isEmpleado) document.getElementById('filterEmpleado').value = '';
+    document.getElementById('filterHorario').value = '';
     loadRecords();
 }
 
@@ -475,6 +495,7 @@ var COL_VIS_KEY_ATT = 'attendance_col_vis';
 var COL_VIS_DEFS_ATT = [
     { cls: 'col-att-empleado',  label: 'Empleado',   default: true  },
     { cls: 'col-att-codigo',    label: 'Código',      default: true  },
+    { cls: 'col-att-horario',   label: 'Horario',     default: true  },
     { cls: 'col-att-sede',      label: 'Sede',        default: true  },
     { cls: 'col-att-tipo',      label: 'Tipo',        default: true  },
     { cls: 'col-att-fecha',     label: 'Fecha/Hora',  default: true  },

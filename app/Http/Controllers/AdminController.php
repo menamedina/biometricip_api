@@ -337,13 +337,15 @@ class AdminController extends Controller
 
     public function attendanceIndex(): View
     {
-        return view('admin.attendance.index');
+        $horarios = \App\Models\Horario::orderBy('nombre')->get(['id', 'nombre']);
+        return view('admin.attendance.index', compact('horarios'));
     }
 
     public function resumenIndex(): View
     {
-        $sedes = \App\Models\Sede::orderBy('nombre')->get(['id', 'nombre']);
-        return view('admin.resumen.index', compact('sedes'));
+        $sedes    = \App\Models\Sede::orderBy('nombre')->get(['id', 'nombre']);
+        $horarios = \App\Models\Horario::orderBy('nombre')->get(['id', 'nombre']);
+        return view('admin.resumen.index', compact('sedes', 'horarios'));
     }
 
     public function resumenRecords(Request $request): JsonResponse

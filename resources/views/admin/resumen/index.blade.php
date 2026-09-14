@@ -73,6 +73,14 @@
                             <option value="">Todos los departamentos</option>
                         </select>
                     </div>
+                    <div class="col-md-3">
+                        <select id="filterHorario" class="form-select form-select-sm">
+                            <option value="">Todos los horarios</option>
+                            @foreach($horarios as $h)
+                                <option value="{{ $h->id }}">{{ $h->nombre }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
@@ -87,7 +95,8 @@
                         <th class="col-res-empleado">Empleado</th>
                         <th class="col-res-codigo">Código</th>
                         <th class="col-res-depto">Departamento</th>
-                        <th class="col-res-fecha">Fecha</th>
+                        <th class="col-res-horario">Horario</th>
+                        <th class="col-res-fecha text-center">Fecha</th>
                         <th class="col-res-e1">Entrada 1</th>
                         <th class="col-res-s1">Salida 1</th>
                         <th class="col-res-e2">Entrada 2</th>
@@ -102,7 +111,7 @@
                 </thead>
                 <tbody id="resumenTbody">
                     <tr id="trLoadingRes">
-                        <td colspan="14" class="text-center py-5">
+                        <td colspan="15" class="text-center py-5">
                             <div class="spinner-border text-primary" role="status" style="width:2rem;height:2rem;"></div>
                             <p class="text-muted mt-2 mb-0 small">Cargando registros...</p>
                         </td>
@@ -321,6 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isEmpleado) {
         document.getElementById('filterEmpleado').closest('.col-md-3').style.display = 'none';
         document.getElementById('filterDepto').closest('.col-md-3').style.display    = 'none';
+        document.getElementById('filterHorario').closest('.col-md-3').style.display  = 'none';
     }
 
     cargarFiltros();
@@ -394,7 +404,7 @@ async function cargarResumen() {
     if ($.fn.DataTable.isDataTable('#resumenTable')) {
         $('#resumenTable').DataTable().destroy();
     }
-    tbody.innerHTML = '<tr id="trLoadingRes"><td colspan="14" class="text-center py-5"><div class="spinner-border text-primary" role="status" style="width:2rem;height:2rem;"></div><p class="text-muted mt-2 mb-0 small">Cargando registros...</p></td></tr>';
+    tbody.innerHTML = '<tr id="trLoadingRes"><td colspan="15" class="text-center py-5"><div class="spinner-border text-primary" role="status" style="width:2rem;height:2rem;"></div><p class="text-muted mt-2 mb-0 small">Cargando registros...</p></td></tr>';
 
     try {
         const res  = await fetch(url, { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
@@ -409,6 +419,11 @@ async function cargarResumen() {
             registros = registros.filter(r => r.user?.departamento_id == deptoId);
         }
 
+        const horarioId = isEmpleado ? '' : document.getElementById('filterHorario').value;
+        if (horarioId) {
+            registros = registros.filter(r => r.horario_id == horarioId);
+        }
+
         const search = document.getElementById('filterSearch').value.trim().toLowerCase();
         if (search) {
             registros = registros.filter(r =>
@@ -421,7 +436,7 @@ async function cargarResumen() {
         allRegistros = registros;
 
         if (!registros.length) {
-            tbody.innerHTML = '<tr><td colspan="14" class="text-center text-muted py-4">Sin registros para el período seleccionado</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="15" class="text-center text-muted py-4">Sin registros para el período seleccionado</td></tr>';
             const elInfo  = document.getElementById('resumenInfo');
             const elTotal = document.getElementById('resumenTotal');
             if (elInfo)  elInfo.textContent  = '';
@@ -514,8 +529,9 @@ async function cargarResumen() {
                 ? `<strong>${Math.floor(totalMin/60)}h ${String(totalMin%60).padStart(2,'0')}m</strong>`
                 : '<span class="text-muted">—</span>';
 
-            const deptoNombre = deptoMap[g.user?.departamento_id] || g.user?.departamento || '—';
-            const fechaFmt    = g.fecha.split('-').reverse().join('/');
+            const deptoNombre   = deptoMap[g.user?.departamento_id] || g.user?.departamento || '—';
+            const horarioNombre = g.registros[0]?.horario?.nombre || '—';
+            const fechaFmt      = g.fecha.split('-').reverse().join('/');
 
             // Botón para agregar registro en ese día para ese usuario (solo admin/supervisor)
             const btnAdd = !isEmpleado
@@ -534,7 +550,8 @@ async function cargarResumen() {
                 <td class="col-res-empleado"><div class="d-flex align-items-center gap-2">${avatarHtml}<span>${g.user?.name ?? 'N/A'}</span></div></td>
                 <td class="col-res-codigo"><span class="badge bg-primary">${g.user?.codigo_empleado ?? '—'}</span></td>
                 <td class="col-res-depto"><small class="text-muted">${deptoNombre}</small></td>
-                <td class="col-res-fecha">${fechaFmt}</td>
+                <td class="col-res-horario"><small class="text-muted text-truncate d-inline-block" style="max-width:90px;vertical-align:middle;" title="${horarioNombre}">${horarioNombre}</small></td>
+                <td class="col-res-fecha text-center">${fechaFmt}</td>
                 ${celdas.map((c, i) => `<td class="${colCls[i]}">${c}</td>`).join('')}
                 <td class="col-res-total text-end">${totalStr}</td>
                 <td class="col-res-acciones text-center">${btnAdd}</td>
@@ -571,7 +588,7 @@ async function cargarResumen() {
 
 
     } catch(e) {
-        tbody.innerHTML = `<tr><td colspan="14" class="text-center text-danger py-3">Error al cargar datos: ${e.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="15" class="text-center text-danger py-3">Error al cargar datos: ${e.message}</td></tr>`;
         console.error('cargarResumen error:', e);
     }
 }
@@ -758,6 +775,7 @@ var COL_VIS_DEFS_RES = [
     { cls: 'col-res-empleado',  label: 'Empleado',    default: true  },
     { cls: 'col-res-codigo',    label: 'Código',       default: true  },
     { cls: 'col-res-depto',     label: 'Departamento', default: false },
+    { cls: 'col-res-horario',   label: 'Horario',      default: true  },
     { cls: 'col-res-fecha',     label: 'Fecha',        default: true  },
     { cls: 'col-res-e1',        label: 'Entrada 1',    default: true  },
     { cls: 'col-res-s1',        label: 'Salida 1',     default: true  },
@@ -858,6 +876,7 @@ function limpiarFiltros() {
     document.getElementById('dateTo').value         = hoy;
     document.getElementById('filterEmpleado').value = '';
     document.getElementById('filterDepto').value    = '';
+    document.getElementById('filterHorario').value  = '';
     cargarResumen();
 }
 
