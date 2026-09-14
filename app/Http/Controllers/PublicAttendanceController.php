@@ -191,6 +191,7 @@ class PublicAttendanceController extends Controller
         $ultimoHoy  = AttendanceRecord::where('user_id', $user->id)
             ->whereDate('fecha_hora', $hoy)
             ->orderBy('fecha_hora', 'desc')
+            ->orderBy('id', 'desc')
             ->first();
 
         $sedeAnterior = $ultimoHoy ? Sede::find($ultimoHoy->sede_id) : null;
@@ -203,12 +204,14 @@ class PublicAttendanceController extends Controller
                 ->whereDate('fecha_hora', $hoy)
                 ->where('sede_id', '!=', $sede->id)
                 ->orderBy('fecha_hora', 'desc')
+                ->orderBy('id', 'desc')
                 ->value('sede_id');
 
             if (!$sedeDestinoId) {
                 $sedeDestinoId = AttendanceRecord::where('user_id', $user->id)
                     ->where('sede_id', '!=', $sede->id)
                     ->orderBy('fecha_hora', 'desc')
+                    ->orderBy('id', 'desc')
                     ->value('sede_id');
             }
 
