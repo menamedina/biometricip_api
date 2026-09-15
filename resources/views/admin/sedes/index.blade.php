@@ -277,6 +277,7 @@ div.dataTables_wrapper div.dataTables_length label,
 div.dataTables_wrapper div.dataTables_filter label { font-size: 13px; color: #6c757d; margin-bottom: 8px; }
 div.dataTables_wrapper div.dataTables_info { font-size: 13px; color: #6c757d; }
 #sedesTable th, #sedesTable td { font-size: 13px; vertical-align: middle; white-space: nowrap; }
+#qrDobleCanvas, #staticQrCanvas, #webQrCanvas { display: flex; justify-content: center; }
 .pac-container { z-index: 1060 !important; }
 #sedeDireccion { padding-left: 2rem !important; }
 </style>
