@@ -31,7 +31,7 @@ class Sede extends Model
     public function generateQRValue(int $timeSlot): string
     {
         $hash = substr(base64_encode($this->codigo . $this->secret_key . $timeSlot), 0, 12);
-        return json_encode([
+        $payload = [
             's'   => $this->codigo,
             'n'   => $this->nombre,
             't'   => $timeSlot,
@@ -39,7 +39,11 @@ class Sede extends Model
             'lat' => $this->lat,
             'lng' => $this->lng,
             'r'   => $this->radio_mts,
-        ]);
+        ];
+        if ($this->doble_registro) {
+            $payload['dr'] = 1;
+        }
+        return json_encode($payload);
     }
 
     public function generateDobleRegistroQRValue(int $timeSlot): string

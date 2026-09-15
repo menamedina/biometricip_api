@@ -331,7 +331,8 @@ class AuthController extends Controller
                     'nombre'    => $sede->nombre,
                     'lat'       => (float) $sede->lat,
                     'lng'       => (float) $sede->lng,
-                    'radio_mts' => (float) $sede->radio_mts,
+                    'radio_mts'       => (float) $sede->radio_mts,
+                    'doble_registro'  => (bool) $sede->doble_registro,
                 ];
             }
         }

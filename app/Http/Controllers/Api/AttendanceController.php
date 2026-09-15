@@ -216,13 +216,15 @@ class AttendanceController extends Controller
         }
 
         $fechaHora = Carbon::now(config('app.timezone'));
+        $hoy       = $fechaHora->toDateString();
 
         // ── Doble registro automático ────────────────────────────────────────
-        // Se activa si el QR escaneado tiene dr:1 (QR especial de doble registro)
-        // O si la última sede del empleado tiene doble_registro=1 (viaje de regreso).
+        // Se activa si: QR tiene dr:1, la sede actual es doble_registro=1,
+        // o el tipo no fue enviado (app omite tipo en sedes doble registro).
         $qrEsDoble = isset($qrData['dr']) && $qrData['dr'] === 1;
 
         $ultimoRegistro = AttendanceRecord::where('user_id', $user->id)
+            ->whereDate('fecha_hora', $hoy)
             ->orderBy('fecha_hora', 'desc')
             ->orderBy('id', 'desc')
             ->first();
@@ -230,10 +232,12 @@ class AttendanceController extends Controller
         $sedeAnterior = $ultimoRegistro ? Sede::find($ultimoRegistro->sede_id) : null;
 
         $activarDoble = $qrEsDoble
+            || $sede->doble_registro
             || ($sedeAnterior && $sedeAnterior->doble_registro);
 
         if ($activarDoble && $sedeAnterior && $sedeAnterior->id !== $sede->id) {
-            // 1. Salida automática de la sede anterior
+            // ── Caso A: Cambio de sede ──
+            // Salida automática de la sede anterior + Entrada a la sede nueva
             $recordSalida = AttendanceRecord::create([
                 'user_id'               => $user->id,
                 'sede_id'               => $sedeAnterior->id,
@@ -249,7 +253,6 @@ class AttendanceController extends Controller
                 'fecha_hora'            => $fechaHora,
             ]);
 
-            // 2. Entrada a la sede actual
             $record = AttendanceRecord::create([
                 'user_id'               => $user->id,
                 'sede_id'               => $sede->id,
@@ -282,13 +285,70 @@ class AttendanceController extends Controller
                 'data_salida'    => $recordSalida,
             ], 201);
         }
+
+        if ($activarDoble && $ultimoRegistro && $ultimoRegistro->sede_id === $sede->id
+            && $ultimoRegistro->tipo === 'entrada') {
+            // ── Caso B: Misma sede doble, último fue entrada → solo salida ──
+            // La entrada a otra sede se hace cuando el usuario seleccione otra sede
+            $record = AttendanceRecord::create([
+                'user_id'               => $user->id,
+                'sede_id'               => $sede->id,
+                'horario_id'            => $horario?->id,
+                'tipo'                  => 'salida',
+                'lat'                   => $request->lat,
+                'lng'                   => $request->lng,
+                'foto_evidencia'        => $fotoBase64 ? 'base64' : null,
+                'metodo'                => $request->metodo,
+                'qr_validado'           => $qrValidado,
+                'geocerca_validada'     => $geocercaValidada,
+                'distancia_oficina_mts' => round($distancia, 2),
+                'fecha_hora'            => $fechaHora,
+            ]);
+
+            if ($fotoBase64 && $thumbBase64) {
+                AttendancePhoto::create([
+                    'attendance_record_id' => $record->id,
+                    'foto_base64'          => $fotoBase64,
+                    'thumbnail_base64'     => $thumbBase64,
+                ]);
+            }
+
+            $record->load(['user', 'sede']);
+
+            return response()->json([
+                'message' => 'Salida registrada correctamente.',
+                'data'    => $record,
+            ], 201);
+        }
+
         // ── Registro normal (un solo registro) ──────────────────────────────
+        // Doble registro misma sede con último=salida → solo entrada (re-ingreso).
+        // O registro normal con tipo explícito desde la app.
+        $tipoFinal = $request->tipo;
+        if ($tipoFinal === null) {
+            if ($ultimoRegistro && $ultimoRegistro->tipo === 'entrada' && $ultimoRegistro->sede_id === $sede->id) {
+                $tipoFinal = 'salida';
+            } else {
+                $tipoFinal = 'entrada';
+            }
+        }
+
+        // ── Validación: no permitir entrada si hay entrada abierta en otra sede ──
+        if ($tipoFinal === 'entrada' && $ultimoRegistro
+            && $ultimoRegistro->tipo === 'entrada'
+            && $ultimoRegistro->sede_id !== $sede->id) {
+            $sedeAbierta = Sede::find($ultimoRegistro->sede_id);
+            $nombreSedeAbierta = $sedeAbierta ? $sedeAbierta->nombre : 'otra sede';
+            return response()->json([
+                'message' => "Debes registrar salida de {$nombreSedeAbierta} antes de entrar a otra sede.",
+            ], 422);
+        }
 
         $record = AttendanceRecord::create([
             'user_id'               => $user->id,
             'sede_id'               => $sede->id,
             'horario_id'            => $horario?->id,
-            'tipo'                  => $request->tipo,
+            'tipo'                  => $tipoFinal,
             'lat'                   => $request->lat,
             'lng'                   => $request->lng,
             'foto_evidencia'        => $fotoBase64 ? 'base64' : null,

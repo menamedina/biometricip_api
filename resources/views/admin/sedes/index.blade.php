@@ -233,7 +233,7 @@
                     </div>
                     <div class="text-center py-2" id="webQrCanvas"></div>
                     <div class="d-flex justify-content-center gap-2 mt-3">
-                        <button class="btn btn-primary" onclick="printWebQR()">
+                        <button class="btn btn-warning" onclick="printWebQR()">
                             <i class="fa-solid fa-print me-1"></i> Imprimir
                         </button>
                         <button class="btn btn-warning" onclick="regenerateWebQR()">
@@ -819,8 +819,27 @@ function printQRDoble() {
     const canvas = document.querySelector('#qrDobleCanvas canvas') || document.querySelector('#qrDobleCanvas img');
     const src = canvas?.toDataURL ? canvas.toDataURL() : canvas?.src;
     if (!src) return;
-    const w = window.open('');
-    w.document.write(`<img src="${src}" onload="window.print();window.close();">`);
+    const name = document.getElementById('qrDobleSedeName').textContent;
+    const win  = window.open('', '_blank');
+    win.document.write(`
+        <html><head><title>QR Doble Registro - ${name}</title>
+        <style>
+            body { margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: sans-serif; }
+            img  { width: 300px; height: 300px; }
+            h2   { margin-bottom: 12px; }
+            p    { font-size: 14px; color: #555; margin: 4px 0; }
+            button { margin-top: 20px; padding: 8px 24px; font-size: 16px; cursor: pointer; }
+            @media print { button { display: none; } }
+        </style></head>
+        <body>
+            <h2>Doble Registro</h2>
+            <img src="${src}"/>
+            <p style="font-size:18px; font-weight:bold; margin-top:12px;">${name}</p>
+            <p>Escanea con la app BiometricIP</p>
+            <button onclick="window.print()">Imprimir</button>
+        </body></html>
+    `);
+    win.document.close();
 }
 
 // ── QR Estático ───────────────────────────────────────────────────────────────
@@ -965,9 +984,9 @@ async function regenerateWebQR() {
 }
 
 function printWebQR() {
-    const canvas = document.querySelector('#webQrCanvas canvas');
-    if (!canvas) return;
-    const img  = canvas.toDataURL('image/png');
+    const canvas = document.querySelector('#webQrCanvas canvas') || document.querySelector('#webQrCanvas img');
+    const src = canvas?.toDataURL ? canvas.toDataURL() : canvas?.src;
+    if (!src) return;
     const name = document.getElementById('webQrSedeName').textContent;
     const win  = window.open('', '_blank');
     win.document.write(`
@@ -982,7 +1001,7 @@ function printWebQR() {
         </style></head>
         <body>
             <h2>Registrar Asistencia</h2>
-            <img src="${img}"/>
+            <img src="${src}"/>
             <p style="font-size:18px; font-weight:bold; margin-top:12px;">${name}</p>
             <p>Escanea con tu cámara — no necesitas la app</p>
             <button onclick="window.print()">Imprimir</button>
