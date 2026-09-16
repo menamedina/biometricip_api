@@ -233,12 +233,17 @@ Route::middleware(['auth', 'admin', 'tenancy.session'])->group(function () {
     // Capacitaciones
     Route::get   ('/admin/capacitaciones',                      [CapacitacionController::class, 'index'])->name('admin.capacitaciones.index');
     Route::get   ('/admin/capacitaciones/list',                 [CapacitacionController::class, 'list']);
+    Route::get   ('/admin/capacitaciones/empleados',            [CapacitacionController::class, 'buscarEmpleados']);
+    Route::get   ('/admin/capacitaciones/departamentos',        [CapacitacionController::class, 'departamentos']);
     Route::post  ('/admin/capacitaciones',                      [CapacitacionController::class, 'store']);
     Route::get   ('/admin/capacitaciones/{encryptedId}',                 [CapacitacionController::class, 'showView'])->name('admin.capacitaciones.show');
     Route::get   ('/admin/capacitaciones/{encryptedId}/json',            [CapacitacionController::class, 'show']);
     Route::put   ('/admin/capacitaciones/{encryptedId}',                 [CapacitacionController::class, 'update']);
     Route::patch ('/admin/capacitaciones/{encryptedId}/desactivar',      [CapacitacionController::class, 'destroyWeb'])->name('admin.capacitaciones.desactivar');
     Route::patch ('/admin/capacitaciones/{encryptedId}/regenerar',        [CapacitacionController::class, 'regenerar']);
+    Route::post  ('/admin/capacitaciones/{encryptedId}/participantes',    [CapacitacionController::class, 'addParticipante']);
+    Route::post  ('/admin/capacitaciones/{encryptedId}/participantes/bulk', [CapacitacionController::class, 'addParticipantes']);
+    Route::delete('/admin/capacitaciones/{encryptedId}/participantes/{participanteId}', [CapacitacionController::class, 'removeParticipante']);
     Route::patch ('/admin/capacitaciones/{encryptedId}/cerrar',          [CapacitacionController::class, 'cerrar']);
     Route::patch ('/admin/capacitaciones/{encryptedId}/abrir',           [CapacitacionController::class, 'abrir']);
 

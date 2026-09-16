@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\TenantHelper;
 use App\Models\Capacitacion;
 use App\Models\CapacitacionAsistente;
+use App\Models\Departamento;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -345,16 +346,225 @@ class CapacitacionController extends Controller
         }
     }
 
+    // ─── Admin: Buscar empleados para agregar participantes ───
+
+    public function buscarEmpleados(Request $request): JsonResponse
+    {
+        abort_unless(Auth::user()->can('capacitaciones.editar'), 403);
+
+        try {
+            $empresaId = Auth::user()->empresa_id;
+            $q         = $request->query('q', '');
+            $deptId    = $request->query('departamento_id');
+
+            $query = User::where('empresa_id', $empresaId)
+                ->where('is_active', true)
+                ->where('tipo', 'usuario');
+
+            if ($q) {
+                $query->where(function ($sub) use ($q) {
+                    $sub->where('name', 'like', "%{$q}%")
+                        ->orWhere('cedula', 'like', "%{$q}%");
+                });
+            }
+
+            if ($deptId) {
+                $query->where('departamento_id', (int) $deptId);
+            }
+
+            $empleados = $query->select('id', 'name', 'cedula', 'email', 'telefono', 'departamento_id')
+                ->orderBy('name')
+                ->limit(50)
+                ->get()
+                ->map(function ($u) {
+                    return [
+                        'cedula'           => $u->cedula ?? '',
+                        'nombre'           => $u->name,
+                        'correo'           => $u->email ?? '',
+                        'telefono'         => $u->telefono ?? '',
+                        'departamento_id'  => $u->departamento_id,
+                    ];
+                });
+
+            return response()->json(['success' => true, 'data' => $empleados]);
+
+        } catch (\Throwable $e) {
+            Log::error('CapacitacionController@buscarEmpleados: ' . $e->getMessage());
+            return response()->json(['success' => false, 'data' => []], 500);
+        }
+    }
+
+    // ─── Admin: Listar departamentos (tenant) ─────────────────
+
+    public function departamentos(): JsonResponse
+    {
+        abort_unless(Auth::user()->can('capacitaciones.editar'), 403);
+
+        try {
+            $departamentos = Departamento::where('is_active', true)
+                ->orderBy('nombre')
+                ->get(['id', 'nombre']);
+
+            return response()->json(['success' => true, 'data' => $departamentos]);
+
+        } catch (\Throwable $e) {
+            Log::error('CapacitacionController@departamentos: ' . $e->getMessage());
+            return response()->json(['success' => false, 'data' => []], 500);
+        }
+    }
+
+    // ─── Admin: Agregar múltiples participantes (bulk) ────────
+
+    public function addParticipantes(Request $request, string $encryptedId): JsonResponse
+    {
+        abort_unless(Auth::user()->can('capacitaciones.editar'), 403);
+
+        $data = $request->validate([
+            'participantes'            => 'required|array|min:1',
+            'participantes.*.cedula'   => 'required|string|max:20',
+            'participantes.*.nombre'   => 'required|string|max:255',
+            'participantes.*.correo'   => 'nullable|email|max:255',
+            'participantes.*.telefono' => 'nullable|string|max:50',
+        ]);
+
+        try {
+            $id      = (int) Crypt::decryptString($encryptedId);
+            Capacitacion::findOrFail($id);
+
+            $existentes = CapacitacionAsistente::where('capacitacion_id', $id)
+                ->pluck('cedula')
+                ->flip();
+
+            $agregados  = 0;
+            $duplicados = 0;
+
+            foreach ($data['participantes'] as $p) {
+                if (isset($existentes[$p['cedula']])) {
+                    $duplicados++;
+                    continue;
+                }
+
+                CapacitacionAsistente::create([
+                    'capacitacion_id' => $id,
+                    'cedula'          => $p['cedula'],
+                    'nombre'          => $p['nombre'],
+                    'correo'          => $p['correo'] ?? null,
+                    'telefono'        => $p['telefono'] ?? null,
+                    'estado'          => 'programado',
+                    'created_at'      => now(),
+                ]);
+
+                $existentes[$p['cedula']] = true;
+                $agregados++;
+            }
+
+            return response()->json([
+                'success'    => true,
+                'agregados'  => $agregados,
+                'duplicados' => $duplicados,
+            ]);
+
+        } catch (\Throwable $e) {
+            Log::error('CapacitacionController@addParticipantes: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Error al agregar participantes.'], 500);
+        }
+    }
+
+    // ─── Admin: Agregar participante ──────────────────────────
+
+    public function addParticipante(Request $request, string $encryptedId): JsonResponse
+    {
+        abort_unless(Auth::user()->can('capacitaciones.editar'), 403);
+
+        $data = $request->validate([
+            'cedula'   => 'required|string|max:20',
+            'nombre'   => 'required|string|max:255',
+            'correo'   => 'nullable|email|max:255',
+            'telefono' => 'nullable|string|max:50',
+        ]);
+
+        try {
+            $id  = (int) Crypt::decryptString($encryptedId);
+            $cap = Capacitacion::findOrFail($id);
+
+            $existe = CapacitacionAsistente::where('capacitacion_id', $id)
+                ->where('cedula', $data['cedula'])
+                ->exists();
+
+            if ($existe) {
+                return response()->json(['success' => false, 'message' => 'Esta cédula ya está registrada en la capacitación.'], 422);
+            }
+
+            $asistente = CapacitacionAsistente::create([
+                'capacitacion_id' => $id,
+                'cedula'          => $data['cedula'],
+                'nombre'          => $data['nombre'],
+                'correo'          => $data['correo'] ?? null,
+                'telefono'        => $data['telefono'] ?? null,
+                'estado'          => 'programado',
+                'created_at'      => now(),
+            ]);
+
+            return response()->json(['success' => true, 'asistente' => [
+                'id'                => $asistente->id,
+                'cedula'            => $asistente->cedula,
+                'nombre'            => $asistente->nombre,
+                'correo'            => $asistente->correo,
+                'telefono'          => $asistente->telefono,
+                'estado'            => $asistente->estado,
+                'fecha_confirmacion'=> null,
+                'created_at'        => $asistente->created_at?->format('d/m/Y H:i'),
+            ]]);
+
+        } catch (\Throwable $e) {
+            Log::error('CapacitacionController@addParticipante: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Error al agregar participante.'], 500);
+        }
+    }
+
+    // ─── Admin: Eliminar participante (solo programado) ───────
+
+    public function removeParticipante(string $encryptedId, int $participanteId): JsonResponse
+    {
+        abort_unless(Auth::user()->can('capacitaciones.editar'), 403);
+
+        try {
+            $id         = (int) Crypt::decryptString($encryptedId);
+            $asistente  = CapacitacionAsistente::where('capacitacion_id', $id)->findOrFail($participanteId);
+
+            if ($asistente->esConfirmado()) {
+                return response()->json(['success' => false, 'message' => 'No se puede eliminar un participante que ya confirmó.'], 422);
+            }
+
+            $asistente->delete();
+
+            return response()->json(['success' => true]);
+
+        } catch (\Throwable $e) {
+            Log::error('CapacitacionController@removeParticipante: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Error al eliminar participante.'], 500);
+        }
+    }
+
     // ─── Público: Formulario de registro ─────────────────────
 
-    public function registroPublico(int $empresaId, string $token): View
+    public function registroPublico(int $empresaId, string $token, Request $request): View
     {
         TenantHelper::switchTenant($empresaId);
         $capacitacion = Capacitacion::where('token', $token)->firstOrFail();
         $expirado     = !$capacitacion->aceptaRegistros();
         $empresa      = \App\Models\Empresa::find($empresaId);
 
-        return view('capacitaciones.registro-publico', compact('capacitacion', 'expirado', 'empresa'));
+        // Si viene cédula en GET, buscar participante programado
+        $cedula      = $request->query('cedula');
+        $participante = null;
+        if ($cedula && !$expirado) {
+            $participante = CapacitacionAsistente::where('capacitacion_id', $capacitacion->id)
+                ->where('cedula', $cedula)
+                ->first();
+        }
+
+        return view('capacitaciones.registro-publico', compact('capacitacion', 'expirado', 'empresa', 'cedula', 'participante'));
     }
 
     // ─── Público: Guardar registro de asistente ───────────────
@@ -370,29 +580,45 @@ class CapacitacionController extends Controller
             }
 
             $data = $request->validate([
+                'cedula'   => 'required|string|max:20',
                 'nombre'   => 'required|string|max:255',
-                'correo'   => 'required|email|max:255',
+                'correo'   => 'nullable|email|max:255',
                 'telefono' => 'nullable|string|max:50',
             ]);
 
-            $yaRegistrado = CapacitacionAsistente::where('capacitacion_id', $capacitacion->id)
-                ->where('correo', $data['correo'])
-                ->exists();
+            // Buscar si ya existe por cédula
+            $asistente = CapacitacionAsistente::where('capacitacion_id', $capacitacion->id)
+                ->where('cedula', $data['cedula'])
+                ->first();
 
-            if ($yaRegistrado) {
-                return back()->with('info', 'Ya estás registrado en esta capacitación con ese correo.');
+            if ($asistente) {
+                if ($asistente->esConfirmado()) {
+                    return back()->with('info', 'Ya confirmaste tu asistencia a esta capacitación.');
+                }
+                // Confirmar participante programado
+                $asistente->update([
+                    'estado'             => 'confirmado',
+                    'fecha_confirmacion' => now(),
+                    'ip_registro'        => $request->ip(),
+                    'correo'             => $data['correo'] ?? $asistente->correo,
+                    'telefono'           => $data['telefono'] ?? $asistente->telefono,
+                ]);
+            } else {
+                // Externo: crear y confirmar directamente
+                CapacitacionAsistente::create([
+                    'capacitacion_id'    => $capacitacion->id,
+                    'cedula'             => $data['cedula'],
+                    'nombre'             => $data['nombre'],
+                    'correo'             => $data['correo'] ?? null,
+                    'telefono'           => $data['telefono'] ?? null,
+                    'estado'             => 'confirmado',
+                    'fecha_confirmacion' => now(),
+                    'ip_registro'        => $request->ip(),
+                    'created_at'         => now(),
+                ]);
             }
 
-            CapacitacionAsistente::create([
-                'capacitacion_id' => $capacitacion->id,
-                'nombre'          => $data['nombre'],
-                'correo'          => $data['correo'],
-                'telefono'        => $data['telefono'] ?? null,
-                'ip_registro'     => $request->ip(),
-                'created_at'      => now(),
-            ]);
-
-            return back()->with('success', '¡Registro exitoso! Tu asistencia ha sido confirmada.');
+            return back()->with('success', '¡Asistencia confirmada exitosamente!');
 
         } catch (\Throwable $e) {
             Log::error('CapacitacionController@guardarRegistro: ' . $e->getMessage());

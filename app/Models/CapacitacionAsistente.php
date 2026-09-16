@@ -14,9 +14,12 @@ class CapacitacionAsistente extends Model
 
     protected $fillable = [
         'capacitacion_id',
+        'cedula',
         'nombre',
         'correo',
         'telefono',
+        'estado',
+        'fecha_confirmacion',
         'ip_registro',
         'created_at',
     ];
@@ -24,8 +27,19 @@ class CapacitacionAsistente extends Model
     protected function casts(): array
     {
         return [
-            'created_at' => 'datetime',
+            'created_at'         => 'datetime',
+            'fecha_confirmacion' => 'datetime',
         ];
+    }
+
+    public function esProgramado(): bool
+    {
+        return $this->estado === 'programado';
+    }
+
+    public function esConfirmado(): bool
+    {
+        return $this->estado === 'confirmado';
     }
 
     public function capacitacion(): BelongsTo

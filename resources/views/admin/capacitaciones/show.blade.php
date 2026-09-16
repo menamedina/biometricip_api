@@ -182,46 +182,74 @@
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h6 class="fw-bold mb-0">
                             <i class="ti ti-users text-primary me-1"></i>
-                            Asistentes Registrados
+                            Participantes
                             <span class="badge bg-primary ms-1">{{ $cap->asistentes->count() }}</span>
+                            <span class="badge bg-success ms-1" title="Confirmados">{{ $cap->asistentes->where('estado','confirmado')->count() }} ✓</span>
                         </h6>
-                        @if($cap->asistentes->count() > 0)
-                            <button onclick="exportarCSV()" class="btn btn-sm btn-outline-success">
-                                <i class="ti ti-file-export me-1"></i> Exportar CSV
+                        <div class="d-flex gap-2">
+                            @can('capacitaciones.editar')
+                            <button onclick="abrirModalAgregar()" class="btn btn-sm btn-outline-primary">
+                                <i class="ti ti-user-plus me-1"></i> Agregar
                             </button>
-                        @endif
+                            @endcan
+                            @if($cap->asistentes->count() > 0)
+                            <button onclick="exportarCSV()" class="btn btn-sm btn-outline-success">
+                                <i class="ti ti-file-export me-1"></i> CSV
+                            </button>
+                            @endif
+                        </div>
                     </div>
 
                     @if($cap->asistentes->count() > 0)
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle" id="tablaAsistentes">
+                        <table class="table table-hover align-middle small" id="tablaAsistentes">
                             <thead>
                                 <tr>
                                     <th>#</th>
+                                    <th>Cédula</th>
                                     <th>Nombre</th>
                                     <th>Correo</th>
-                                    <th>Teléfono</th>
-                                    <th>Fecha Registro</th>
+                                    <th>Estado</th>
+                                    <th>Confirmación</th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($cap->asistentes as $i => $asistente)
-                                <tr>
+                                <tr id="fila-asistente-{{ $asistente->id }}">
                                     <td>{{ $i + 1 }}</td>
+                                    <td>{{ $asistente->cedula ?? '—' }}</td>
                                     <td>{{ $asistente->nombre }}</td>
-                                    <td>{{ $asistente->correo }}</td>
-                                    <td>{{ $asistente->telefono ?? '—' }}</td>
-                                    <td>{{ $asistente->created_at?->format('d/m/Y H:i') ?? '—' }}</td>
+                                    <td>{{ $asistente->correo ?? '—' }}</td>
+                                    <td>
+                                        @if($asistente->estado === 'confirmado')
+                                            <span class="badge bg-success">Confirmado</span>
+                                        @else
+                                            <span class="badge bg-secondary">Programado</span>
+                                        @endif
+                                    </td>
+                                    <td>{{ $asistente->fecha_confirmacion?->format('d/m/Y H:i') ?? '—' }}</td>
+                                    <td>
+                                        @if($asistente->estado === 'programado')
+                                        @can('capacitaciones.editar')
+                                        <button class="btn btn-sm btn-link text-danger p-0"
+                                            onclick="eliminarParticipante({{ $asistente->id }})"
+                                            title="Quitar participante">
+                                            <i class="ti ti-x"></i>
+                                        </button>
+                                        @endcan
+                                        @endif
+                                    </td>
                                 </tr>
                                 @endforeach
                             </tbody>
                         </table>
                     </div>
                     @else
-                        <div class="text-center text-muted py-5">
+                        <div class="text-center text-muted py-5" id="emptyAsistentes">
                             <i class="ti ti-users" style="font-size:48px;opacity:.3;"></i>
-                            <p class="mt-2 mb-0">Aún no hay asistentes registrados.</p>
-                            <p class="small">Comparte el link para que los participantes se registren.</p>
+                            <p class="mt-2 mb-0">Aún no hay participantes.</p>
+                            <p class="small">Agrega participantes o comparte el link.</p>
                         </div>
                     @endif
                 </div>
@@ -315,6 +343,108 @@
                 <button type="button" class="btn btn-primary" id="btnGuardarEdit" onclick="guardarEdicion()">
                     <i class="ti ti-device-floppy me-1"></i> Guardar Cambios
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Modal Agregar Participante --}}
+<div class="modal fade" id="modalAgregar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="ti ti-user-plus me-2 text-primary"></i>Agregar Participante</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                {{-- Tabs --}}
+                <ul class="nav nav-tabs mb-3" id="tabsAgregar" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabBuscar" type="button">
+                            <i class="ti ti-search me-1"></i> Buscar Empleado
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabArea" type="button" onclick="cargarDepartamentos()">
+                            <i class="ti ti-building me-1"></i> Por Área
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabManual" type="button">
+                            <i class="ti ti-forms me-1"></i> Manual
+                        </button>
+                    </li>
+                </ul>
+
+                <div id="agregarError" class="alert alert-danger d-none"></div>
+                <div id="agregarSuccess" class="alert alert-success d-none"></div>
+
+                <div class="tab-content">
+
+                    {{-- Tab: Buscar Empleado --}}
+                    <div class="tab-pane fade show active" id="tabBuscar">
+                        <div class="mb-3">
+                            <input type="text" id="buscarQ" class="form-control"
+                                placeholder="Buscar por nombre o cédula..." oninput="buscarEmpleados()">
+                        </div>
+                        <div id="listaBuscar" style="max-height:300px;overflow-y:auto;">
+                            <p class="text-muted small text-center mt-3">Escribe para buscar empleados.</p>
+                        </div>
+                        <div class="mt-2 d-flex justify-content-end">
+                            <button class="btn btn-primary" id="btnAgregarBuscar" onclick="agregarSeleccionadosBuscar()" style="display:none!important;">
+                                <i class="ti ti-user-plus me-1"></i> Agregar seleccionados
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- Tab: Por Área --}}
+                    <div class="tab-pane fade" id="tabArea">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Área / Departamento</label>
+                            <select id="selectDepartamento" class="form-select" onchange="cargarEmpleadosPorArea()">
+                                <option value="">— Selecciona un área —</option>
+                            </select>
+                        </div>
+                        <div id="listaArea" style="max-height:280px;overflow-y:auto;"></div>
+                        <div class="mt-2 d-flex justify-content-between align-items-center" id="panelAreaAcciones" style="display:none!important;">
+                            <small class="text-muted"><span id="cntArea">0</span> seleccionado(s)</small>
+                            <button class="btn btn-primary btn-sm" onclick="agregarSeleccionadosArea()">
+                                <i class="ti ti-user-plus me-1"></i> Agregar seleccionados
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- Tab: Manual --}}
+                    <div class="tab-pane fade" id="tabManual">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold">Cédula <span class="text-danger">*</span></label>
+                                <input type="text" id="agregarCedula" class="form-control" placeholder="Ej: 1234567890">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold">Nombre completo <span class="text-danger">*</span></label>
+                                <input type="text" id="agregarNombre" class="form-control" placeholder="Nombre del participante">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold">Correo <span class="text-muted fw-normal">(opcional)</span></label>
+                                <input type="email" id="agregarCorreo" class="form-control" placeholder="correo@ejemplo.com">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold">Teléfono <span class="text-muted fw-normal">(opcional)</span></label>
+                                <input type="tel" id="agregarTelefono" class="form-control" placeholder="300 123 4567">
+                            </div>
+                        </div>
+                        <div class="mt-3 d-flex justify-content-end">
+                            <button type="button" class="btn btn-primary" id="btnGuardarParticipante" onclick="guardarParticipante()">
+                                <i class="ti ti-user-plus me-1"></i> Agregar
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
             </div>
         </div>
     </div>
@@ -525,10 +655,17 @@ async function guardarEdicion() {
 }
 
 function exportarCSV() {
-    var rows = [['#','Nombre','Correo','Teléfono','Fecha Registro']];
+    var rows = [['#','Cédula','Nombre','Correo','Estado','Fecha Confirmación']];
     document.querySelectorAll('#tablaAsistentes tbody tr').forEach(function (tr) {
         var cols = tr.querySelectorAll('td');
-        rows.push([cols[0].innerText, cols[1].innerText, cols[2].innerText, cols[3].innerText, cols[4].innerText]);
+        rows.push([
+            cols[0].innerText.trim(),
+            cols[1].innerText.trim(),
+            cols[2].innerText.trim(),
+            cols[3].innerText.trim(),
+            cols[4].innerText.trim(),
+            cols[5].innerText.trim(),
+        ]);
     });
     var csv  = rows.map(function (r) { return r.map(function (c) { return '"' + c.replace(/"/g,'""') + '"'; }).join(','); }).join('\n');
     var blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -536,6 +673,272 @@ function exportarCSV() {
     a.href   = URL.createObjectURL(blob);
     a.download = 'asistentes_capacitacion_{{ $cap->id }}.csv';
     a.click();
+}
+
+// ── Agregar participante — modal ──────────────────────────────
+var encryptedCapId    = '{{ urlencode(Crypt::encryptString((string)$cap->id)) }}';
+var deptsCargados     = false;
+var cedulasExistentes = @json($cap->asistentes->pluck('cedula')->filter()->values());
+
+function abrirModalAgregar() {
+    // Reset tabs al abrir
+    var tabBuscar = document.querySelector('[data-bs-target="#tabBuscar"]');
+    bootstrap.Tab.getOrCreateInstance(tabBuscar).show();
+    document.getElementById('buscarQ').value     = '';
+    document.getElementById('listaBuscar').innerHTML = '<p class="text-muted small text-center mt-3">Escribe para buscar empleados.</p>';
+    document.getElementById('agregarCedula').value   = '';
+    document.getElementById('agregarNombre').value   = '';
+    document.getElementById('agregarCorreo').value   = '';
+    document.getElementById('agregarTelefono').value = '';
+    document.getElementById('agregarError').classList.add('d-none');
+    document.getElementById('agregarSuccess').classList.add('d-none');
+    new bootstrap.Modal(document.getElementById('modalAgregar')).show();
+}
+
+function mostrarAgregarError(msg) {
+    var el = document.getElementById('agregarError');
+    el.textContent = msg;
+    el.classList.remove('d-none');
+    document.getElementById('agregarSuccess').classList.add('d-none');
+}
+
+function mostrarAgregarSuccess(msg) {
+    var el = document.getElementById('agregarSuccess');
+    el.textContent = msg;
+    el.classList.remove('d-none');
+    document.getElementById('agregarError').classList.add('d-none');
+}
+
+// ── Tab: Buscar empleado ──────────────────────────────────────
+var buscarTimer = null;
+var empleadosBuscar = [];
+
+function buscarEmpleados() {
+    clearTimeout(buscarTimer);
+    buscarTimer = setTimeout(_ejecutarBusqueda, 350);
+}
+
+async function _ejecutarBusqueda() {
+    var q = document.getElementById('buscarQ').value.trim();
+    if (q.length < 2) {
+        document.getElementById('listaBuscar').innerHTML = '<p class="text-muted small text-center mt-3">Escribe al menos 2 caracteres.</p>';
+        return;
+    }
+    document.getElementById('listaBuscar').innerHTML = '<p class="text-muted small text-center mt-3"><span class="spinner-border spinner-border-sm"></span> Buscando...</p>';
+
+    try {
+        var res  = await fetch('/admin/capacitaciones/empleados?q=' + encodeURIComponent(q), { headers: { 'Accept': 'application/json' } });
+        var data = await res.json();
+        empleadosBuscar = data.data || [];
+        _renderListaBuscar();
+    } catch (e) {
+        document.getElementById('listaBuscar').innerHTML = '<p class="text-danger small text-center mt-3">Error al buscar.</p>';
+    }
+}
+
+function _yaExiste(cedula) {
+    return cedulasExistentes.indexOf(String(cedula)) !== -1;
+}
+
+function _renderListaBuscar() {
+    var lista = document.getElementById('listaBuscar');
+    if (!empleadosBuscar.length) {
+        lista.innerHTML = '<p class="text-muted small text-center mt-3">Sin resultados.</p>';
+        return;
+    }
+    var html = '<div class="list-group list-group-flush">';
+    empleadosBuscar.forEach(function (emp, i) {
+        var existe = _yaExiste(emp.cedula);
+        html += '<label class="list-group-item ' + (existe ? '' : 'list-group-item-action') + ' d-flex align-items-center gap-3 py-2 px-2" style="' + (existe ? 'opacity:.6;' : 'cursor:pointer;') + '">'
+            + '<input type="checkbox" class="form-check-input flex-shrink-0" value="' + i + '" onchange="_actualizarBtnBuscar()" ' + (existe ? 'disabled' : '') + '>'
+            + '<div>'
+            + '<div class="fw-semibold small">' + emp.nombre
+            + (existe ? ' <span class="badge bg-secondary ms-1" style="font-size:10px;">Ya programado</span>' : '')
+            + '</div>'
+            + '<div class="text-muted" style="font-size:12px;">' + (emp.cedula || '—') + ' · ' + (emp.correo || '—') + '</div>'
+            + '</div></label>';
+    });
+    html += '</div>';
+    lista.innerHTML = html;
+}
+
+function _actualizarBtnBuscar() {
+    var chk = document.querySelectorAll('#listaBuscar input[type=checkbox]:checked');
+    var btn = document.getElementById('btnAgregarBuscar');
+    btn.style.display = chk.length > 0 ? 'inline-block' : 'none';
+}
+
+async function agregarSeleccionadosBuscar() {
+    var chk = document.querySelectorAll('#listaBuscar input[type=checkbox]:checked');
+    var seleccionados = Array.from(chk).map(function (c) { return empleadosBuscar[parseInt(c.value)]; });
+    if (!seleccionados.length) return;
+    await _enviarBulk(seleccionados);
+}
+
+// ── Tab: Por Área ─────────────────────────────────────────────
+var empleadosArea = [];
+
+async function cargarDepartamentos() {
+    if (deptsCargados) return;
+    try {
+        var res  = await fetch('/admin/capacitaciones/departamentos', { headers: { 'Accept': 'application/json' } });
+        var data = await res.json();
+        var sel  = document.getElementById('selectDepartamento');
+        (data.data || []).forEach(function (d) {
+            var opt = document.createElement('option');
+            opt.value = d.id;
+            opt.textContent = d.nombre;
+            sel.appendChild(opt);
+        });
+        deptsCargados = true;
+    } catch (e) { /* silencioso */ }
+}
+
+async function cargarEmpleadosPorArea() {
+    var deptId = document.getElementById('selectDepartamento').value;
+    var lista  = document.getElementById('listaArea');
+    var panel  = document.getElementById('panelAreaAcciones');
+
+    if (!deptId) { lista.innerHTML = ''; panel.style.display = 'none'; return; }
+
+    lista.innerHTML = '<p class="text-muted small text-center mt-3"><span class="spinner-border spinner-border-sm"></span> Cargando...</p>';
+    panel.style.display = 'none';
+
+    try {
+        var res  = await fetch('/admin/capacitaciones/empleados?departamento_id=' + deptId, { headers: { 'Accept': 'application/json' } });
+        var data = await res.json();
+        empleadosArea = data.data || [];
+        _renderListaArea();
+    } catch (e) {
+        lista.innerHTML = '<p class="text-danger small text-center mt-3">Error al cargar.</p>';
+    }
+}
+
+function _renderListaArea() {
+    var lista = document.getElementById('listaArea');
+    var panel = document.getElementById('panelAreaAcciones');
+
+    if (!empleadosArea.length) {
+        lista.innerHTML = '<p class="text-muted small text-center mt-3">Sin empleados en esta área.</p>';
+        panel.style.display = 'none';
+        return;
+    }
+
+    var html = '<div class="list-group list-group-flush">';
+    html += '<label class="list-group-item d-flex align-items-center gap-3 py-2 px-2 bg-light" style="cursor:pointer;">'
+        + '<input type="checkbox" id="chkTodosArea" class="form-check-input" onchange="_toggleTodosArea(this)">'
+        + '<span class="small fw-semibold">Seleccionar todos</span></label>';
+    empleadosArea.forEach(function (emp, i) {
+        var existe = _yaExiste(emp.cedula);
+        html += '<label class="list-group-item ' + (existe ? '' : 'list-group-item-action') + ' d-flex align-items-center gap-3 py-2 px-2" style="' + (existe ? 'opacity:.6;' : 'cursor:pointer;') + '">'
+            + '<input type="checkbox" class="form-check-input chk-area" value="' + i + '" onchange="_actualizarCntArea()" ' + (existe ? 'disabled' : '') + '>'
+            + '<div>'
+            + '<div class="fw-semibold small">' + emp.nombre
+            + (existe ? ' <span class="badge bg-secondary ms-1" style="font-size:10px;">Ya programado</span>' : '')
+            + '</div>'
+            + '<div class="text-muted" style="font-size:12px;">' + (emp.cedula || '—') + ' · ' + (emp.correo || '—') + '</div>'
+            + '</div></label>';
+    });
+    html += '</div>';
+    lista.innerHTML = html;
+    panel.style.display = 'flex';
+    document.getElementById('cntArea').textContent = '0';
+}
+
+function _toggleTodosArea(chk) {
+    document.querySelectorAll('#listaArea .chk-area').forEach(function (c) { c.checked = chk.checked; });
+    _actualizarCntArea();
+}
+
+function _actualizarCntArea() {
+    var cnt = document.querySelectorAll('#listaArea .chk-area:checked').length;
+    document.getElementById('cntArea').textContent = cnt;
+    var todos = document.querySelectorAll('#listaArea .chk-area').length;
+    var chkTodos = document.getElementById('chkTodosArea');
+    if (chkTodos) chkTodos.checked = cnt === todos && todos > 0;
+}
+
+async function agregarSeleccionadosArea() {
+    var chk = document.querySelectorAll('#listaArea .chk-area:checked');
+    var seleccionados = Array.from(chk).map(function (c) { return empleadosArea[parseInt(c.value)]; });
+    if (!seleccionados.length) { mostrarAgregarError('Selecciona al menos un empleado.'); return; }
+    await _enviarBulk(seleccionados);
+}
+
+// ── Bulk send ─────────────────────────────────────────────────
+async function _enviarBulk(lista) {
+    document.getElementById('agregarError').classList.add('d-none');
+    document.getElementById('agregarSuccess').classList.add('d-none');
+
+    try {
+        var res  = await fetch('/admin/capacitaciones/' + encryptedCapId + '/participantes/bulk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+            body: JSON.stringify({ participantes: lista }),
+        });
+        var data = await res.json();
+
+        if (!res.ok) { mostrarAgregarError(data.message || 'Error al agregar.'); return; }
+
+        var msg = data.agregados + ' participante(s) agregado(s)';
+        if (data.duplicados > 0) msg += ' · ' + data.duplicados + ' ya existían (ignorados)';
+        mostrarAgregarSuccess(msg + '. La página se actualizará.');
+        setTimeout(function () { window.location.reload(); }, 1800);
+
+    } catch (e) {
+        mostrarAgregarError('Error de conexión.');
+    }
+}
+
+// ── Tab: Manual ───────────────────────────────────────────────
+async function guardarParticipante() {
+    var cedula   = document.getElementById('agregarCedula').value.trim();
+    var nombre   = document.getElementById('agregarNombre').value.trim();
+    var correo   = document.getElementById('agregarCorreo').value.trim();
+    var telefono = document.getElementById('agregarTelefono').value.trim();
+
+    if (!cedula || !nombre) { mostrarAgregarError('Cédula y nombre son obligatorios.'); return; }
+
+    var btn = document.getElementById('btnGuardarParticipante');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Guardando...';
+    document.getElementById('agregarError').classList.add('d-none');
+
+    try {
+        var res  = await fetch('/admin/capacitaciones/' + encryptedCapId + '/participantes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+            body: JSON.stringify({ cedula, nombre, correo, telefono }),
+        });
+        var data = await res.json();
+
+        if (!res.ok) { mostrarAgregarError(data.message || 'Error al agregar el participante.'); return; }
+
+        mostrarAgregarSuccess('Participante agregado. La página se actualizará.');
+        setTimeout(function () { window.location.reload(); }, 1500);
+
+    } catch (e) {
+        mostrarAgregarError('Error de conexión.');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ti ti-user-plus me-1"></i> Agregar';
+    }
+}
+
+// ── Eliminar participante ─────────────────────────────────────
+async function eliminarParticipante(id) {
+    if (!confirm('¿Quitar este participante programado?')) return;
+    try {
+        var res = await fetch('/admin/capacitaciones/{{ urlencode(Crypt::encryptString((string)$cap->id)) }}/participantes/' + id, {
+            method: 'DELETE',
+            headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+        });
+        if (!res.ok) throw new Error();
+        var fila = document.getElementById('fila-asistente-' + id);
+        if (fila) fila.remove();
+    } catch (e) {
+        alert('Error al eliminar el participante.');
+    }
 }
 </script>
 @endpush

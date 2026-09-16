@@ -18,7 +18,7 @@
         .registro-card {
             background: #fff;
             border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
             max-width: 540px;
             width: 100%;
             overflow: hidden;
@@ -48,15 +48,6 @@
             font-size: 12px;
             margin-top: 4px;
         }
-        .temas-box {
-            background: #f0faf7;
-            border-left: 4px solid #1ab394;
-            border-radius: 0 8px 8px 0;
-            padding: 14px 16px;
-            font-size: 14px;
-            color: #333;
-            margin-bottom: 20px;
-        }
         .form-label { font-weight: 600; font-size: 14px; color: #444; }
         .btn-registro {
             background: #1ab394;
@@ -78,9 +69,7 @@
         <div class="cap-label">&#x1F4DA; Capacitación</div>
         <h1>{{ $capacitacion->titulo }}</h1>
         @if($empresa)
-        <div style="font-size:15px;font-weight:600;opacity:0.9;margin-top:6px;letter-spacing:0.3px;">
-            {{ $empresa->nombre }}
-        </div>
+        <div style="font-size:15px;font-weight:600;opacity:0.9;margin-top:6px;">{{ $empresa->nombre }}</div>
         @endif
         @if($capacitacion->instructor_nombre)
             <span class="badge-info-cap">&#x1F464; {{ $capacitacion->instructor_nombre }}</span>
@@ -109,87 +98,103 @@
             {{-- Temas --}}
             @if($capacitacion->temas && count($capacitacion->temas))
                 <div class="mb-4">
-                    <p class="fw-semibold mb-2" style="font-size:12px; color:#888; text-transform:uppercase; letter-spacing:0.5px;">
-                        Temas de la capacitación
-                    </p>
-                    <div class="temas-box d-flex flex-wrap gap-2">
+                    <p class="fw-semibold mb-2" style="font-size:12px; color:#888; text-transform:uppercase; letter-spacing:0.5px;">Temas</p>
+                    <div class="d-flex flex-wrap gap-2">
                         @foreach($capacitacion->temas as $tema)
                             <span style="background:#1ab394;color:#fff;border-radius:20px;padding:3px 12px;font-size:13px;font-weight:500;">{{ $tema }}</span>
                         @endforeach
                     </div>
-                    @if($capacitacion->observaciones)
-                        <p class="mt-2 mb-0 small text-muted" style="white-space:pre-line;">{{ $capacitacion->observaciones }}</p>
-                    @endif
                 </div>
             @endif
 
             {{-- Alertas --}}
             @if(session('success'))
                 <div class="alert alert-success d-flex align-items-center gap-2">
-                    <span>&#x2705;</span>
-                    <div>{{ session('success') }}</div>
+                    <span>&#x2705;</span><div>{{ session('success') }}</div>
                 </div>
             @endif
             @if(session('error'))
                 <div class="alert alert-danger d-flex align-items-center gap-2">
-                    <span>&#x26A0;&#xFE0F;</span>
-                    <div>{{ session('error') }}</div>
+                    <span>&#x26A0;&#xFE0F;</span><div>{{ session('error') }}</div>
                 </div>
             @endif
             @if(session('info'))
                 <div class="alert alert-info d-flex align-items-center gap-2">
-                    <span>&#x2139;&#xFE0F;</span>
-                    <div>{{ session('info') }}</div>
+                    <span>&#x2139;&#xFE0F;</span><div>{{ session('info') }}</div>
                 </div>
             @endif
 
             @if(!session('success'))
-            {{-- Formulario --}}
+
+            {{-- PASO 1: Buscar por cédula --}}
+            @if(!$cedula)
+            <form method="GET" action="">
+                <p class="fw-semibold mb-3" style="color:#444;">Ingresa tu número de cédula para continuar:</p>
+                @if($errors->has('cedula'))
+                    <div class="alert alert-danger">{{ $errors->first('cedula') }}</div>
+                @endif
+                <div class="mb-3">
+                    <label class="form-label">Número de Cédula <span class="text-danger">*</span></label>
+                    <input type="text" name="cedula" class="form-control form-control-lg"
+                        placeholder="Ej: 1234567890" required autofocus>
+                </div>
+                <button type="submit" class="btn btn-registro w-100">Continuar &#x27A1;</button>
+            </form>
+
+            {{-- PASO 2: Confirmar asistencia --}}
+            @else
             <form method="POST" action="{{ route('capacitacion.guardar', [$capacitacion->empresa_id, $capacitacion->token]) }}">
                 @csrf
 
                 @if($errors->any())
                     <div class="alert alert-danger">
-                        @foreach($errors->all() as $error)
-                            <div>• {{ $error }}</div>
-                        @endforeach
+                        @foreach($errors->all() as $error)<div>• {{ $error }}</div>@endforeach
                     </div>
                 @endif
 
+                <input type="hidden" name="cedula" value="{{ $cedula }}">
+
+                @if($participante && $participante->esConfirmado())
+                    <div class="alert alert-info text-center">
+                        <strong>{{ $participante->nombre }}</strong>, ya confirmaste tu asistencia.
+                    </div>
+                @else
+
                 <div class="mb-3">
                     <label class="form-label">Nombre completo <span class="text-danger">*</span></label>
-                    <input type="text" name="nombre" class="form-control form-control-lg @error('nombre') is-invalid @enderror"
-                        value="{{ old('nombre') }}" placeholder="Escribe tu nombre completo" required autofocus>
-                    @error('nombre')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
+                    <input type="text" name="nombre" class="form-control form-control-lg"
+                        value="{{ $participante?->nombre ?? old('nombre') }}"
+                        {{ $participante ? 'readonly style=background:#f8f9fa' : '' }}
+                        placeholder="Escribe tu nombre completo" required>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Correo electrónico <span class="text-danger">*</span></label>
-                    <input type="email" name="correo" class="form-control form-control-lg @error('correo') is-invalid @enderror"
-                        value="{{ old('correo') }}" placeholder="tucorreo@ejemplo.com" required>
-                    @error('correo')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
+                    <label class="form-label">Correo electrónico <span class="text-muted fw-normal">(opcional)</span></label>
+                    <input type="email" name="correo" class="form-control form-control-lg"
+                        value="{{ $participante?->correo ?? old('correo') }}"
+                        placeholder="tucorreo@ejemplo.com">
                 </div>
 
                 <div class="mb-4">
                     <label class="form-label">Teléfono <span class="text-muted fw-normal">(opcional)</span></label>
-                    <input type="tel" name="telefono" class="form-control form-control-lg @error('telefono') is-invalid @enderror"
-                        value="{{ old('telefono') }}" placeholder="300 123 4567">
+                    <input type="tel" name="telefono" class="form-control form-control-lg"
+                        value="{{ $participante?->telefono ?? old('telefono') }}"
+                        placeholder="300 123 4567">
                 </div>
 
-                <button type="submit" class="btn btn-registro w-100">
-                    &#x2705; Confirmar Registro
-                </button>
+                <button type="submit" class="btn btn-registro w-100">&#x2705; Confirmar Asistencia</button>
+                @endif
             </form>
+
+            <div class="mt-3 text-center">
+                <a href="?" class="text-muted small">&#x2190; Ingresar otra cédula</a>
+            </div>
+            @endif
+
             @endif
 
             <div class="text-center mt-3">
-                <small class="text-muted">
-                    &#x1F512; Tu información es confidencial y solo se usa para el registro de asistencia.
-                </small>
+                <small class="text-muted">&#x1F512; Tu información es confidencial y solo se usa para el registro de asistencia.</small>
             </div>
         @endif
     </div>
