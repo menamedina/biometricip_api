@@ -467,19 +467,34 @@ class AdminController extends Controller
             }
             if ($openEntrada) $sessions[] = ['e' => $openEntrada, 's' => null];
 
-            $totalMin = 0;
+            $totalMin   = 0;
+            $minEsperados = 0;
+            $diaHorario   = null; // HorarioDia del día (tomado del primer registro con horario)
+
             foreach ($sessions as $s) {
                 if ($s['e'] && $s['s']) {
-                    $mins = round(($toDate($s['s']->fecha_hora)->getTimestamp() - $toDate($s['e']->fecha_hora)->getTimestamp()) / 60);
+                    $mins    = round(($toDate($s['s']->fecha_hora)->getTimestamp() - $toDate($s['e']->fecha_hora)->getTimestamp()) / 60);
                     $fechaDt = $toDate($s['e']->fecha_hora);
                     $isoDay  = ((int) $fechaDt->format('N')); // 1=lun..7=dom
                     $horario = $s['e']->horario;
                     $dia     = collect($horario?->dias ?? [])->firstWhere('dia_semana', $isoDay);
-                    if ($dia && $dia->duracion_almuerzo_min && $mins > $dia->duracion_almuerzo_min) {
-                        $mins -= $dia->duracion_almuerzo_min;
+                    if ($dia) {
+                        $diaHorario = $dia;
+                        if ($dia->duracion_almuerzo_min && $mins > $dia->duracion_almuerzo_min) {
+                            $mins -= $dia->duracion_almuerzo_min;
+                        }
                     }
                     $totalMin += $mins;
                 }
+            }
+
+            // Calcular minutos esperados según horario del día
+            if ($diaHorario && $diaHorario->hora_entrada && $diaHorario->hora_salida) {
+                [$hE, $mE] = explode(':', substr($diaHorario->hora_entrada, 0, 5));
+                [$hS, $mS] = explode(':', substr($diaHorario->hora_salida,  0, 5));
+                $minEsperados = (((int)$hS * 60 + (int)$mS) - ((int)$hE * 60 + (int)$mE))
+                    - (int)($diaHorario->duracion_almuerzo_min ?? 0);
+                $minEsperados = max(0, $minEsperados);
             }
 
             $resultado[] = [
@@ -489,6 +504,7 @@ class AdminController extends Controller
                 'departamento_id' => $g['user']?->departamento_id,
                 'fecha'           => $g['fecha'],
                 'total_min'       => max(0, $totalMin),
+                'min_esperados'   => $minEsperados,
             ];
         }
 

@@ -11,7 +11,10 @@
                     <h4 class="mb-1"><i class="fa-solid fa-calendar-days me-2 text-primary"></i>Resumen Mensual</h4>
                     <p class="text-muted mb-0">Horas trabajadas por persona y día del mes</p>
                 </div>
-                <div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-secondary btn-sm" onclick="toggleFullscreen()" title="Pantalla completa" id="btnFullscreen">
+                        <i class="fa-solid fa-expand" id="iconFullscreen"></i>
+                    </button>
                     @can('resumen_mensual.exportar')
                     <button class="btn btn-success btn-sm" onclick="exportarCSV()">
                         <i class="fa-solid fa-file-csv me-1"></i> Exportar CSV
@@ -83,7 +86,7 @@
     <div id="resumenTotales" class="row g-3 mb-3" style="display:none!important;"></div>
 
     {{-- Tabla pivot --}}
-    <div class="card shadow-lg border-0">
+    <div class="card shadow-lg border-0" id="tablaWrapper">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover table-sm mb-0 table-bordered" id="mensualTable" style="font-size:12px;">
@@ -119,9 +122,24 @@
     font-size: 11px;
 }
 .celda-ok      { background: #e8f5e9; color: #2e7d32; font-weight: 600; }
-.celda-parcial { background: #fff8e1; color: #f57f17; font-weight: 600; }
+.celda-parcial { background: #fdecea; color: #c62828; font-weight: 600; }
 .celda-ausente { background: #fafafa; color: #bdbdbd; }
 .celda-fin     { background: #f5f5f5; color: #9e9e9e; font-style:italic; }
+
+/* Pantalla completa */
+#tablaWrapper:fullscreen,
+#tablaWrapper:-webkit-full-screen,
+#tablaWrapper:-moz-full-screen {
+    background: #fff;
+    padding: 16px;
+    overflow: auto;
+}
+#tablaWrapper:fullscreen .table-responsive,
+#tablaWrapper:-webkit-full-screen .table-responsive,
+#tablaWrapper:-moz-full-screen .table-responsive {
+    max-height: calc(100vh - 32px);
+    overflow: auto;
+}
 #mensualTable tfoot td { font-weight: 700; background: #f8f9fa; font-size: 11px; }
 .col-empleado-fijo { min-width: 160px; max-width: 200px; position: sticky; left: 0; background: #fff; z-index: 2; box-shadow: 2px 0 4px rgba(0,0,0,.05); }
 .col-total-fijo    { min-width: 70px;  position: sticky; right: 0; background: #f8f9fa; z-index: 2; box-shadow: -2px 0 4px rgba(0,0,0,.05); font-weight: 700; }
@@ -227,7 +245,10 @@ async function cargarMensual() {
                     dias: {}
                 };
             }
-            porEmpleado[d.user_id].dias[d.fecha] = d.total_min;
+            porEmpleado[d.user_id].dias[d.fecha] = {
+                total_min:     d.total_min,
+                min_esperados: d.min_esperados ?? 0,
+            };
         });
 
         // ── Cabecera ──────────────────────────────────────────────────────────
@@ -264,19 +285,27 @@ async function cargarMensual() {
                 const fecha = `${anio}-${String(mes).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
                 const dow   = new Date(fecha).getDay();
                 const esFS  = dow === 0 || dow === 6;
-                const mins  = emp.dias[fecha] ?? null;
+                const diaData = emp.dias[fecha] ?? null;
+            const mins    = diaData;
 
                 if (esFS) {
                     celdas += `<td class="dia-col celda-fin">·</td>`;
                 } else if (mins === null) {
                     celdas += `<td class="dia-col celda-ausente">—</td>`;
                 } else {
-                    const h = Math.floor(mins / 60);
-                    const m = String(mins % 60).padStart(2, '0');
-                    const cls = mins >= 420 ? 'celda-ok' : 'celda-parcial'; // ≥7h = verde
-                    celdas += `<td class="dia-col ${cls}" title="${fecha}: ${h}h ${m}m">${h}h${m}</td>`;
-                    totalEmpleadoMin += mins;
-                    colTotalesDia[d] = (colTotalesDia[d] || 0) + mins;
+                    const totalMin    = mins.total_min;
+                    const minEsp      = mins.min_esperados;
+                    const h = Math.floor(totalMin / 60);
+                    const m = String(totalMin % 60).padStart(2, '0');
+                    // Verde si cumplió el horario esperado (o no hay horario definido y trabajó algo)
+                    const cumple = minEsp > 0 ? totalMin >= minEsp : totalMin >= 420;
+                    const cls = cumple ? 'celda-ok' : 'celda-parcial';
+                    const tooltip = minEsp > 0
+                        ? `${fecha}: ${h}h${m}m trabajadas / ${Math.floor(minEsp/60)}h${String(minEsp%60).padStart(2,'0')}m esperadas`
+                        : `${fecha}: ${h}h${m}m trabajadas`;
+                    celdas += `<td class="dia-col ${cls}" title="${tooltip}">${h}h${m}</td>`;
+                    totalEmpleadoMin += totalMin;
+                    colTotalesDia[d] = (colTotalesDia[d] || 0) + totalMin;
                 }
             }
 
@@ -391,6 +420,28 @@ function limpiarFiltros() {
     cargarMensual();
 }
 
+// ── Pantalla completa ─────────────────────────────────────────────────────────
+function toggleFullscreen() {
+    const el   = document.getElementById('tablaWrapper');
+    const icon = document.getElementById('iconFullscreen');
+    if (!document.fullscreenElement) {
+        (el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen).call(el);
+    } else {
+        (document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen).call(document);
+    }
+}
+document.addEventListener('fullscreenchange',       actualizarIconoFullscreen);
+document.addEventListener('webkitfullscreenchange', actualizarIconoFullscreen);
+document.addEventListener('mozfullscreenchange',    actualizarIconoFullscreen);
+function actualizarIconoFullscreen() {
+    const icon = document.getElementById('iconFullscreen');
+    if (document.fullscreenElement) {
+        icon.className = 'fa-solid fa-compress';
+    } else {
+        icon.className = 'fa-solid fa-expand';
+    }
+}
+
 // ── Exportar CSV ──────────────────────────────────────────────────────────────
 function exportarCSV() {
     if (!_tablaData.length) { alert('No hay datos para exportar.'); return; }
@@ -419,8 +470,9 @@ function exportarCSV() {
         let totalMin = 0;
         let cols = '';
         for (let d = 1; d <= dias; d++) {
-            const fecha = `${anio}-${String(mes).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-            const mins  = emp.dias[fecha] ?? 0;
+            const fecha    = `${anio}-${String(mes).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const diaData  = emp.dias[fecha] ?? null;
+            const mins     = diaData ? diaData.total_min : 0;
             const h = Math.floor(mins / 60);
             const m = String(mins % 60).padStart(2, '0');
             cols += mins > 0 ? `,${h}:${m}` : ',';
