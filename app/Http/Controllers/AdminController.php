@@ -389,6 +389,112 @@ class AdminController extends Controller
         return response()->json(['data' => $records]);
     }
 
+    public function resumenMensualIndex(): View
+    {
+        abort_unless(auth()->user()->can('resumen_mensual.ver'), 403, 'No tienes permiso para acceder a esta sección.');
+        $sedes    = \App\Models\Sede::orderBy('nombre')->get(['id', 'nombre']);
+        $horarios = \App\Models\Horario::orderBy('nombre')->get(['id', 'nombre']);
+        return view('admin.resumen_mensual.index', compact('sedes', 'horarios'));
+    }
+
+    public function resumenMensualData(Request $request): JsonResponse
+    {
+        abort_unless(auth()->user()->can('resumen_mensual.ver'), 403);
+        $request->validate([
+            'anio' => 'required|integer|min:2000|max:2100',
+            'mes'  => 'required|integer|min:1|max:12',
+        ]);
+
+        $anio   = (int) $request->anio;
+        $mes    = (int) $request->mes;
+        $inicio = sprintf('%04d-%02d-01 00:00:00', $anio, $mes);
+        $fin    = date('Y-m-t 23:59:59', mktime(0, 0, 0, $mes, 1, $anio));
+
+        $query = \App\Models\AttendanceRecord::query()
+            ->select('id', 'user_id', 'sede_id', 'horario_id', 'tipo', 'fecha_hora')
+            ->with([
+                'user:id,name,codigo_empleado,departamento_id',
+                'horario:id,nombre',
+                'horario.dias',
+            ])
+            ->whereBetween('fecha_hora', [$inicio, $fin])
+            ->orderBy('fecha_hora', 'asc');
+
+        // Empleados solo ven sus propios registros
+        if (auth()->user()->cannot('empleados.ver')) {
+            $query->where('user_id', auth()->id());
+        } elseif ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+
+        if ($request->filled('sede_id')) {
+            $query->where('sede_id', $request->sede_id);
+        }
+
+        $records = $query->get();
+
+        // Agrupar por empleado + fecha → calcular horas
+        $grupos = [];
+        foreach ($records as $r) {
+            $fecha = substr($r->fecha_hora, 0, 10);
+            $key   = "{$r->user_id}_{$fecha}";
+            if (!isset($grupos[$key])) {
+                $grupos[$key] = [
+                    'user'      => $r->user,
+                    'fecha'     => $fecha,
+                    'registros' => [],
+                ];
+            }
+            $grupos[$key]['registros'][] = $r;
+        }
+
+        $toDate = fn($str) => new \DateTime(str_replace(' ', 'T', $str));
+
+        $resultado = [];
+        foreach ($grupos as $g) {
+            $sorted = collect($g['registros'])->sortBy('fecha_hora')->values();
+
+            $sessions  = [];
+            $openEntrada = null;
+            foreach ($sorted as $r) {
+                if ($r->tipo === 'entrada') {
+                    if ($openEntrada) $sessions[] = ['e' => $openEntrada, 's' => null];
+                    $openEntrada = $r;
+                } elseif ($r->tipo === 'salida') {
+                    $sessions[] = ['e' => $openEntrada, 's' => $r];
+                    $openEntrada = null;
+                }
+            }
+            if ($openEntrada) $sessions[] = ['e' => $openEntrada, 's' => null];
+
+            $totalMin = 0;
+            foreach ($sessions as $s) {
+                if ($s['e'] && $s['s']) {
+                    $mins = round(($toDate($s['s']->fecha_hora)->getTimestamp() - $toDate($s['e']->fecha_hora)->getTimestamp()) / 60);
+                    $fechaDt = $toDate($s['e']->fecha_hora);
+                    $isoDay  = ((int) $fechaDt->format('N')); // 1=lun..7=dom
+                    $horario = $s['e']->horario;
+                    $dia     = collect($horario?->dias ?? [])->firstWhere('dia_semana', $isoDay);
+                    if ($dia && $dia->duracion_almuerzo_min && $mins > $dia->duracion_almuerzo_min) {
+                        $mins -= $dia->duracion_almuerzo_min;
+                    }
+                    $totalMin += $mins;
+                }
+            }
+
+            $resultado[] = [
+                'user_id'         => $g['user']?->id,
+                'nombre'          => $g['user']?->name ?? 'N/A',
+                'codigo_empleado' => $g['user']?->codigo_empleado ?? '',
+                'departamento_id' => $g['user']?->departamento_id,
+                'fecha'           => $g['fecha'],
+                'total_min'       => max(0, $totalMin),
+            ];
+        }
+
+        return response()->json(['data' => $resultado]);
+    }
+
     public function departamentosIndex(Request $request): View
     {
         abort_unless(auth()->user()->can('departamentos.ver'), 403, 'No tienes permiso para acceder a esta sección.');

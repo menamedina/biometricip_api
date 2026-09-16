@@ -46,8 +46,11 @@ class RolesSeeder extends Seeder
             // Festivos
             'festivos.ver', 'festivos.crear', 'festivos.editar', 'festivos.eliminar',
 
-            // Reportes
+            // Reportes (Resumen Marcación)
             'reportes.ver', 'reportes.exportar', 'reportes.crear', 'reportes.editar',
+
+            // Resumen Mensual
+            'resumen_mensual.ver', 'resumen_mensual.exportar',
 
             // Notificaciones
             'notificaciones.ver', 'notificaciones.enviar',
@@ -84,6 +87,7 @@ class RolesSeeder extends Seeder
             'horarios.ver', 'horarios.crear', 'horarios.editar', 'horarios.eliminar',
             'festivos.ver', 'festivos.crear', 'festivos.editar', 'festivos.eliminar',
             'reportes.ver', 'reportes.exportar', 'reportes.crear', 'reportes.editar',
+            'resumen_mensual.ver', 'resumen_mensual.exportar',
             'notificaciones.ver', 'notificaciones.enviar',
             'empresa.ver', 'empresa.crear', 'empresa.editar', 'empresa.eliminar', 'empresa.token',
             'roles.ver', 'roles.crear', 'roles.editar', 'roles.eliminar',
@@ -104,6 +108,7 @@ class RolesSeeder extends Seeder
             'horarios.ver',
             'festivos.ver',
             'reportes.ver', 'reportes.exportar',
+            'resumen_mensual.ver', 'resumen_mensual.exportar',
             'notificaciones.ver',
         ]);
 
@@ -112,6 +117,7 @@ class RolesSeeder extends Seeder
         $empleado->syncPermissions([
             'asistencia.ver',
             'permisos.ver', 'permisos.crear',
+            'resumen_mensual.ver',
         ]);
     }
 }

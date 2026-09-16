@@ -120,6 +120,8 @@ Route::middleware(['auth', 'admin', 'tenancy.session'])->group(function () {
     Route::get('/admin/attendance', [AdminController::class, 'attendanceIndex'])->name('admin.attendance.index');
     Route::get('/admin/resumen',         [AdminController::class, 'resumenIndex'])->name('admin.resumen.index');
     Route::get('/admin/resumen/records', [AdminController::class, 'resumenRecords'])->name('admin.resumen.records');
+    Route::get('/admin/resumen-mensual',      [AdminController::class, 'resumenMensualIndex'])->name('admin.resumen-mensual.index');
+    Route::get('/admin/resumen-mensual/data', [AdminController::class, 'resumenMensualData'])->name('admin.resumen-mensual.data');
     Route::get ('/admin/attendance/records',      [ApiAttendanceController::class, 'index']);
     Route::get ('/admin/attendance/stats',        [ApiAttendanceController::class, 'stats']);
     Route::get ('/admin/attendance/weekly-hours', [ApiAttendanceController::class, 'weeklyHours']);

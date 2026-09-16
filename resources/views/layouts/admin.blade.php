@@ -198,7 +198,7 @@
                         @endcan
 
                         {{-- ── Asistencia ──────────────────────────────────── --}}
-                        @canany(['asistencia.ver','reportes.ver','permisos.ver'])
+                        @canany(['asistencia.ver','reportes.ver','resumen_mensual.ver','permisos.ver'])
                         <li class="side-nav-title mt-2">Asistencia</li>
                         @endcanany
                         @can('asistencia.ver')
@@ -211,9 +211,17 @@
                         @endcan
                         @can('reportes.ver')
                         <li class="side-nav-item">
-                            <a href="{{ route('admin.resumen.index') }}" class="side-nav-link {{ request()->routeIs('admin.resumen.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.resumen.index') }}" class="side-nav-link {{ request()->routeIs('admin.resumen.index') || request()->routeIs('admin.resumen.records') ? 'active' : '' }}">
                                 <span class="menu-icon"><i class="ti ti-calendar-stats"></i></span>
                                 <span class="menu-text">Resumen Marcación</span>
+                            </a>
+                        </li>
+                        @endcan
+                        @can('resumen_mensual.ver')
+                        <li class="side-nav-item">
+                            <a href="{{ route('admin.resumen-mensual.index') }}" class="side-nav-link {{ request()->routeIs('admin.resumen-mensual.*') ? 'active' : '' }}">
+                                <span class="menu-icon"><i class="ti ti-table-column"></i></span>
+                                <span class="menu-text">Resumen Mensual</span>
                             </a>
                         </li>
                         @endcan
