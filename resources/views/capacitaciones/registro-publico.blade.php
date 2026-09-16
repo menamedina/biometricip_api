@@ -160,6 +160,23 @@
                     </div>
                 @else
 
+                {{-- Aviso según si está programado o es externo --}}
+                @if($participante)
+                    <div class="mb-3 p-3 rounded" style="background:#e8f7f4;border:1px solid #b2dfdb;">
+                        <div style="font-size:13px;color:#0d7560;">
+                            &#x2705; <strong>{{ $participante->nombre }}</strong>, estás en la lista de esta capacitación.
+                            Confirma tu asistencia con los datos a continuación.
+                        </div>
+                    </div>
+                @else
+                    <div class="mb-3 p-3 rounded" style="background:#fff8e1;border:1px solid #ffe082;">
+                        <div style="font-size:13px;color:#7a6000;">
+                            &#x2139;&#xFE0F; La cédula <strong>{{ $cedula }}</strong> no está en la lista programada.
+                            Puedes registrarte igualmente como asistente externo.
+                        </div>
+                    </div>
+                @endif
+
                 <div class="mb-3">
                     <label class="form-label">Nombre completo <span class="text-danger">*</span></label>
                     <input type="text" name="nombre" class="form-control form-control-lg"
