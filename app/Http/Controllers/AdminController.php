@@ -469,20 +469,25 @@ class AdminController extends Controller
 
             $totalMin   = 0;
             $minEsperados = 0;
-            $diaHorario   = null; // HorarioDia del día (tomado del primer registro con horario)
+            $diaHorario   = null;
+
+            // Intentar obtener el HorarioDia desde cualquier registro del día
+            foreach ($g['registros'] as $r) {
+                if ($diaHorario) break;
+                $isoD = ((int) $toDate($r->fecha_hora)->format('N'));
+                $d    = collect($r->horario?->dias ?? [])->firstWhere('dia_semana', $isoD);
+                if ($d) $diaHorario = $d;
+            }
 
             foreach ($sessions as $s) {
                 if ($s['e'] && $s['s']) {
                     $mins    = round(($toDate($s['s']->fecha_hora)->getTimestamp() - $toDate($s['e']->fecha_hora)->getTimestamp()) / 60);
                     $fechaDt = $toDate($s['e']->fecha_hora);
-                    $isoDay  = ((int) $fechaDt->format('N')); // 1=lun..7=dom
+                    $isoDay  = ((int) $fechaDt->format('N'));
                     $horario = $s['e']->horario;
                     $dia     = collect($horario?->dias ?? [])->firstWhere('dia_semana', $isoDay);
-                    if ($dia) {
-                        $diaHorario = $dia;
-                        if ($dia->duracion_almuerzo_min && $mins > $dia->duracion_almuerzo_min) {
-                            $mins -= $dia->duracion_almuerzo_min;
-                        }
+                    if ($dia && $dia->duracion_almuerzo_min && $mins > $dia->duracion_almuerzo_min) {
+                        $mins -= $dia->duracion_almuerzo_min;
                     }
                     $totalMin += $mins;
                 }
