@@ -121,10 +121,10 @@
     text-align: center;
     font-size: 11px;
 }
-.celda-ok      { background: #e8f5e9; color: #2e7d32; font-weight: 600; }
-.celda-parcial { background: #fdecea; color: #c62828; font-weight: 600; }
-.celda-ausente { background: #fafafa; color: #bdbdbd; }
-.celda-fin     { background: #f5f5f5; color: #9e9e9e; font-style:italic; }
+#mensualTable td.celda-ok      { background-color: #e8f5e9 !important; color: #2e7d32 !important; font-weight: 600; }
+#mensualTable td.celda-parcial { background-color: #fdecea !important; color: #c62828 !important; font-weight: 600; }
+#mensualTable td.celda-ausente { background-color: #fafafa !important; color: #bdbdbd !important; }
+#mensualTable td.celda-fin     { background-color: #f5f5f5 !important; color: #9e9e9e !important; font-style: italic; }
 
 /* Pantalla completa */
 #tablaWrapper:fullscreen,
