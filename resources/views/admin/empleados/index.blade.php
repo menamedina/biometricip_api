@@ -801,12 +801,11 @@ async function loadEmpleados() {
 
             cols = cols.concat([
                 {
-                    title: 'Rol', data: 'role', className: 'col-emp-rol',
+                    title: 'Rol', data: 'spatie_role', className: 'col-emp-rol',
                     render: function(d, type, row) {
                         if (type !== 'display') return d || '';
-                        if (d === 'admin') return '<span class="badge bg-warning text-dark">' + (row.admin_tenant ? 'Admin multi-empresa' : 'Admin') + '</span>';
-                        if (d === 'supervisor') return '<span class="badge bg-info text-dark">Supervisor</span>';
-                        return '<span class="badge bg-secondary">Empleado</span>';
+                        if (!d) return '<span class="badge bg-secondary">Sin rol</span>';
+                        return '<span class="badge bg-primary">' + d + '</span>';
                     }
                 },
                 {

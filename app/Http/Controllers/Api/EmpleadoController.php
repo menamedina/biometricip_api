@@ -125,6 +125,7 @@ class EmpleadoController extends Controller
             $data['departamento_nombre'] = $maps['deptos']->get($user->departamento_id);
             $data['sede_nombres']        = collect($data['sede_ids'])->map(fn($id) => $maps['sedes']->get($id))->filter()->values()->all();
             $data['foto_perfil_thumbnail'] = $thumbnails->get($user->id)?->imagen_thumbnail;
+            $data['spatie_role']           = $user->getRoleNames()->first();
             return $data;
         });
 
