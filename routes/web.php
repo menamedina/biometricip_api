@@ -16,6 +16,7 @@ use App\Http\Controllers\AiConfigController;
 use App\Http\Controllers\AiChatController;
 use App\Http\Controllers\LoginImageController;
 use App\Http\Controllers\AdminLoginImageController;
+use App\Http\Controllers\CapacitacionController;
 use Illuminate\Support\Facades\Route;
 
 // ZKTeco ADMS PUSH — sin autenticación ni CSRF
@@ -27,6 +28,10 @@ Route::post('/iclock/devicecmd',  [AdmsController::class, 'devicecmd']);
 Route::get('/', function () {
     return view('welcome');
 });
+
+// Capacitaciones — registro público (sin autenticación)
+Route::get ('/capacitacion/{empresaId}/{token}', [CapacitacionController::class, 'registroPublico'])->where('empresaId', '[0-9]+')->name('capacitacion.registro');
+Route::post('/capacitacion/{empresaId}/{token}', [CapacitacionController::class, 'guardarRegistro'])->where('empresaId', '[0-9]+')->name('capacitacion.guardar');
 
 Route::get('/privacy', function () {
     return view('privacy');
@@ -131,8 +136,8 @@ Route::middleware(['auth', 'admin', 'tenancy.session'])->group(function () {
     Route::get ('/admin/catalogos',               [\App\Http\Controllers\Api\DepartamentoController::class, 'catalogos']);
 });
 
-// Solo admin y supervisor
-Route::middleware(['auth', 'admin', 'role:admin,supervisor', 'tenancy.session'])->group(function () {
+// Admin y supervisor — control de acceso por permisos Spatie dentro de cada controller
+Route::middleware(['auth', 'admin', 'tenancy.session'])->group(function () {
     Route::get   ('/admin/sedes',                            [AdminController::class,  'sedesIndex'])->name('admin.sedes.index');
     Route::get   ('/admin/sedes/list',                       [ApiSedeController::class, 'index']);
     Route::post  ('/admin/sedes',                            [ApiSedeController::class, 'store']);
@@ -225,6 +230,18 @@ Route::middleware(['auth', 'admin', 'role:admin,supervisor', 'tenancy.session'])
     Route::post  ('/admin/permisos/{id}/aprobar',    [ApiPermisoController::class, 'aprobar']);
     Route::post  ('/admin/permisos/{id}/rechazar',   [ApiPermisoController::class, 'rechazar']);
     Route::delete('/admin/permisos/{id}',            [ApiPermisoController::class, 'destroy']);
+    // Capacitaciones
+    Route::get   ('/admin/capacitaciones',                      [CapacitacionController::class, 'index'])->name('admin.capacitaciones.index');
+    Route::get   ('/admin/capacitaciones/list',                 [CapacitacionController::class, 'list']);
+    Route::post  ('/admin/capacitaciones',                      [CapacitacionController::class, 'store']);
+    Route::get   ('/admin/capacitaciones/{encryptedId}',                 [CapacitacionController::class, 'showView'])->name('admin.capacitaciones.show');
+    Route::get   ('/admin/capacitaciones/{encryptedId}/json',            [CapacitacionController::class, 'show']);
+    Route::put   ('/admin/capacitaciones/{encryptedId}',                 [CapacitacionController::class, 'update']);
+    Route::patch ('/admin/capacitaciones/{encryptedId}/desactivar',      [CapacitacionController::class, 'destroyWeb'])->name('admin.capacitaciones.desactivar');
+    Route::patch ('/admin/capacitaciones/{encryptedId}/regenerar',        [CapacitacionController::class, 'regenerar']);
+    Route::patch ('/admin/capacitaciones/{encryptedId}/cerrar',          [CapacitacionController::class, 'cerrar']);
+    Route::patch ('/admin/capacitaciones/{encryptedId}/abrir',           [CapacitacionController::class, 'abrir']);
+
     // Notificaciones push
     Route::get   ('/admin/notificaciones',             [AdminController::class, 'notificacionesIndex'])->name('admin.notificaciones.index');
     Route::get   ('/admin/notificaciones/empleados',  [AdminController::class, 'notificacionesEmpleados']);
@@ -250,7 +267,7 @@ Route::middleware(['auth', 'admin', 'role:admin,supervisor', 'tenancy.session'])
 Route::middleware(['auth', 'admin', 'tenancy.session'])->group(function () {
     Route::post('/admin/ai/chat', [AiChatController::class, 'chat']);
 });
-Route::middleware(['auth', 'admin', 'role:admin', 'tenancy.session'])->group(function () {
+Route::middleware(['auth', 'admin', 'tenancy.session'])->group(function () {
     Route::get ('/admin/ai/config',      [AiConfigController::class, 'index'])->name('admin.ai.config');
     Route::post('/admin/ai/config/save', [AiConfigController::class, 'save']);
     Route::get ('/admin/ai/config/test', [AiConfigController::class, 'test']);
@@ -263,8 +280,8 @@ Route::middleware(['auth', 'admin', 'role:admin', 'tenancy.session'])->group(fun
     Route::patch ('/admin/login-images/{id}/toggle',  [AdminLoginImageController::class, 'toggleActive']);
 });
 
-// Roles y Permisos — solo admin
-Route::middleware(['auth', 'admin', 'role:admin', 'tenancy.session'])->group(function () {
+// Roles y Permisos — control por permiso roles.ver dentro del controller
+Route::middleware(['auth', 'admin', 'tenancy.session'])->group(function () {
     Route::get   ('/admin/roles',             [RolesController::class, 'index'])->name('admin.roles.index');
     Route::get   ('/admin/roles/list',        [RolesController::class, 'list']);
     Route::get   ('/admin/roles/permissions', [RolesController::class, 'allPermissions']);

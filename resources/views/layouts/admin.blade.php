@@ -105,7 +105,7 @@
                         <div class="dropdown-menu dropdown-menu-end">
                             <div class="px-3 pt-2 pb-1">
                                 <span class="badge bg-primary-subtle text-primary fw-semibold">
-                                    {{ ['admin' => 'Administrador', 'supervisor' => 'Supervisor', 'empleado' => 'Empleado'][auth()->user()->role] ?? auth()->user()->role }}
+                                    {{ auth()->user()->getRoleNames()->first() ?? auth()->user()->role }}
                                 </span>
                             </div>
                             <div class="dropdown-divider mt-1"></div>
@@ -144,13 +144,13 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <span class="sidenav-user-name fw-bold" title="{{ auth()->user()->name ?? 'Admin' }}">{{ Str::limit(auth()->user()->name ?? 'Admin', 20) }}</span>
-                            <span class="fs-12 fw-semibold d-block">{{ ['admin' => 'Administrador', 'supervisor' => 'Supervisor', 'empleado' => 'Empleado'][auth()->user()->role] ?? auth()->user()->role }}</span>
+                            <span class="fs-12 fw-semibold d-block">{{ auth()->user()->getRoleNames()->first() ?? auth()->user()->role }}</span>
                         </div>
                     </div>
                 </div>
 
                 <div id="sidenav-menu">
-                    @php $role = auth()->user()->role; @endphp
+                    @php $spatieRole = auth()->user()->getRoleNames()->first(); @endphp
                     <ul class="side-nav">
                         <li class="side-nav-title mt-2">Menú Principal</li>
                         <li class="side-nav-item">
@@ -198,7 +198,7 @@
                         @endcan
 
                         {{-- ── Asistencia ──────────────────────────────────── --}}
-                        @canany(['asistencia.ver','reportes.ver','resumen_mensual.ver','permisos.ver'])
+                        @canany(['asistencia.ver','reportes.ver','resumen_mensual.ver','permisos.ver','capacitaciones.ver'])
                         <li class="side-nav-title mt-2">Asistencia</li>
                         @endcanany
                         @can('asistencia.ver')
@@ -230,6 +230,14 @@
                             <a href="{{ route('admin.permisos.index') }}" class="side-nav-link {{ request()->routeIs('admin.permisos.*') ? 'active' : '' }}">
                                 <span class="menu-icon"><i class="ti ti-file-certificate"></i></span>
                                 <span class="menu-text">Permisos / Ausencias</span>
+                            </a>
+                        </li>
+                        @endcan
+                        @can('capacitaciones.ver')
+                        <li class="side-nav-item">
+                            <a href="{{ route('admin.capacitaciones.index') }}" class="side-nav-link {{ request()->routeIs('admin.capacitaciones.*') ? 'active' : '' }}">
+                                <span class="menu-icon"><i class="ti ti-school"></i></span>
+                                <span class="menu-text">Capacitaciones</span>
                             </a>
                         </li>
                         @endcan
@@ -297,7 +305,7 @@
                             </a>
                         </li>
                         @endcan
-                        @if($role === 'admin')
+                        @if(auth()->user()->can('roles.ver'))
                         <li class="side-nav-item">
                             <a href="{{ route('admin.roles.index') }}" class="side-nav-link {{ request()->routeIs('admin.roles.*') ? 'active' : '' }}">
                                 <span class="menu-icon"><i class="ti ti-shield-lock"></i></span>
