@@ -109,18 +109,24 @@ class CapacitacionController extends Controller
                 'instructor_nombre' => $data['instructor_nombre'],
                 'duracion_horas'    => $data['duracion_horas'] ?? null,
                 'expira_en'         => $data['expira_en'],
-                'fecha_expiracion'  => $data['expira_en'] > 0
-                    ? now()->addMinutes((int) $data['expira_en'])
-                    : now()->addYears(100),
                 'activo'            => true,
                 'creado_por'        => Auth::id(),
                 'empresa_id'        => Auth::user()->empresa_id,
             ];
 
             // Crear una capacitación por cada fecha
+            // La fecha_expiracion se calcula a partir de la fecha de la sesión + expira_en minutos
             $primera = null;
             foreach ($fechas as $fecha) {
-                $cap = Capacitacion::create(array_merge($base, ['fecha_capacitacion' => $fecha]));
+                $fechaBase       = \Carbon\Carbon::parse($fecha);
+                $fechaExpiracion = $data['expira_en'] > 0
+                    ? $fechaBase->addMinutes((int) $data['expira_en'])
+                    : \Carbon\Carbon::parse($fecha)->addYears(100);
+
+                $cap = Capacitacion::create(array_merge($base, [
+                    'fecha_capacitacion' => $fecha,
+                    'fecha_expiracion'   => $fechaExpiracion,
+                ]));
                 if (!$primera) $primera = $cap;
             }
 
