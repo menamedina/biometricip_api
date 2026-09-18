@@ -108,6 +108,16 @@
 @endsection
 
 @push('styles')
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
+<style>
+div.dataTables_wrapper div.dataTables_length,
+div.dataTables_wrapper div.dataTables_filter { padding: 10px 12px 0; }
+div.dataTables_wrapper div.dataTables_info,
+div.dataTables_wrapper div.dataTables_paginate { padding: 8px 12px 10px; border-top: 1px solid #e9ecef; }
+div.dataTables_wrapper div.dataTables_length label,
+div.dataTables_wrapper div.dataTables_filter label { font-size: 12px; color: #6c757d; margin-bottom: 6px; }
+div.dataTables_wrapper div.dataTables_info { font-size: 12px; color: #6c757d; }
+</style>
 <style>
 #mensualTable th, #mensualTable td {
     vertical-align: middle;
@@ -147,6 +157,9 @@
 @endpush
 
 @push('scripts')
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script>
 const csrfToken   = '{{ csrf_token() }}';
 const esEmpleado  = {{ auth()->user()->cannot('empleados.ver') ? 'true' : 'false' }};
@@ -207,6 +220,9 @@ async function cargarMensual() {
     const totDiv = document.getElementById('resumenTotales');
 
     // Spinner
+    if ($.fn.DataTable.isDataTable('#mensualTable')) {
+        $('#mensualTable').DataTable().destroy();
+    }
     thead.innerHTML = '';
     tfoot.innerHTML = '';
     totDiv.style.display = 'none';
@@ -324,6 +340,30 @@ async function cargarMensual() {
         });
 
         tbody.innerHTML = filas;
+
+        // ── DataTable ──────────────────────────────────────────────────────────
+        // Columnas de días: índices 2 hasta (dias+1), sin ordenamiento
+        const dayTargets = Array.from({ length: dias }, (_, i) => i + 2);
+        $('#mensualTable').DataTable({
+            paging:     true,
+            pageLength: 25,
+            lengthMenu: [10, 25, 50, 100, 200],
+            ordering:   true,
+            scrollX:    true,
+            searching:  true,
+            language: {
+                url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json',
+            },
+            columnDefs: [
+                { orderable: false, targets: dayTargets },
+                { orderable: false, targets: -1 },       // Total
+            ],
+            order: [[0, 'asc']],
+            initComplete: function () {
+                $('#mensualTable_length select').addClass('form-select form-select-sm d-inline-block w-auto');
+                $('#mensualTable_filter input').addClass('form-control form-control-sm d-inline-block w-auto');
+            },
+        });
 
         // ── Pie totales por día ───────────────────────────────────────────────
         let pieDias = '';

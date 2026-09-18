@@ -502,7 +502,8 @@ div.dataTables_wrapper div.dataTables_info {
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
-<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
 <script>
 var dtAsistentes = null;
 
@@ -709,13 +710,112 @@ async function guardarEdicion() {
     }
 }
 
-function exportarCSV() {
-    var rows = [['#','Cédula','Nombre','Correo','Estado','Fecha Confirmación']];
+async function exportarCSV() {
+    var wb = new ExcelJS.Workbook();
+    var ws = wb.addWorksheet('Participantes');
+
+    // ── Anchos de columna ──
+    ws.columns = [
+        { width: 6  },  // A: # / etiqueta
+        { width: 16 },  // B: Cédula / valor
+        { width: 36 },  // C: Nombre
+        { width: 32 },  // D: Correo
+        { width: 16 },  // E: Estado
+        { width: 22 },  // F: Fecha Confirmación
+    ];
+
+    // ── Colores corporativos ──
+    var COLOR_VERDE  = '1AB394';  // verde BiometricIP
+    var COLOR_OSCURO = '0D7560';
+    var COLOR_GRIS   = 'F4F6F8';
+    var COLOR_BLANCO = 'FFFFFF';
+
+    // ── Título principal ──
+    ws.mergeCells('A1:F1');
+    var titleRow = ws.getRow(1);
+    titleRow.height = 32;
+    var titleCell = ws.getCell('A1');
+    titleCell.value = '{{ addslashes($cap->titulo) }}';
+    titleCell.font  = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF' + COLOR_BLANCO } };
+    titleCell.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + COLOR_OSCURO } };
+    titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // ── Subtítulo empresa ──
+    ws.mergeCells('A2:F2');
+    var subRow = ws.getRow(2);
+    subRow.height = 20;
+    var subCell = ws.getCell('A2');
+    subCell.value = '{{ addslashes(auth()->user()->empresa?->nombre ?? 'BiometricIP') }}';
+    subCell.font  = { name: 'Calibri', size: 11, italic: true, color: { argb: 'FF' + COLOR_BLANCO } };
+    subCell.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + COLOR_VERDE } };
+    subCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // ── Filas de info de la capacitación ──
+    var infoStyle = function (labelCell, valueCell, label, value) {
+        labelCell.value = label;
+        labelCell.font  = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF333333' } };
+        labelCell.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + COLOR_GRIS } };
+        labelCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+        labelCell.border = {
+            top: { style: 'thin', color: { argb: 'FFDDDDDD' } },
+            bottom: { style: 'thin', color: { argb: 'FFDDDDDD' } },
+            left: { style: 'thin', color: { argb: 'FFDDDDDD' } },
+            right: { style: 'thin', color: { argb: 'FFDDDDDD' } },
+        };
+
+        valueCell.value = value;
+        valueCell.font  = { name: 'Calibri', size: 10 };
+        valueCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+        valueCell.border = {
+            top: { style: 'thin', color: { argb: 'FFDDDDDD' } },
+            bottom: { style: 'thin', color: { argb: 'FFDDDDDD' } },
+            left: { style: 'thin', color: { argb: 'FFDDDDDD' } },
+            right: { style: 'thin', color: { argb: 'FFDDDDDD' } },
+        };
+    };
+
+    var infoData = [
+        ['Instructor',    '{{ addslashes($cap->instructor_nombre ?? '—') }}'],
+        ['Fecha',         '{{ $cap->fecha_capacitacion?->format('d/m/Y H:i') ?? '—' }}'],
+        ['Duración',      '{{ $cap->duracion_horas ? $cap->duracion_horas . ' hora(s)' : '—' }}'],
+        ['Estado',        '{{ !$cap->activo ? "Desactivada" : ($cap->cerrada ? "Cerrada" : (!$cap->estaVigente() ? "Expirada" : "Abierta")) }}'],
+        ['Registrado por','{{ addslashes($creadoPorNombre) }}'],
+        ['Exportado',     new Date().toLocaleString('es-CO')],
+    ];
+
+    infoData.forEach(function (pair) {
+        var r = ws.addRow([]);
+        r.height = 18;
+        ws.mergeCells('A' + r.number + ':B' + r.number);
+        ws.mergeCells('C' + r.number + ':F' + r.number);
+        infoStyle(ws.getCell('A' + r.number), ws.getCell('C' + r.number), pair[0], pair[1]);
+    });
+
+    // ── Fila vacía separadora ──
+    ws.addRow([]);
+
+    // ── Encabezado de la tabla de participantes ──
+    var headRow = ws.addRow(['#', 'Cédula', 'Nombre', 'Correo', 'Estado', 'Fecha Confirmación']);
+    headRow.height = 22;
+    headRow.eachCell(function (cell) {
+        cell.font  = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF' + COLOR_BLANCO } };
+        cell.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + COLOR_VERDE } };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.border = {
+            top:    { style: 'thin', color: { argb: 'FF' + COLOR_OSCURO } },
+            bottom: { style: 'thin', color: { argb: 'FF' + COLOR_OSCURO } },
+            left:   { style: 'thin', color: { argb: 'FF' + COLOR_OSCURO } },
+            right:  { style: 'thin', color: { argb: 'FF' + COLOR_OSCURO } },
+        };
+    });
+
+    // ── Filas de participantes ──
+    var participantes = [];
     if (dtAsistentes) {
         dtAsistentes.rows().every(function (i) {
-            var tr = this.node();
+            var tr   = this.node();
             var cols = tr.querySelectorAll('td');
-            rows.push([
+            participantes.push([
                 i + 1,
                 cols[1].innerText.trim(),
                 cols[2].innerText.trim(),
@@ -727,7 +827,7 @@ function exportarCSV() {
     } else {
         document.querySelectorAll('#tablaAsistentes tbody tr').forEach(function (tr, i) {
             var cols = tr.querySelectorAll('td');
-            rows.push([
+            participantes.push([
                 i + 1,
                 cols[1].innerText.trim(),
                 cols[2].innerText.trim(),
@@ -738,21 +838,29 @@ function exportarCSV() {
         });
     }
 
-    var wb  = XLSX.utils.book_new();
-    var ws  = XLSX.utils.aoa_to_sheet(rows);
+    participantes.forEach(function (p, idx) {
+        var dataRow = ws.addRow(p);
+        dataRow.height = 16;
+        var bgColor = idx % 2 === 0 ? 'FFFFFFFF' : 'FFF4F6F8';
+        dataRow.eachCell(function (cell) {
+            cell.font      = { name: 'Calibri', size: 10 };
+            cell.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } };
+            cell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+            cell.border    = {
+                top:    { style: 'hair', color: { argb: 'FFDDDDDD' } },
+                bottom: { style: 'hair', color: { argb: 'FFDDDDDD' } },
+                left:   { style: 'hair', color: { argb: 'FFDDDDDD' } },
+                right:  { style: 'hair', color: { argb: 'FFDDDDDD' } },
+            };
+        });
+        // columna # centrada
+        dataRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+    });
 
-    // Ancho de columnas
-    ws['!cols'] = [
-        { wch: 5 },  // #
-        { wch: 14 }, // Cédula
-        { wch: 35 }, // Nombre
-        { wch: 30 }, // Correo
-        { wch: 14 }, // Estado
-        { wch: 20 }, // Fecha Confirmación
-    ];
-
-    XLSX.utils.book_append_sheet(wb, ws, 'Participantes');
-    XLSX.writeFile(wb, 'asistentes_capacitacion_{{ $cap->id }}.xlsx');
+    // ── Generar y descargar ──
+    var buffer = await wb.xlsx.writeBuffer();
+    saveAs(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+        'capacitacion_{{ $cap->id }}_participantes.xlsx');
 }
 
 // ── Agregar participante — modal ──────────────────────────────
