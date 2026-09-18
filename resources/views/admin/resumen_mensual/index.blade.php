@@ -88,7 +88,7 @@
     {{-- Tabla pivot --}}
     <div class="card shadow-lg border-0" id="tablaWrapper">
         <div class="card-body p-0">
-            <div class="table-responsive">
+            <div class="table-responsive" style="max-height:70vh; overflow:auto;">
                 <table class="table table-hover table-sm mb-0 table-bordered" id="mensualTable" style="font-size:12px;">
                     <thead class="table-light" id="mensualThead"></thead>
                     <tbody id="mensualTbody">
@@ -151,8 +151,11 @@ div.dataTables_wrapper div.dataTables_info { font-size: 12px; color: #6c757d; }
     overflow: auto;
 }
 #mensualTable tfoot td { font-weight: 700; background: #f8f9fa; font-size: 11px; }
-.col-empleado-fijo { min-width: 160px; max-width: 200px; position: sticky; left: 0; background: #fff; z-index: 2; box-shadow: 2px 0 4px rgba(0,0,0,.05); }
-.col-total-fijo    { min-width: 70px;  position: sticky; right: 0; background: #f8f9fa; z-index: 2; box-shadow: -2px 0 4px rgba(0,0,0,.05); font-weight: 700; }
+.col-empleado-fijo { min-width: 160px; max-width: 200px; position: sticky; left: 0; background: #fff !important; z-index: 3; box-shadow: 2px 0 4px rgba(0,0,0,.05); }
+.col-total-fijo    { min-width: 70px;  position: sticky; right: 0; background: #f8f9fa !important; z-index: 3; box-shadow: -2px 0 4px rgba(0,0,0,.05); font-weight: 700; }
+#mensualTable thead th { position: sticky; top: 0; background: #fff !important; z-index: 2; }
+#mensualTable thead th.col-empleado-fijo,
+#mensualTable thead th.col-total-fijo { z-index: 5; }
 </style>
 @endpush
 
@@ -351,7 +354,7 @@ async function cargarMensual() {
             pageLength: 25,
             lengthMenu: [10, 25, 50, 100, 200],
             ordering:   true,
-            scrollX:    true,
+            scrollX:    false,
             searching:  true,
             language: {
                 url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json',
