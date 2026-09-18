@@ -311,22 +311,24 @@ async function cargarMensual() {
                 } else {
                     const totalMin    = mins.total_min;
                     const minEsp      = mins.min_esperados;
-                    const h = Math.floor(totalMin / 60);
+                    const h = String(Math.floor(totalMin / 60)).padStart(2, '0');
                     const m = String(totalMin % 60).padStart(2, '0');
                     // Verde si cumplió el horario esperado (o no hay horario definido y trabajó algo)
                     const cumple = minEsp > 0 ? totalMin >= minEsp : totalMin >= 420;
                     const cls = cumple ? 'celda-ok' : 'celda-parcial';
+                    const hEsp = String(Math.floor(minEsp/60)).padStart(2,'0');
+                    const mEsp = String(minEsp%60).padStart(2,'0');
                     const tooltip = minEsp > 0
-                        ? `${fecha}: ${h}h${m}m trabajadas / ${Math.floor(minEsp/60)}h${String(minEsp%60).padStart(2,'0')}m esperadas`
-                        : `${fecha}: ${h}h${m}m trabajadas`;
-                    celdas += `<td class="dia-col ${cls}" title="${tooltip}">${h}h${m}</td>`;
+                        ? `${fecha}: ${h}:${m} trabajadas / ${hEsp}:${mEsp} esperadas`
+                        : `${fecha}: ${h}:${m} trabajadas`;
+                    celdas += `<td class="dia-col ${cls}" title="${tooltip}">${h}:${m}</td>`;
                     totalEmpleadoMin += totalMin;
                     colTotalesDia[d] = (colTotalesDia[d] || 0) + totalMin;
                 }
             }
 
             totalGlobalMin += totalEmpleadoMin;
-            const th = Math.floor(totalEmpleadoMin / 60);
+            const th = String(Math.floor(totalEmpleadoMin / 60)).padStart(2, '0');
             const tm = String(totalEmpleadoMin % 60).padStart(2, '0');
 
             filas += `<tr>
@@ -335,7 +337,7 @@ async function cargarMensual() {
                 </td>
                 <td><span class="badge bg-primary">${emp.codigo || '—'}</span></td>
                 ${celdas}
-                <td class="col-total-fijo text-end">${th}h ${tm}m</td>
+                <td class="col-total-fijo text-end">${th}:${tm}</td>
             </tr>`;
         });
 
@@ -375,18 +377,18 @@ async function cargarMensual() {
             if (esFS || mins === 0) {
                 pieDias += `<td class="dia-col text-muted">—</td>`;
             } else {
-                const h = Math.floor(mins / 60);
+                const h = String(Math.floor(mins / 60)).padStart(2, '0');
                 const m = String(mins % 60).padStart(2, '0');
-                pieDias += `<td class="dia-col">${h}h</td>`;
+                pieDias += `<td class="dia-col">${h}:${m}</td>`;
             }
         }
-        const tgh = Math.floor(totalGlobalMin / 60);
+        const tgh = String(Math.floor(totalGlobalMin / 60)).padStart(2, '0');
         const tgm = String(totalGlobalMin % 60).padStart(2, '0');
         tfoot.innerHTML = `<tr>
             <td class="col-empleado-fijo fw-bold">Total</td>
             <td></td>
             ${pieDias}
-            <td class="col-total-fijo text-end">${tgh}h ${tgm}m</td>
+            <td class="col-total-fijo text-end">${tgh}:${tgm}</td>
         </tr>`;
 
         // ── KPI cards ─────────────────────────────────────────────────────────
@@ -405,7 +407,7 @@ async function cargarMensual() {
             </div>
             <div class="col-md-3">
                 <div class="card border-0 shadow-sm text-center py-3">
-                    <div class="fs-2 fw-bold text-success">${tgh}h ${tgm}m</div>
+                    <div class="fs-2 fw-bold text-success">${tgh}:${tgm}</div>
                     <div class="text-muted small">Total horas del mes</div>
                 </div>
             </div>
