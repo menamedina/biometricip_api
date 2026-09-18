@@ -367,29 +367,9 @@ async function cargarMensual() {
             },
         });
 
-        // ── Pie totales por día ───────────────────────────────────────────────
-        let pieDias = '';
-        for (let d = 1; d <= dias; d++) {
-            const fecha = `${anio}-${String(mes).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-            const dow   = new Date(anio, mes - 1, d).getDay();
-            const esFS  = dow === 0 || dow === 6;
-            const mins  = colTotalesDia[d] || 0;
-            if (esFS || mins === 0) {
-                pieDias += `<td class="dia-col text-muted">—</td>`;
-            } else {
-                const h = String(Math.floor(mins / 60)).padStart(2, '0');
-                const m = String(mins % 60).padStart(2, '0');
-                pieDias += `<td class="dia-col">${h}:${m}</td>`;
-            }
-        }
         const tgh = String(Math.floor(totalGlobalMin / 60)).padStart(2, '0');
         const tgm = String(totalGlobalMin % 60).padStart(2, '0');
-        tfoot.innerHTML = `<tr>
-            <td class="col-empleado-fijo fw-bold">Total</td>
-            <td></td>
-            ${pieDias}
-            <td class="col-total-fijo text-end">${tgh}:${tgm}</td>
-        </tr>`;
+        tfoot.innerHTML = '';
 
         // ── KPI cards ─────────────────────────────────────────────────────────
         const totalEmpleados = empleadosSorted.length;
