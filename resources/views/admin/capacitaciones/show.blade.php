@@ -403,6 +403,7 @@
                             <label class="form-label fw-semibold">Área / Departamento</label>
                             <select id="selectDepartamento" class="form-select" onchange="cargarEmpleadosPorArea()">
                                 <option value="">— Selecciona un área —</option>
+                                <option value="all">Todos los departamentos</option>
                             </select>
                         </div>
                         <div id="listaArea" style="max-height:280px;overflow-y:auto;"></div>
@@ -805,7 +806,10 @@ async function cargarEmpleadosPorArea() {
     panel.style.display = 'none';
 
     try {
-        var res  = await fetch('/admin/capacitaciones/empleados?departamento_id=' + deptId, { headers: { 'Accept': 'application/json' } });
+        var url = deptId === 'all'
+            ? '/admin/capacitaciones/empleados'
+            : '/admin/capacitaciones/empleados?departamento_id=' + deptId;
+        var res  = await fetch(url, { headers: { 'Accept': 'application/json' } });
         var data = await res.json();
         empleadosArea = data.data || [];
         _renderListaArea();

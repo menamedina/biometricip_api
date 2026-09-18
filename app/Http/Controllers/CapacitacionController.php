@@ -380,7 +380,6 @@ class CapacitacionController extends Controller
 
             $empleados = $query->select('id', 'name', 'cedula', 'email', 'telefono', 'departamento_id')
                 ->orderBy('name')
-                ->limit(50)
                 ->get()
                 ->map(function ($u) {
                     return [
