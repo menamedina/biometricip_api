@@ -272,7 +272,7 @@ async function cargarMensual() {
         const colTotalesDia = {};
         for (let d = 1; d <= dias; d++) {
             const fecha = `${anio}-${String(mes).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-            const dow   = new Date(fecha).getDay(); // 0=dom
+            const dow   = new Date(anio, mes - 1, d).getDay(); // 0=dom
             const esFS  = dow === 0 || dow === 6;
             colTotalesDia[d] = 0;
             thDias += `<th class="dia-col ${esFS ? 'table-secondary' : ''}" title="${fecha}">
@@ -299,7 +299,7 @@ async function cargarMensual() {
 
             for (let d = 1; d <= dias; d++) {
                 const fecha = `${anio}-${String(mes).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-                const dow   = new Date(fecha).getDay();
+                const dow   = new Date(anio, mes - 1, d).getDay();
                 const esFS  = dow === 0 || dow === 6;
                 const diaData = emp.dias[fecha] ?? null;
             const mins    = diaData;
@@ -369,7 +369,7 @@ async function cargarMensual() {
         let pieDias = '';
         for (let d = 1; d <= dias; d++) {
             const fecha = `${anio}-${String(mes).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-            const dow   = new Date(fecha).getDay();
+            const dow   = new Date(anio, mes - 1, d).getDay();
             const esFS  = dow === 0 || dow === 6;
             const mins  = colTotalesDia[d] || 0;
             if (esFS || mins === 0) {
