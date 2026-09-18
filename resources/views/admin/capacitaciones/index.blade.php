@@ -253,52 +253,99 @@
     </div>
 </div>
 
+@push('styles')
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
+<style>
+div.dataTables_wrapper div.dataTables_length,
+div.dataTables_wrapper div.dataTables_filter { padding: 12px 16px 0; }
+div.dataTables_wrapper div.dataTables_info,
+div.dataTables_wrapper div.dataTables_paginate { padding: 10px 16px 12px; border-top: 1px solid #e9ecef; }
+div.dataTables_wrapper div.dataTables_length label,
+div.dataTables_wrapper div.dataTables_filter label { font-size: 13px; color: #6c757d; margin-bottom: 8px; }
+div.dataTables_wrapper div.dataTables_info { font-size: 13px; color: #6c757d; }
+</style>
+@endpush
+
 @push('scripts')
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script>
 // ── Estado local ──────────────────────────────────────────────
 var csrfToken = '{{ csrf_token() }}';
 var temasCrear = [];
 var fechasCrear = [];
+var dtCapacitaciones = null;
 
-// ── Cargar tabla ──────────────────────────────────────────────
-async function cargarTabla() {
-    var tbody = document.querySelector('#tablaCapacitaciones tbody');
-    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Cargando...</td></tr>';
-    try {
-        var res  = await fetch('/admin/capacitaciones/list', { headers: { 'Accept': 'application/json' } });
-        var data = await res.json();
+var estadoMap = {
+    'Abierta':     '<span class="badge bg-success">Abierta</span>',
+    'Cerrada':     '<span class="badge bg-secondary">Cerrada</span>',
+    'Expirada':    '<span class="badge bg-warning text-dark">Expirada</span>',
+    'Desactivada': '<span class="badge bg-danger">Desactivada</span>',
+};
 
-        if (!Array.isArray(data) || data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No hay capacitaciones registradas.</td></tr>';
-            return;
-        }
-
-        tbody.innerHTML = data.map(function (row, i) {
-            var estadoMap = {
-            'Abierta':     '<span class="badge bg-success">Abierta</span>',
-            'Cerrada':     '<span class="badge bg-secondary">Cerrada</span>',
-            'Expirada':    '<span class="badge bg-warning text-dark">Expirada</span>',
-            'Desactivada': '<span class="badge bg-danger">Desactivada</span>',
-        };
-        var estado = estadoMap[row.estado_label] || '<span class="badge bg-secondary">' + row.estado_label + '</span>';
-            return '<tr>'
-                + '<td>' + (i + 1) + '</td>'
-                + '<td>' + escHtml(row.titulo) + '</td>'
-                + '<td>' + (row.instructor_nombre ? escHtml(row.instructor_nombre) : '<span class="text-muted">—</span>') + '</td>'
-                + '<td>' + (row.fecha_capacitacion || '<span class="text-muted">—</span>') + '</td>'
-                + '<td>' + row.fecha_expiracion + '</td>'
-                + '<td>' + estado + '</td>'
-                + '<td><span class="badge bg-primary rounded-pill">' + (row.asistentes_count || 0) + '</span></td>'
-                + '<td><a href="/admin/capacitaciones/' + encodeURIComponent(row.encrypted_id) + '" class="btn btn-sm btn-outline-primary"><i class="ti ti-eye me-1"></i>Ver</a></td>'
-                + '</tr>';
-        }).join('');
-    } catch (e) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger py-4">Error al cargar las capacitaciones.</td></tr>';
-        console.error(e);
-    }
-}
-
-document.addEventListener('DOMContentLoaded', cargarTabla);
+$(function () {
+    dtCapacitaciones = $('#tablaCapacitaciones').DataTable({
+        ajax: {
+            url: '/admin/capacitaciones/list',
+            dataSrc: '',
+            headers: { 'Accept': 'application/json' },
+        },
+        language: {
+            url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json',
+        },
+        pageLength: 25,
+        order: [[3, 'desc']],
+        columns: [
+            {
+                data: null,
+                orderable: false,
+                searchable: false,
+                render: function (data, type, row, meta) {
+                    return meta.row + 1;
+                }
+            },
+            {
+                data: 'titulo',
+                render: function (data) { return escHtml(data || ''); }
+            },
+            {
+                data: 'instructor_nombre',
+                render: function (data) {
+                    return data ? escHtml(data) : '<span class="text-muted">—</span>';
+                }
+            },
+            {
+                data: 'fecha_capacitacion',
+                render: function (data) {
+                    return data || '<span class="text-muted">—</span>';
+                }
+            },
+            { data: 'fecha_expiracion' },
+            {
+                data: 'estado_label',
+                render: function (data) {
+                    return estadoMap[data] || '<span class="badge bg-secondary">' + escHtml(data) + '</span>';
+                }
+            },
+            {
+                data: 'asistentes_count',
+                render: function (data) {
+                    return '<span class="badge bg-primary rounded-pill">' + (data || 0) + '</span>';
+                }
+            },
+            {
+                data: 'encrypted_id',
+                orderable: false,
+                searchable: false,
+                render: function (data) {
+                    return '<a href="/admin/capacitaciones/' + encodeURIComponent(data) + '" class="btn btn-sm btn-outline-primary">'
+                        + '<i class="ti ti-eye me-1"></i>Ver</a>';
+                }
+            },
+        ],
+    });
+});
 
 // ── Fechas / Sesiones ─────────────────────────────────────────
 function renderFechas() {

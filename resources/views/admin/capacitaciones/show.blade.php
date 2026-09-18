@@ -194,7 +194,7 @@
                             @endcan
                             @if($cap->asistentes->count() > 0)
                             <button onclick="exportarCSV()" class="btn btn-sm btn-outline-success">
-                                <i class="ti ti-file-export me-1"></i> CSV
+                                <i class="ti ti-file-spreadsheet me-1"></i> Excel
                             </button>
                             @endif
                         </div>
@@ -391,7 +391,7 @@
                             <p class="text-muted small text-center mt-3">Escribe para buscar empleados.</p>
                         </div>
                         <div class="mt-2 d-flex justify-content-end">
-                            <button class="btn btn-primary" id="btnAgregarBuscar" onclick="agregarSeleccionadosBuscar()" style="display:none!important;">
+                            <button class="btn btn-primary" id="btnAgregarBuscar" onclick="agregarSeleccionadosBuscar(this)" style="display:none!important;">
                                 <i class="ti ti-user-plus me-1"></i> Agregar seleccionados
                             </button>
                         </div>
@@ -409,7 +409,7 @@
                         <div id="listaArea" style="max-height:280px;overflow-y:auto;"></div>
                         <div class="mt-2 d-flex justify-content-between align-items-center" id="panelAreaAcciones" style="display:none!important;">
                             <small class="text-muted"><span id="cntArea">0</span> seleccionado(s)</small>
-                            <button class="btn btn-primary btn-sm" onclick="agregarSeleccionadosArea()">
+                            <button class="btn btn-primary btn-sm" id="btnAgregarArea" onclick="agregarSeleccionadosArea(this)">
                                 <i class="ti ti-user-plus me-1"></i> Agregar seleccionados
                             </button>
                         </div>
@@ -473,8 +473,62 @@
 </div>
 @endsection
 
+@push('styles')
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
+<style>
+div.dataTables_wrapper div.dataTables_length,
+div.dataTables_wrapper div.dataTables_filter {
+    padding: 12px 16px 0;
+}
+div.dataTables_wrapper div.dataTables_info,
+div.dataTables_wrapper div.dataTables_paginate {
+    padding: 10px 16px 12px;
+    border-top: 1px solid #e9ecef;
+}
+div.dataTables_wrapper div.dataTables_length label,
+div.dataTables_wrapper div.dataTables_filter label {
+    font-size: 13px;
+    color: #6c757d;
+    margin-bottom: 8px;
+}
+div.dataTables_wrapper div.dataTables_info {
+    font-size: 13px;
+    color: #6c757d;
+}
+</style>
+@endpush
+
 @push('scripts')
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script>
+var dtAsistentes = null;
+
+$(function () {
+    if ($('#tablaAsistentes').length) {
+        dtAsistentes = $('#tablaAsistentes').DataTable({
+            language: {
+                url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json'
+            },
+            pageLength: 25,
+            order: [[2, 'asc']],
+            columnDefs: [
+                { orderable: false, targets: [0, 6] }
+            ],
+            drawCallback: function () {
+                // Renumerar la columna #
+                this.api().rows({ page: 'current' }).every(function (rowIdx) {
+                    var node = this.node();
+                    var pageInfo = dtAsistentes.page.info();
+                    $(node).find('td:first').text(pageInfo.start + rowIdx + 1);
+                });
+            }
+        });
+    }
+});
+
 function copiarLink() {
     var texto = document.getElementById('linkTexto').innerText.trim();
     var ta = document.createElement('textarea');
@@ -657,23 +711,48 @@ async function guardarEdicion() {
 
 function exportarCSV() {
     var rows = [['#','Cédula','Nombre','Correo','Estado','Fecha Confirmación']];
-    document.querySelectorAll('#tablaAsistentes tbody tr').forEach(function (tr) {
-        var cols = tr.querySelectorAll('td');
-        rows.push([
-            cols[0].innerText.trim(),
-            cols[1].innerText.trim(),
-            cols[2].innerText.trim(),
-            cols[3].innerText.trim(),
-            cols[4].innerText.trim(),
-            cols[5].innerText.trim(),
-        ]);
-    });
-    var csv  = rows.map(function (r) { return r.map(function (c) { return '"' + c.replace(/"/g,'""') + '"'; }).join(','); }).join('\n');
-    var blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-    var a    = document.createElement('a');
-    a.href   = URL.createObjectURL(blob);
-    a.download = 'asistentes_capacitacion_{{ $cap->id }}.csv';
-    a.click();
+    if (dtAsistentes) {
+        dtAsistentes.rows().every(function (i) {
+            var tr = this.node();
+            var cols = tr.querySelectorAll('td');
+            rows.push([
+                i + 1,
+                cols[1].innerText.trim(),
+                cols[2].innerText.trim(),
+                cols[3].innerText.trim(),
+                cols[4].innerText.trim(),
+                cols[5].innerText.trim(),
+            ]);
+        });
+    } else {
+        document.querySelectorAll('#tablaAsistentes tbody tr').forEach(function (tr, i) {
+            var cols = tr.querySelectorAll('td');
+            rows.push([
+                i + 1,
+                cols[1].innerText.trim(),
+                cols[2].innerText.trim(),
+                cols[3].innerText.trim(),
+                cols[4].innerText.trim(),
+                cols[5].innerText.trim(),
+            ]);
+        });
+    }
+
+    var wb  = XLSX.utils.book_new();
+    var ws  = XLSX.utils.aoa_to_sheet(rows);
+
+    // Ancho de columnas
+    ws['!cols'] = [
+        { wch: 5 },  // #
+        { wch: 14 }, // Cédula
+        { wch: 35 }, // Nombre
+        { wch: 30 }, // Correo
+        { wch: 14 }, // Estado
+        { wch: 20 }, // Fecha Confirmación
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Participantes');
+    XLSX.writeFile(wb, 'asistentes_capacitacion_{{ $cap->id }}.xlsx');
 }
 
 // ── Agregar participante — modal ──────────────────────────────
@@ -769,11 +848,11 @@ function _actualizarBtnBuscar() {
     btn.style.display = chk.length > 0 ? 'inline-block' : 'none';
 }
 
-async function agregarSeleccionadosBuscar() {
+async function agregarSeleccionadosBuscar(btn) {
     var chk = document.querySelectorAll('#listaBuscar input[type=checkbox]:checked');
     var seleccionados = Array.from(chk).map(function (c) { return empleadosBuscar[parseInt(c.value)]; });
     if (!seleccionados.length) return;
-    await _enviarBulk(seleccionados);
+    await _enviarBulk(seleccionados, btn);
 }
 
 // ── Tab: Por Área ─────────────────────────────────────────────
@@ -862,17 +941,24 @@ function _actualizarCntArea() {
     if (chkTodos) chkTodos.checked = cnt === todos && todos > 0;
 }
 
-async function agregarSeleccionadosArea() {
+async function agregarSeleccionadosArea(btn) {
     var chk = document.querySelectorAll('#listaArea .chk-area:checked');
     var seleccionados = Array.from(chk).map(function (c) { return empleadosArea[parseInt(c.value)]; });
     if (!seleccionados.length) { mostrarAgregarError('Selecciona al menos un empleado.'); return; }
-    await _enviarBulk(seleccionados);
+    await _enviarBulk(seleccionados, btn);
 }
 
 // ── Bulk send ─────────────────────────────────────────────────
-async function _enviarBulk(lista) {
+async function _enviarBulk(lista, btn) {
     document.getElementById('agregarError').classList.add('d-none');
     document.getElementById('agregarSuccess').classList.add('d-none');
+
+    var originalHtml = null;
+    if (btn) {
+        originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Agregando...';
+    }
 
     try {
         var res  = await fetch('/admin/capacitaciones/' + encryptedCapId + '/participantes/bulk', {
@@ -891,6 +977,11 @@ async function _enviarBulk(lista) {
 
     } catch (e) {
         mostrarAgregarError('Error de conexión.');
+    } finally {
+        if (btn && originalHtml) {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
     }
 }
 
@@ -931,7 +1022,17 @@ async function guardarParticipante() {
 
 // ── Eliminar participante ─────────────────────────────────────
 async function eliminarParticipante(id) {
-    if (!confirm('¿Quitar este participante programado?')) return;
+    var result = await Swal.fire({
+        title: '¿Quitar participante?',
+        text: 'Esta acción lo removerá de la capacitación.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, quitar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#e74c3c',
+        reverseButtons: true,
+    });
+    if (!result.isConfirmed) return;
     try {
         var res = await fetch('/admin/capacitaciones/{{ urlencode(Crypt::encryptString((string)$cap->id)) }}/participantes/' + id, {
             method: 'DELETE',
@@ -939,7 +1040,13 @@ async function eliminarParticipante(id) {
         });
         if (!res.ok) throw new Error();
         var fila = document.getElementById('fila-asistente-' + id);
-        if (fila) fila.remove();
+        if (fila) {
+            if (dtAsistentes) {
+                dtAsistentes.row(fila).remove().draw();
+            } else {
+                fila.remove();
+            }
+        }
     } catch (e) {
         alert('Error al eliminar el participante.');
     }
