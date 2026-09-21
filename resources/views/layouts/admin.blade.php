@@ -198,7 +198,7 @@
                         @endcan
 
                         {{-- ── Asistencia ──────────────────────────────────── --}}
-                        @canany(['asistencia.ver','reportes.ver','resumen_mensual.ver','permisos.ver','capacitaciones.ver'])
+                        @canany(['asistencia.ver','reportes.ver','resumen_mensual.ver','recargos.ver','permisos.ver','capacitaciones.ver'])
                         <li class="side-nav-title mt-2">Asistencia</li>
                         @endcanany
                         @can('asistencia.ver')
@@ -222,6 +222,14 @@
                             <a href="{{ route('admin.resumen-mensual.index') }}" class="side-nav-link {{ request()->routeIs('admin.resumen-mensual.*') ? 'active' : '' }}">
                                 <span class="menu-icon"><i class="ti ti-table-column"></i></span>
                                 <span class="menu-text">Resumen Mensual</span>
+                            </a>
+                        </li>
+                        @endcan
+                        @can('recargos.ver')
+                        <li class="side-nav-item">
+                            <a href="{{ route('admin.recargos.index') }}" class="side-nav-link {{ request()->routeIs('admin.recargos.index') ? 'active' : '' }}">
+                                <span class="menu-icon"><i class="ti ti-receipt-2"></i></span>
+                                <span class="menu-text">Recargos</span>
                             </a>
                         </li>
                         @endcan
@@ -286,7 +294,7 @@
                         @endcan
 
                         {{-- ── Configuración ───────────────────────────────── --}}
-                        @canany(['horarios.ver','festivos.ver','roles.ver','ia.ver'])
+                        @canany(['horarios.ver','festivos.ver','recargos.configurar','roles.ver','ia.ver'])
                         <li class="side-nav-title mt-2">Configuración</li>
                         @endcanany
                         @can('horarios.ver')
@@ -302,6 +310,14 @@
                             <a href="{{ route('admin.festivos.index') }}" class="side-nav-link {{ request()->routeIs('admin.festivos.*') ? 'active' : '' }}">
                                 <span class="menu-icon"><i class="ti ti-calendar-x"></i></span>
                                 <span class="menu-text">Festivos</span>
+                            </a>
+                        </li>
+                        @endcan
+                        @can('recargos.configurar')
+                        <li class="side-nav-item">
+                            <a href="{{ route('admin.recargos.conceptos') }}" class="side-nav-link {{ request()->routeIs('admin.recargos.conceptos') ? 'active' : '' }}">
+                                <span class="menu-icon"><i class="ti ti-percentage"></i></span>
+                                <span class="menu-text">Conceptos Recargo</span>
                             </a>
                         </li>
                         @endcan

@@ -17,7 +17,10 @@ use App\Models\Departamento;
 use App\Models\Empleador;
 use App\Models\Empresa;
 use App\Models\Horario;
+use App\Models\ConfigRecargo;
+use App\Models\ConceptoRecargo;
 use App\Models\Sede;
+use App\Services\RecargoCalculatorService;
 use App\Models\TenantTabla;
 use App\Models\User;
 use App\Models\Visitante;
@@ -497,9 +500,9 @@ class AdminController extends Controller
             if ($diaHorario && $diaHorario->hora_entrada && $diaHorario->hora_salida) {
                 [$hE, $mE] = explode(':', substr($diaHorario->hora_entrada, 0, 5));
                 [$hS, $mS] = explode(':', substr($diaHorario->hora_salida,  0, 5));
-                $minEsperados = (((int)$hS * 60 + (int)$mS) - ((int)$hE * 60 + (int)$mE))
-                    - (int)($diaHorario->duracion_almuerzo_min ?? 0);
-                $minEsperados = max(0, $minEsperados);
+                $diff = ((int)$hS * 60 + (int)$mS) - ((int)$hE * 60 + (int)$mE);
+                if ($diff < 0) $diff += 1440; // +24h para turnos que cruzan medianoche
+                $minEsperados = max(0, $diff - (int)($diaHorario->duracion_almuerzo_min ?? 0));
             }
 
             $resultado[] = [
@@ -514,6 +517,107 @@ class AdminController extends Controller
         }
 
         return response()->json(['data' => $resultado]);
+    }
+
+    // ── Recargos ─────────────────────────────────────────────────────────────
+
+    public function recargosIndex(): View
+    {
+        abort_unless(auth()->user()->can('recargos.ver'), 403);
+
+        $sedes     = Sede::where('is_active', 1)->orderBy('nombre')->get(['id', 'nombre']);
+        $horarios  = Horario::where('is_active', 1)->orderBy('nombre')->get(['id', 'nombre']);
+        $conceptos = ConceptoRecargo::where('is_active', 1)->orderBy('id')->get();
+
+        return view('admin.recargos.index', compact('sedes', 'horarios', 'conceptos'));
+    }
+
+    public function recargosData(Request $request): JsonResponse
+    {
+        abort_unless(auth()->user()->can('recargos.ver'), 403);
+
+        $request->validate([
+            'anio' => 'required|integer|min:2000|max:2100',
+            'mes'  => 'required|integer|min:1|max:12',
+        ]);
+
+        $anio  = (int) $request->anio;
+        $mes   = (int) $request->mes;
+        $desde = \Carbon\Carbon::create($anio, $mes, 1)->startOfDay();
+        $hasta = $desde->copy()->endOfMonth()->endOfDay();
+
+        $userIds = [];
+        if (auth()->user()->cannot('empleados.ver')) {
+            $userIds = [auth()->id()];
+        } elseif ($request->filled('user_id')) {
+            $userIds = [(int) $request->user_id];
+        }
+
+        $service    = new RecargoCalculatorService();
+        $resultados = $service->calcular($userIds, $desde, $hasta);
+
+        // Filtro por departamento (client-side friendly)
+        if ($request->filled('departamento_id')) {
+            $deptoId    = (int) $request->departamento_id;
+            $resultados = array_values(array_filter($resultados, fn($r) => $r['departamento_id'] == $deptoId));
+        }
+
+        $conceptos = ConceptoRecargo::where('is_active', 1)
+            ->orderBy('id')
+            ->get(['id', 'codigo', 'nombre', 'porcentaje']);
+
+        return response()->json([
+            'data'      => $resultados,
+            'conceptos' => $conceptos,
+        ]);
+    }
+
+    public function recargosConceptosIndex(): View
+    {
+        abort_unless(auth()->user()->can('recargos.configurar'), 403);
+
+        $conceptos = ConceptoRecargo::orderBy('id')->get();
+
+        $configRecargos = [
+            'hora_inicio_nocturna' => ConfigRecargo::valor('hora_inicio_nocturna', '19'),
+            'hora_fin_nocturna'    => ConfigRecargo::valor('hora_fin_nocturna', '6'),
+        ];
+
+        return view('admin.recargos.conceptos', compact('conceptos', 'configRecargos'));
+    }
+
+    public function recargosConceptosUpdate(Request $request): JsonResponse
+    {
+        abort_unless(auth()->user()->can('recargos.configurar'), 403);
+
+        $request->validate([
+            'conceptos'              => 'required|array',
+            'conceptos.*.id'         => 'required|integer',
+            'conceptos.*.porcentaje' => 'required|numeric|min:0|max:999.99',
+            'conceptos.*.is_active'  => 'required|boolean',
+            'config'                          => 'nullable|array',
+            'config.hora_inicio_nocturna'     => 'nullable|integer|min:0|max:23',
+            'config.hora_fin_nocturna'        => 'nullable|integer|min:0|max:23',
+        ]);
+
+        foreach ($request->conceptos as $item) {
+            ConceptoRecargo::where('id', $item['id'])->update([
+                'porcentaje' => $item['porcentaje'],
+                'is_active'  => $item['is_active'],
+            ]);
+        }
+
+        // Guardar configuración de jornada nocturna
+        if ($request->has('config')) {
+            foreach ($request->config as $clave => $valor) {
+                ConfigRecargo::updateOrCreate(
+                    ['clave' => $clave],
+                    ['valor' => (string) $valor]
+                );
+            }
+        }
+
+        return response()->json(['message' => 'Configuración actualizada correctamente']);
     }
 
     public function departamentosIndex(Request $request): View
