@@ -71,25 +71,22 @@
                         <td><code>{{ $c->codigo }}</code></td>
                         <td>{{ $c->nombre }}</td>
                         <td class="text-center">
-                            @if($c->es_extra)
-                                <span class="badge bg-warning text-dark">Si</span>
-                            @else
-                                <span class="badge bg-light text-muted">No</span>
-                            @endif
+                            <div class="form-check form-switch d-flex justify-content-center mb-0">
+                                <input class="form-check-input input-es-extra" type="checkbox"
+                                       {{ $c->es_extra ? 'checked' : '' }}>
+                            </div>
                         </td>
                         <td class="text-center">
-                            @if($c->es_nocturno)
-                                <span class="badge bg-dark">Si</span>
-                            @else
-                                <span class="badge bg-light text-muted">No</span>
-                            @endif
+                            <div class="form-check form-switch d-flex justify-content-center mb-0">
+                                <input class="form-check-input input-es-nocturno" type="checkbox"
+                                       {{ $c->es_nocturno ? 'checked' : '' }}>
+                            </div>
                         </td>
                         <td class="text-center">
-                            @if($c->es_festivo)
-                                <span class="badge bg-danger">Si</span>
-                            @else
-                                <span class="badge bg-light text-muted">No</span>
-                            @endif
+                            <div class="form-check form-switch d-flex justify-content-center mb-0">
+                                <input class="form-check-input input-es-festivo" type="checkbox"
+                                       {{ $c->es_festivo ? 'checked' : '' }}>
+                            </div>
                         </td>
                         <td class="text-center">
                             <input type="number" class="form-control form-control-sm text-center input-porcentaje"
@@ -131,9 +128,12 @@ async function guardarConceptos() {
 
     rows.forEach(row => {
         conceptos.push({
-            id:         parseInt(row.dataset.id),
-            porcentaje: parseFloat(row.querySelector('.input-porcentaje').value),
-            is_active:  row.querySelector('.input-activo').checked,
+            id:          parseInt(row.dataset.id),
+            es_extra:    row.querySelector('.input-es-extra').checked,
+            es_nocturno: row.querySelector('.input-es-nocturno').checked,
+            es_festivo:  row.querySelector('.input-es-festivo').checked,
+            porcentaje:  parseFloat(row.querySelector('.input-porcentaje').value),
+            is_active:   row.querySelector('.input-activo').checked,
         });
     });
 

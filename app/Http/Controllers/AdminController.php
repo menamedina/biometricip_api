@@ -593,8 +593,11 @@ class AdminController extends Controller
         $request->validate([
             'conceptos'              => 'required|array',
             'conceptos.*.id'         => 'required|integer',
-            'conceptos.*.porcentaje' => 'required|numeric|min:0|max:999.99',
-            'conceptos.*.is_active'  => 'required|boolean',
+            'conceptos.*.es_extra'    => 'required|boolean',
+            'conceptos.*.es_nocturno' => 'required|boolean',
+            'conceptos.*.es_festivo'  => 'required|boolean',
+            'conceptos.*.porcentaje'  => 'required|numeric|min:0|max:999.99',
+            'conceptos.*.is_active'   => 'required|boolean',
             'config'                          => 'nullable|array',
             'config.hora_inicio_nocturna'     => 'nullable|integer|min:0|max:23',
             'config.hora_fin_nocturna'        => 'nullable|integer|min:0|max:23',
@@ -602,8 +605,11 @@ class AdminController extends Controller
 
         foreach ($request->conceptos as $item) {
             ConceptoRecargo::where('id', $item['id'])->update([
-                'porcentaje' => $item['porcentaje'],
-                'is_active'  => $item['is_active'],
+                'es_extra'    => $item['es_extra'],
+                'es_nocturno' => $item['es_nocturno'],
+                'es_festivo'  => $item['es_festivo'],
+                'porcentaje'  => $item['porcentaje'],
+                'is_active'   => $item['is_active'],
             ]);
         }
 
