@@ -85,6 +85,40 @@
                     </div>
 
                     <div class="col-12">
+                        <label class="form-label fw-semibold">Metodología</label>
+                        <textarea id="crearMetodologia" class="form-control" rows="2" placeholder="Describe la metodología utilizada"></textarea>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold">¿La formación es medible en su impacto? <span class="text-danger">*</span></label>
+                        <select id="crearImpactoMedible" class="form-select" required>
+                            <option value="" selected disabled>Selecciona una opción</option>
+                            <option value="1">Sí</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 d-none" id="crearIndicadorFields">
+                        <div class="border rounded p-3 bg-light-subtle">
+                            <h6 class="fw-semibold mb-3">Información del indicador</h6>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label">Nombre del indicador <span class="text-danger">*</span></label>
+                                    <input type="text" id="crearIndicadorNombre" class="form-control">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Fórmula del indicador <span class="text-danger">*</span></label>
+                                    <textarea id="crearFormulaIndicador" class="form-control" rows="2"></textarea>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label">Frecuencia de medición <span class="text-danger">*</span></label>
+                                    <input type="text" id="crearFrecuenciaMedicion" class="form-control" placeholder="Ej: Mensual, trimestral">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
                         <label class="form-label fw-semibold">Temas</label>
                         <div class="d-flex gap-2 mb-2">
                             <input type="text" id="crearTemaInput" class="form-control" placeholder="Escribe un tema y presiona Agregar o Enter">
@@ -194,6 +228,39 @@
                             <option value="capacitacion">Capacitación</option>
                             <option value="asistencia">Registro de asistencia</option>
                         </select>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Metodología</label>
+                        <textarea id="editarMetodologia" class="form-control" rows="2"></textarea>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold">¿La formación es medible en su impacto? <span class="text-danger">*</span></label>
+                        <select id="editarImpactoMedible" class="form-select" required>
+                            <option value="1">Sí</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 d-none" id="editarIndicadorFields">
+                        <div class="border rounded p-3 bg-light-subtle">
+                            <h6 class="fw-semibold mb-3">Información del indicador</h6>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label">Nombre del indicador <span class="text-danger">*</span></label>
+                                    <input type="text" id="editarIndicadorNombre" class="form-control">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Fórmula del indicador <span class="text-danger">*</span></label>
+                                    <textarea id="editarFormulaIndicador" class="form-control" rows="2"></textarea>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label">Frecuencia de medición <span class="text-danger">*</span></label>
+                                    <input type="text" id="editarFrecuenciaMedicion" class="form-control">
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="col-12">
@@ -404,8 +471,19 @@ function eliminarFecha(i) {
     renderFechas();
 }
 
+function toggleIndicadorFields(prefix) {
+    var visible = document.getElementById(prefix + 'ImpactoMedible').value === '1';
+    document.getElementById(prefix + 'IndicadorFields').classList.toggle('d-none', !visible);
+}
+
 document.getElementById('crearFechaInput').addEventListener('keydown', function (e) {
     if (e.key === 'Enter') { e.preventDefault(); agregarFecha(); }
+});
+document.getElementById('crearImpactoMedible').addEventListener('change', function () {
+    toggleIndicadorFields('crear');
+});
+document.getElementById('editarImpactoMedible').addEventListener('change', function () {
+    toggleIndicadorFields('editar');
 });
 
 // ── Temas (modal crear) ───────────────────────────────────────
@@ -451,6 +529,12 @@ function abrirModalCrear() {
     document.getElementById('crearTitulo').value       = '';
     document.getElementById('crearTipoEvento').value   = '';
     document.getElementById('crearObservaciones').value = '';
+    document.getElementById('crearMetodologia').value   = '';
+    document.getElementById('crearImpactoMedible').value = '';
+    document.getElementById('crearIndicadorNombre').value = '';
+    document.getElementById('crearFormulaIndicador').value = '';
+    document.getElementById('crearFrecuenciaMedicion').value = '';
+    toggleIndicadorFields('crear');
     document.getElementById('crearInstructor').value   = '{{ auth()->user()->name }}';
     document.getElementById('crearFechaInput').value   = '';
     document.getElementById('crearExpiraEn').value     = '60';
@@ -464,6 +548,7 @@ function abrirModalCrear() {
 async function guardarCapacitacion() {
     var titulo        = document.getElementById('crearTitulo').value.trim();
     var tipoEvento    = document.getElementById('crearTipoEvento').value;
+    var impactoMedible = document.getElementById('crearImpactoMedible').value;
     var instructor    = document.getElementById('crearInstructor').value.trim();
     var observaciones = document.getElementById('crearObservaciones').value.trim();
 
@@ -473,6 +558,18 @@ async function guardarCapacitacion() {
     }
     if (!tipoEvento) {
         Swal.fire({ icon: 'warning', title: 'Tipo de evento requerido', text: 'Selecciona si es una capacitación o un registro de asistencia.', confirmButtonColor: '#1ab394' });
+        return;
+    }
+    if (impactoMedible === '') {
+        Swal.fire({ icon: 'warning', title: 'Respuesta requerida', text: 'Indica si la formación es medible en su impacto.', confirmButtonColor: '#1ab394' });
+        return;
+    }
+    if (impactoMedible === '1' && (
+        !document.getElementById('crearIndicadorNombre').value.trim() ||
+        !document.getElementById('crearFormulaIndicador').value.trim() ||
+        !document.getElementById('crearFrecuenciaMedicion').value.trim()
+    )) {
+        Swal.fire({ icon: 'warning', title: 'Datos del indicador requeridos', text: 'Completa el nombre, fórmula y frecuencia de medición.', confirmButtonColor: '#1ab394' });
         return;
     }
     if (!observaciones) {
@@ -504,6 +601,11 @@ async function guardarCapacitacion() {
                 titulo:             titulo,
                 tipo_evento:        tipoEvento,
                 temas:              JSON.stringify(temasCrear),
+                metodologia:        document.getElementById('crearMetodologia').value.trim() || null,
+                impacto_medible:    impactoMedible,
+                indicador_nombre:   document.getElementById('crearIndicadorNombre').value.trim() || null,
+                formula_indicador:  document.getElementById('crearFormulaIndicador').value.trim() || null,
+                frecuencia_medicion: document.getElementById('crearFrecuenciaMedicion').value.trim() || null,
                 fechas_sesiones:    JSON.stringify(fechasCrear),
                 observaciones:      document.getElementById('crearObservaciones').value.trim() || null,
                 instructor_nombre:  document.getElementById('crearInstructor').value.trim() || null,
@@ -578,6 +680,20 @@ function renderDetalle(d) {
           + '<p class="mb-0 small" style="white-space:pre-line;">' + escHtml(d.observaciones) + '</p>'
         : '';
 
+    var metodologiaHtml = d.metodologia
+        ? '<hr><h6 class="fw-semibold mb-1">Metodología</h6>'
+          + '<p class="mb-0 small" style="white-space:pre-line;">' + escHtml(d.metodologia) + '</p>'
+        : '';
+
+    var indicadorHtml = d.impacto_medible
+        ? '<hr><h6 class="fw-semibold mb-2">Medición de impacto</h6>'
+          + '<dl class="row mb-0 small">'
+          + '<dt class="col-5">Indicador</dt><dd class="col-7">' + escHtml(d.indicador_nombre || '—') + '</dd>'
+          + '<dt class="col-5">Fórmula</dt><dd class="col-7">' + escHtml(d.formula_indicador || '—') + '</dd>'
+          + '<dt class="col-5">Frecuencia</dt><dd class="col-7">' + escHtml(d.frecuencia_medicion || '—') + '</dd>'
+          + '</dl>'
+        : '<hr><p class="small text-muted mb-0">La formación no es medible en su impacto.</p>';
+
     var editarHtml = '';
     @can('capacitaciones.editar')
     editarHtml = '<hr>'
@@ -642,8 +758,10 @@ function renderDetalle(d) {
         + '</dl>'
         + '<hr>'
         + '<h6 class="fw-semibold mb-2"><i class="ti ti-list text-primary me-1"></i>Temas</h6>'
-        + '<div>' + temasHtml + '</div>'
-        + obsHtml
+         + '<div>' + temasHtml + '</div>'
+         + metodologiaHtml
+         + indicadorHtml
+         + obsHtml
         + '<hr>'
         + '<h6 class="fw-semibold mb-2"><i class="ti ti-link text-primary me-1"></i>Link de Registro</h6>'
         + '<div class="input-group mb-2">'
@@ -766,6 +884,12 @@ function abrirEditar(d) {
     document.getElementById('editarId').value            = d.id;
     document.getElementById('editarTitulo').value        = d.titulo || '';
     document.getElementById('editarTipoEvento').value    = d.tipo_evento || 'capacitacion';
+    document.getElementById('editarMetodologia').value    = d.metodologia || '';
+    document.getElementById('editarImpactoMedible').value = d.impacto_medible ? '1' : '0';
+    document.getElementById('editarIndicadorNombre').value = d.indicador_nombre || '';
+    document.getElementById('editarFormulaIndicador').value = d.formula_indicador || '';
+    document.getElementById('editarFrecuenciaMedicion').value = d.frecuencia_medicion || '';
+    toggleIndicadorFields('editar');
     document.getElementById('editarObservaciones').value = d.observaciones || '';
     document.getElementById('editarInstructor').value    = d.instructor_nombre || '';
     document.getElementById('editarDuracion').value      = d.duracion_horas || '';
@@ -790,8 +914,17 @@ function abrirEditar(d) {
 async function guardarEdicion() {
     var id     = document.getElementById('editarId').value;
     var titulo = document.getElementById('editarTitulo').value.trim();
+    var impactoMedible = document.getElementById('editarImpactoMedible').value;
     if (!titulo) {
         Swal.fire({ icon: 'warning', title: 'Título requerido', confirmButtonColor: '#1ab394' });
+        return;
+    }
+    if (impactoMedible === '1' && (
+        !document.getElementById('editarIndicadorNombre').value.trim() ||
+        !document.getElementById('editarFormulaIndicador').value.trim() ||
+        !document.getElementById('editarFrecuenciaMedicion').value.trim()
+    )) {
+        Swal.fire({ icon: 'warning', title: 'Datos del indicador requeridos', text: 'Completa el nombre, fórmula y frecuencia de medición.', confirmButtonColor: '#1ab394' });
         return;
     }
 
@@ -811,6 +944,11 @@ async function guardarEdicion() {
                 titulo:             titulo,
                 tipo_evento:        document.getElementById('editarTipoEvento').value,
                 temas:              JSON.stringify(temasEditar),
+                metodologia:        document.getElementById('editarMetodologia').value.trim() || null,
+                impacto_medible:    impactoMedible,
+                indicador_nombre:   document.getElementById('editarIndicadorNombre').value.trim() || null,
+                formula_indicador:  document.getElementById('editarFormulaIndicador').value.trim() || null,
+                frecuencia_medicion: document.getElementById('editarFrecuenciaMedicion').value.trim() || null,
                 observaciones:      document.getElementById('editarObservaciones').value.trim() || null,
                 instructor_nombre:  document.getElementById('editarInstructor').value.trim() || null,
                 fecha_capacitacion: document.getElementById('editarFecha').value || null,

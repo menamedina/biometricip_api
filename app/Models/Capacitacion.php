@@ -15,6 +15,11 @@ class Capacitacion extends Model
         'titulo',
         'tipo_evento',
         'temas',
+        'metodologia',
+        'impacto_medible',
+        'indicador_nombre',
+        'formula_indicador',
+        'frecuencia_medicion',
         'observaciones',
         'fechas_sesiones',
         'instructor_nombre',
@@ -33,6 +38,7 @@ class Capacitacion extends Model
     {
         return [
             'temas'              => 'array',
+            'impacto_medible'    => 'boolean',
             'fechas_sesiones'    => 'array',
             'fecha_capacitacion' => 'datetime',
             'fecha_expiracion'   => 'datetime',

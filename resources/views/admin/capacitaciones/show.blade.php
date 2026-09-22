@@ -41,8 +41,11 @@
 
                     <h6 class="fw-bold mb-3"><i class="ti ti-info-circle text-primary me-1"></i>Información</h6>
                     <dl class="row mb-0 small">
-                        <dt class="col-5 text-muted">Tipo</dt>
-                        <dd class="col-7">{{ $cap->tipo_evento === 'asistencia' ? 'Registro de asistencia' : 'Capacitación' }}</dd>
+                         <dt class="col-5 text-muted">Tipo</dt>
+                         <dd class="col-7">{{ $cap->tipo_evento === 'asistencia' ? 'Registro de asistencia' : 'Capacitación' }}</dd>
+
+                         <dt class="col-5 text-muted">Impacto medible</dt>
+                         <dd class="col-7">{{ $cap->impacto_medible ? 'Sí' : 'No' }}</dd>
 
                         <dt class="col-5 text-muted">Registrado por</dt>
                         <dd class="col-7">{{ $creadoPorNombre }}</dd>
@@ -95,6 +98,25 @@
                             </span>
                         @endforeach
                     </div>
+                    @endif
+
+                    @if($cap->metodologia)
+                    <hr>
+                    <h6 class="fw-bold mb-2">Metodología</h6>
+                    <p class="mb-0 small" style="white-space:pre-line;">{{ $cap->metodologia }}</p>
+                    @endif
+
+                    @if($cap->impacto_medible)
+                    <hr>
+                    <h6 class="fw-bold mb-2">Medición de impacto</h6>
+                    <dl class="row mb-0 small">
+                        <dt class="col-5 text-muted">Indicador</dt>
+                        <dd class="col-7">{{ $cap->indicador_nombre }}</dd>
+                        <dt class="col-5 text-muted">Fórmula</dt>
+                        <dd class="col-7" style="white-space:pre-line;">{{ $cap->formula_indicador }}</dd>
+                        <dt class="col-5 text-muted">Frecuencia</dt>
+                        <dd class="col-7">{{ $cap->frecuencia_medicion }}</dd>
+                    </dl>
                     @endif
 
                     @if($cap->observaciones)
@@ -272,7 +294,7 @@
             </div>
             <div class="modal-body">
                 <div class="row g-3">
-                    <div class="col-12">
+                     <div class="col-12">
                          <label class="form-label fw-semibold">Título <span class="text-danger">*</span></label>
                          <input type="text" id="editTitulo" class="form-control" value="{{ $cap->titulo }}">
                      </div>
@@ -282,6 +304,36 @@
                              <option value="capacitacion" {{ $cap->tipo_evento !== 'asistencia' ? 'selected' : '' }}>Capacitación</option>
                              <option value="asistencia" {{ $cap->tipo_evento === 'asistencia' ? 'selected' : '' }}>Registro de asistencia</option>
                          </select>
+                     </div>
+                     <div class="col-12">
+                         <label class="form-label fw-semibold">Metodología</label>
+                         <textarea id="editMetodologia" class="form-control" rows="2">{{ $cap->metodologia }}</textarea>
+                     </div>
+                     <div class="col-12 col-md-6">
+                         <label class="form-label fw-semibold">¿La formación es medible en su impacto? <span class="text-danger">*</span></label>
+                         <select id="editImpactoMedible" class="form-select">
+                             <option value="1" {{ $cap->impacto_medible ? 'selected' : '' }}>Sí</option>
+                             <option value="0" {{ !$cap->impacto_medible ? 'selected' : '' }}>No</option>
+                         </select>
+                     </div>
+                     <div class="col-12 {{ $cap->impacto_medible ? '' : 'd-none' }}" id="editIndicadorFields">
+                         <div class="border rounded p-3 bg-light-subtle">
+                             <h6 class="fw-semibold mb-3">Información del indicador</h6>
+                             <div class="row g-3">
+                                 <div class="col-12">
+                                     <label class="form-label">Nombre del indicador <span class="text-danger">*</span></label>
+                                     <input type="text" id="editIndicadorNombre" class="form-control" value="{{ $cap->indicador_nombre }}">
+                                 </div>
+                                 <div class="col-12">
+                                     <label class="form-label">Fórmula del indicador <span class="text-danger">*</span></label>
+                                     <textarea id="editFormulaIndicador" class="form-control" rows="2">{{ $cap->formula_indicador }}</textarea>
+                                 </div>
+                                 <div class="col-12 col-md-6">
+                                     <label class="form-label">Frecuencia de medición <span class="text-danger">*</span></label>
+                                     <input type="text" id="editFrecuenciaMedicion" class="form-control" value="{{ $cap->frecuencia_medicion }}">
+                                 </div>
+                             </div>
+                         </div>
                      </div>
                     <div class="col-12">
                         <label class="form-label fw-semibold">Temas</label>
@@ -598,8 +650,13 @@ async function habilitarLink() {
             },
             body: JSON.stringify({
                 titulo:             '{{ addslashes($cap->titulo) }}',
-                tipo_evento:        '{{ $cap->tipo_evento ?? 'capacitacion' }}',
-                observaciones:      '{{ addslashes($cap->observaciones) }}',
+                 tipo_evento:        '{{ $cap->tipo_evento ?? 'capacitacion' }}',
+                 metodologia:        '{{ addslashes($cap->metodologia) }}',
+                 impacto_medible:    '{{ $cap->impacto_medible ? 1 : 0 }}',
+                 indicador_nombre:   '{{ addslashes($cap->indicador_nombre) }}',
+                 formula_indicador:  '{{ addslashes($cap->formula_indicador) }}',
+                 frecuencia_medicion: '{{ addslashes($cap->frecuencia_medicion) }}',
+                 observaciones:      '{{ addslashes($cap->observaciones) }}',
                 instructor_nombre:  '{{ addslashes($cap->instructor_nombre) }}',
                 fecha_capacitacion: '{{ $cap->fecha_capacitacion?->format('Y-m-d\TH:i') }}',
                 extender_link:      minutos > 0 ? parseInt(minutos) : null,
@@ -638,6 +695,15 @@ async function cambiarEstado(accion) {
 
 // ── Editar ────────────────────────────────────────────────────
 var temasEdit = @json($cap->temas ?? []);
+
+function toggleEditIndicadorFields() {
+    document.getElementById('editIndicadorFields').classList.toggle(
+        'd-none',
+        document.getElementById('editImpactoMedible').value !== '1'
+    );
+}
+
+document.getElementById('editImpactoMedible').addEventListener('change', toggleEditIndicadorFields);
 
 function renderTemasEdit() {
     var lista = document.getElementById('editTemasLista');
@@ -683,6 +749,14 @@ async function guardarEdicion() {
         alert('Título, observaciones, instructor y fecha son obligatorios.');
         return;
     }
+    if (document.getElementById('editImpactoMedible').value === '1' && (
+        !document.getElementById('editIndicadorNombre').value.trim() ||
+        !document.getElementById('editFormulaIndicador').value.trim() ||
+        !document.getElementById('editFrecuenciaMedicion').value.trim()
+    )) {
+        alert('Completa el nombre, fórmula y frecuencia de medición del indicador.');
+        return;
+    }
 
     var btn = document.getElementById('btnGuardarEdit');
     btn.disabled = true;
@@ -700,6 +774,11 @@ async function guardarEdicion() {
                 titulo:             titulo,
                 tipo_evento:        document.getElementById('editTipoEvento').value,
                 temas:              JSON.stringify(temasEdit),
+                metodologia:        document.getElementById('editMetodologia').value.trim() || null,
+                impacto_medible:    document.getElementById('editImpactoMedible').value,
+                indicador_nombre:   document.getElementById('editIndicadorNombre').value.trim() || null,
+                formula_indicador:  document.getElementById('editFormulaIndicador').value.trim() || null,
+                frecuencia_medicion: document.getElementById('editFrecuenciaMedicion').value.trim() || null,
                 observaciones:      observaciones,
                 instructor_nombre:  instructor,
                 fecha_capacitacion: fecha,

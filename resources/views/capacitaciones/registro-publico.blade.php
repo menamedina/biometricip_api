@@ -113,6 +113,13 @@
                 </div>
             @endif
 
+            @if($capacitacion->metodologia)
+                <div class="mb-4">
+                    <p class="fw-semibold mb-1" style="font-size:12px; color:#888; text-transform:uppercase; letter-spacing:0.5px;">Metodología</p>
+                    <p class="mb-0" style="white-space:pre-line;">{{ $capacitacion->metodologia }}</p>
+                </div>
+            @endif
+
             {{-- Alertas --}}
             @if(session('success'))
                 <div class="alert alert-success d-flex align-items-center gap-2">
