@@ -326,8 +326,8 @@ async function cargarMensual() {
                     if (permiso && totalMin === 0) {
                         // Solo permiso, sin marcación → celda azul
                         cls = 'celda-permiso';
-                        tooltip = `${fecha}: ${permiso.tipo}${permiso.es_remunerado ? ' (Rem.)' : ' (No rem.)'}`;
-                        celdas += `<td class="dia-col ${cls}" title="${tooltip}"><i class="ti ti-clipboard-check" style="font-size:13px;"></i></td>`;
+                        tooltip = `${fecha}: ${permiso.tipo}${permiso.es_remunerado ? ' (Remunerado)' : ' (No remunerado)'}`;
+                        celdas += `<td class="dia-col ${cls}" data-bs-toggle="tooltip" data-bs-placement="top" title="${tooltip}" style="cursor:help;"><i class="ti ti-clipboard-check" style="font-size:13px;"></i></td>`;
                     } else if (permiso && totalMin > 0) {
                         // Permiso parcial + marcación
                         const minConPermiso = totalMin + permiso.minutos;
@@ -336,7 +336,7 @@ async function cargarMensual() {
                         const hEsp = String(Math.floor(minEsp/60)).padStart(2,'0');
                         const mEsp = String(minEsp%60).padStart(2,'0');
                         tooltip = `${fecha}: ${h}:${m} trab. + ${permiso.tipo}${permiso.es_remunerado ? ' (Rem.)' : ''} / ${hEsp}:${mEsp} esp.`;
-                        celdas += `<td class="dia-col ${cls}" title="${tooltip}">${h}:${m}*</td>`;
+                        celdas += `<td class="dia-col ${cls}" data-bs-toggle="tooltip" data-bs-placement="top" title="${tooltip}" style="cursor:help;">${h}:${m}*</td>`;
                         totalEmpleadoMin += totalMin;
                         colTotalesDia[d] = (colTotalesDia[d] || 0) + totalMin;
                     } else {
@@ -370,6 +370,11 @@ async function cargarMensual() {
         });
 
         tbody.innerHTML = filas;
+
+        // Inicializar tooltips de Bootstrap en celdas con permiso
+        document.querySelectorAll('#mensualTable [data-bs-toggle="tooltip"]').forEach(el => {
+            new bootstrap.Tooltip(el);
+        });
 
         // ── DataTable ──────────────────────────────────────────────────────────
         // Columnas de días: índices 2 hasta (dias+1), sin ordenamiento
