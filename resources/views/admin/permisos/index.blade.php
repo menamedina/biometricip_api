@@ -142,7 +142,16 @@
 
 @push('styles')
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
 <style>
+#filterEmpleado + .select2-container { width: 100% !important; }
+#filterEmpleado + .select2-container .select2-selection--single { height: 31px; border-color: #dee2e6; border-radius: .25rem; }
+#filterEmpleado + .select2-container .select2-selection__rendered { line-height: 29px; font-size: .875rem; }
+#filterEmpleado + .select2-container .select2-selection__arrow { height: 29px; }
+#pEmpleado + .select2-container { width: 100% !important; }
+#pEmpleado + .select2-container .select2-selection--single { height: 38px; border-color: #dee2e6; border-radius: .375rem; }
+#pEmpleado + .select2-container .select2-selection__rendered { line-height: 36px; font-size: 1rem; }
+#pEmpleado + .select2-container .select2-selection__arrow { height: 36px; }
 div.dataTables_wrapper div.dataTables_length,
 div.dataTables_wrapper div.dataTables_filter {
     padding: 12px 16px 0;
@@ -172,6 +181,7 @@ div.dataTables_wrapper div.dataTables_info {
 
 @push('scripts')
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script>
@@ -188,6 +198,21 @@ var tiposPermiso  = [];
 
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
+
+    $('#filterEmpleado').select2({
+        placeholder: 'Todos los empleados',
+        allowClear: true,
+        width: '100%',
+        language: { noResults: function() { return 'No se encontraron empleados'; } }
+    });
+    $('#pEmpleado').select2({
+        placeholder: '-- Seleccionar --',
+        allowClear: true,
+        width: '100%',
+        dropdownParent: $('#permisoModal'),
+        language: { noResults: function() { return 'No se encontraron empleados'; } }
+    });
+
     const hoy   = new Date().toISOString().slice(0,10);
     const inicio = new Date(); inicio.setDate(1);
     document.getElementById('filterFrom').value = inicio.toISOString().slice(0,10);

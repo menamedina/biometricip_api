@@ -98,7 +98,12 @@
 
 @push('styles')
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
 <style>
+#filterEmpleado + .select2-container { width: 100% !important; }
+#filterEmpleado + .select2-container .select2-selection--single { height: 31px; border-color: #dee2e6; border-radius: .25rem; }
+#filterEmpleado + .select2-container .select2-selection__rendered { line-height: 29px; font-size: .875rem; }
+#filterEmpleado + .select2-container .select2-selection__arrow { height: 29px; }
 div.dataTables_wrapper div.dataTables_length,
 div.dataTables_wrapper div.dataTables_filter { padding: 10px 12px 0; }
 div.dataTables_wrapper div.dataTables_info,
@@ -122,6 +127,7 @@ div.dataTables_wrapper div.dataTables_info { font-size: 12px; color: #6c757d; }
 
 @push('scripts')
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script>
@@ -133,6 +139,14 @@ let _conceptos   = [];
 const MESES_ES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 document.addEventListener('DOMContentLoaded', async () => {
+    if (!esEmpleado) {
+        $('#filterEmpleado').select2({
+            placeholder: 'Todos los empleados',
+            allowClear: true,
+            width: '100%',
+            language: { noResults: function() { return 'No se encontraron empleados'; } }
+        });
+    }
     const hoy = new Date();
     document.getElementById('filterMes').value  = hoy.getMonth() + 1;
     document.getElementById('filterAnio').value = hoy.getFullYear();
