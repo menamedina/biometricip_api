@@ -13,6 +13,7 @@ class Capacitacion extends Model
 
     protected $fillable = [
         'titulo',
+        'tipo_evento',
         'temas',
         'observaciones',
         'fechas_sesiones',

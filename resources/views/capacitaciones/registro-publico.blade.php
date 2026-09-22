@@ -66,7 +66,13 @@
 
 <div class="registro-card">
     <div class="card-header-custom">
-        <div class="cap-label">&#x1F4DA; Capacitación</div>
+        <div class="cap-label">
+            @if($capacitacion->tipo_evento === 'asistencia')
+                &#x2705; Registro de asistencia
+            @else
+                &#x1F4DA; Capacitación
+            @endif
+        </div>
         <h1>{{ $capacitacion->titulo }}</h1>
         @if($empresa)
         <div style="font-size:15px;font-weight:600;opacity:0.9;margin-top:6px;">{{ $empresa->nombre }}</div>

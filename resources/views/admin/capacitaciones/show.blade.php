@@ -41,6 +41,9 @@
 
                     <h6 class="fw-bold mb-3"><i class="ti ti-info-circle text-primary me-1"></i>Información</h6>
                     <dl class="row mb-0 small">
+                        <dt class="col-5 text-muted">Tipo</dt>
+                        <dd class="col-7">{{ $cap->tipo_evento === 'asistencia' ? 'Registro de asistencia' : 'Capacitación' }}</dd>
+
                         <dt class="col-5 text-muted">Registrado por</dt>
                         <dd class="col-7">{{ $creadoPorNombre }}</dd>
 
@@ -270,9 +273,16 @@
             <div class="modal-body">
                 <div class="row g-3">
                     <div class="col-12">
-                        <label class="form-label fw-semibold">Título <span class="text-danger">*</span></label>
-                        <input type="text" id="editTitulo" class="form-control" value="{{ $cap->titulo }}">
-                    </div>
+                         <label class="form-label fw-semibold">Título <span class="text-danger">*</span></label>
+                         <input type="text" id="editTitulo" class="form-control" value="{{ $cap->titulo }}">
+                     </div>
+                     <div class="col-12 col-md-6">
+                         <label class="form-label fw-semibold">Tipo de evento <span class="text-danger">*</span></label>
+                         <select id="editTipoEvento" class="form-select">
+                             <option value="capacitacion" {{ $cap->tipo_evento !== 'asistencia' ? 'selected' : '' }}>Capacitación</option>
+                             <option value="asistencia" {{ $cap->tipo_evento === 'asistencia' ? 'selected' : '' }}>Registro de asistencia</option>
+                         </select>
+                     </div>
                     <div class="col-12">
                         <label class="form-label fw-semibold">Temas</label>
                         <div class="d-flex gap-2 mb-2">
@@ -588,6 +598,7 @@ async function habilitarLink() {
             },
             body: JSON.stringify({
                 titulo:             '{{ addslashes($cap->titulo) }}',
+                tipo_evento:        '{{ $cap->tipo_evento ?? 'capacitacion' }}',
                 observaciones:      '{{ addslashes($cap->observaciones) }}',
                 instructor_nombre:  '{{ addslashes($cap->instructor_nombre) }}',
                 fecha_capacitacion: '{{ $cap->fecha_capacitacion?->format('Y-m-d\TH:i') }}',
@@ -687,6 +698,7 @@ async function guardarEdicion() {
             },
             body: JSON.stringify({
                 titulo:             titulo,
+                tipo_evento:        document.getElementById('editTipoEvento').value,
                 temas:              JSON.stringify(temasEdit),
                 observaciones:      observaciones,
                 instructor_nombre:  instructor,

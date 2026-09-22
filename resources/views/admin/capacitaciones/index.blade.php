@@ -38,6 +38,7 @@
                                 <tr>
                                     <th>#</th>
                                     <th>Título</th>
+                                    <th>Tipo</th>
                                     <th>Instructor</th>
                                     <th>Fecha</th>
                                     <th>Expira</th>
@@ -74,6 +75,15 @@
                         <input type="text" id="crearTitulo" class="form-control" placeholder="Ej: Seguridad en Redes" required>
                     </div>
 
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold">Tipo de evento <span class="text-danger">*</span></label>
+                        <select id="crearTipoEvento" class="form-select" required>
+                            <option value="" selected disabled>Selecciona el tipo de evento</option>
+                            <option value="capacitacion">Capacitación</option>
+                            <option value="asistencia">Registro de asistencia</option>
+                        </select>
+                    </div>
+
                     <div class="col-12">
                         <label class="form-label fw-semibold">Temas</label>
                         <div class="d-flex gap-2 mb-2">
@@ -87,7 +97,7 @@
                     </div>
 
                     <div class="col-12">
-                        <label class="form-label fw-semibold">Observaciones <span class="text-danger">*</span></label>
+                        <label class="form-label fw-semibold">Objetivo de la formación <span class="text-danger">*</span></label>
                         <textarea id="crearObservaciones" class="form-control" rows="3" placeholder="Información adicional sobre la capacitación..."></textarea>
                     </div>
 
@@ -176,6 +186,14 @@
                     <div class="col-12">
                         <label class="form-label fw-semibold">Título <span class="text-danger">*</span></label>
                         <input type="text" id="editarTitulo" class="form-control" required>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold">Tipo de evento <span class="text-danger">*</span></label>
+                        <select id="editarTipoEvento" class="form-select" required>
+                            <option value="capacitacion">Capacitación</option>
+                            <option value="asistencia">Registro de asistencia</option>
+                        </select>
                     </div>
 
                     <div class="col-12">
@@ -295,7 +313,7 @@ $(function () {
             url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json',
         },
         pageLength: 25,
-        order: [[3, 'desc']],
+         order: [[4, 'desc']],
         columns: [
             {
                 data: null,
@@ -308,6 +326,14 @@ $(function () {
             {
                 data: 'titulo',
                 render: function (data) { return escHtml(data || ''); }
+            },
+            {
+                data: 'tipo_evento',
+                render: function (data) {
+                    return data === 'asistencia'
+                        ? '<span class="badge bg-info-subtle text-info-emphasis">Registro de asistencia</span>'
+                        : '<span class="badge bg-primary-subtle text-primary">Capacitación</span>';
+                }
             },
             {
                 data: 'instructor_nombre',
@@ -423,6 +449,7 @@ function abrirModalCrear() {
     renderTemas();
     renderFechas();
     document.getElementById('crearTitulo').value       = '';
+    document.getElementById('crearTipoEvento').value   = '';
     document.getElementById('crearObservaciones').value = '';
     document.getElementById('crearInstructor').value   = '{{ auth()->user()->name }}';
     document.getElementById('crearFechaInput').value   = '';
@@ -436,11 +463,16 @@ function abrirModalCrear() {
 // ── Guardar capacitación ──────────────────────────────────────
 async function guardarCapacitacion() {
     var titulo        = document.getElementById('crearTitulo').value.trim();
+    var tipoEvento    = document.getElementById('crearTipoEvento').value;
     var instructor    = document.getElementById('crearInstructor').value.trim();
     var observaciones = document.getElementById('crearObservaciones').value.trim();
 
     if (!titulo) {
         Swal.fire({ icon: 'warning', title: 'Título requerido', text: 'Ingresa un título para la capacitación.', confirmButtonColor: '#1ab394' });
+        return;
+    }
+    if (!tipoEvento) {
+        Swal.fire({ icon: 'warning', title: 'Tipo de evento requerido', text: 'Selecciona si es una capacitación o un registro de asistencia.', confirmButtonColor: '#1ab394' });
         return;
     }
     if (!observaciones) {
@@ -470,6 +502,7 @@ async function guardarCapacitacion() {
             },
             body: JSON.stringify({
                 titulo:             titulo,
+                tipo_evento:        tipoEvento,
                 temas:              JSON.stringify(temasCrear),
                 fechas_sesiones:    JSON.stringify(fechasCrear),
                 observaciones:      document.getElementById('crearObservaciones').value.trim() || null,
@@ -598,6 +631,7 @@ function renderDetalle(d) {
         + '<div class="card-body">'
         + '<h6 class="fw-semibold mb-3"><i class="ti ti-info-circle text-primary me-1"></i>Información</h6>'
         + '<dl class="row mb-0 small">'
+        + '<dt class="col-5">Tipo</dt><dd class="col-7">' + (d.tipo_evento === 'asistencia' ? 'Registro de asistencia' : 'Capacitación') + '</dd>'
         + '<dt class="col-5">Registrado por</dt><dd class="col-7">' + escHtml(d.creado_por_nombre) + '</dd>'
         + '<dt class="col-5">Instructor</dt><dd class="col-7">' + (d.instructor_nombre ? escHtml(d.instructor_nombre) : '—') + '</dd>'
         + '<dt class="col-5">Duración</dt><dd class="col-7">' + (d.duracion_horas ? d.duracion_horas + (isNaN(d.duracion_horas) ? '' : ' hora(s)') : '—') + '</dd>'
@@ -731,6 +765,7 @@ function abrirEditar(d) {
 
     document.getElementById('editarId').value            = d.id;
     document.getElementById('editarTitulo').value        = d.titulo || '';
+    document.getElementById('editarTipoEvento').value    = d.tipo_evento || 'capacitacion';
     document.getElementById('editarObservaciones').value = d.observaciones || '';
     document.getElementById('editarInstructor').value    = d.instructor_nombre || '';
     document.getElementById('editarDuracion').value      = d.duracion_horas || '';
@@ -774,6 +809,7 @@ async function guardarEdicion() {
             },
             body: JSON.stringify({
                 titulo:             titulo,
+                tipo_evento:        document.getElementById('editarTipoEvento').value,
                 temas:              JSON.stringify(temasEditar),
                 observaciones:      document.getElementById('editarObservaciones').value.trim() || null,
                 instructor_nombre:  document.getElementById('editarInstructor').value.trim() || null,

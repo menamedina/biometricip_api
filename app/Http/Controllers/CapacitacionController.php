@@ -43,6 +43,7 @@ class CapacitacionController extends Controller
                         'id'                  => $cap->id,
                         'encrypted_id'        => Crypt::encryptString((string) $cap->id),
                         'titulo'              => $cap->titulo,
+                        'tipo_evento'         => $cap->tipo_evento,
                         'instructor_nombre'   => $cap->instructor_nombre,
                         'duracion_horas'      => $cap->duracion_horas,
                         'temas'               => $cap->temas ?? [],
@@ -76,6 +77,7 @@ class CapacitacionController extends Controller
 
         $data = $request->validate([
             'titulo'             => 'required|string|max:255',
+            'tipo_evento'       => 'required|in:capacitacion,asistencia',
             'temas'              => 'nullable|string',
             'fechas_sesiones'    => 'nullable|string',
             'observaciones'      => 'required|string',
@@ -104,6 +106,7 @@ class CapacitacionController extends Controller
 
             $base = [
                 'titulo'            => $data['titulo'],
+                'tipo_evento'      => $data['tipo_evento'],
                 'temas'             => $temas,
                 'observaciones'     => $data['observaciones'],
                 'instructor_nombre' => $data['instructor_nombre'],
@@ -180,6 +183,7 @@ class CapacitacionController extends Controller
                 'id'                 => $cap->id,
                 'encrypted_id'       => Crypt::encryptString((string) $cap->id),
                 'titulo'             => $cap->titulo,
+                'tipo_evento'       => $cap->tipo_evento,
                 'instructor_nombre'  => $cap->instructor_nombre,
                 'duracion_horas'     => $cap->duracion_horas,
                 'temas'              => $cap->temas ?? [],
@@ -254,6 +258,7 @@ class CapacitacionController extends Controller
 
         $data = $request->validate([
             'titulo'             => 'required|string|max:255',
+            'tipo_evento'       => 'required|in:capacitacion,asistencia',
             'temas'              => 'nullable|string',
             'observaciones'      => 'required|string',
             'instructor_nombre'  => 'required|string|max:255',
@@ -275,6 +280,7 @@ class CapacitacionController extends Controller
             $cap = Capacitacion::findOrFail($id);
             $cap->update([
                 'titulo'             => $data['titulo'],
+                'tipo_evento'       => $data['tipo_evento'],
                 'temas'              => $temas,
                 'observaciones'      => $data['observaciones'],
                 'instructor_nombre'  => $data['instructor_nombre'],
