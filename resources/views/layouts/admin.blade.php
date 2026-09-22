@@ -14,6 +14,7 @@
         /* ── Tooltips en botones disabled ────────────────── */
         .btn:disabled, .btn[disabled] { pointer-events: auto; cursor: not-allowed; }
 
+
         /* ── Logo en sidebar ─────────────────────────────── */
         .sidenav-menu > a.logo {
             display: flex !important;

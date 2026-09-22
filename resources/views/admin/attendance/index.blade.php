@@ -78,7 +78,7 @@
                                 </select>
                             </div>
                             <div class="col-md-3">
-                                <select class="form-select form-select-sm" id="filterEmpleado">
+                                <select id="filterEmpleado" class="form-select form-select-sm">
                                     <option value="">Todos los empleados</option>
                                 </select>
                             </div>

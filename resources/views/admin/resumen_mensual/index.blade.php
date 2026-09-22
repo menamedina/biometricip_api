@@ -203,9 +203,11 @@ async function cargarCatalogos() {
             const dataE = await resE.json();
             const empleados = dataE.data || [];
             const selE = document.getElementById('filterEmpleado');
-            if (selE) empleados.forEach(e => {
-                selE.innerHTML += `<option value="${e.id}">${e.name} (${e.codigo_empleado || ''})</option>`;
-            });
+            if (selE) {
+                empleados.forEach(e => {
+                    selE.innerHTML += `<option value="${e.id}">${e.name} (${e.codigo_empleado || ''})</option>`;
+                });
+            }
         }
     } catch(e) { console.error('cargarCatalogos:', e); }
 }
