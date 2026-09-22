@@ -72,13 +72,15 @@
                         <th>Fecha Fin</th>
                         <th>Duracion</th>
                         <th>Motivo</th>
+                        <th>Creado por</th>
+                        <th>Aprobado por</th>
                         <th>Estado</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="permisosTbody">
                     <tr id="trLoadingPerm">
-                        <td colspan="8" class="text-center py-5">
+                        <td colspan="10" class="text-center py-5">
                             <div class="spinner-border text-primary" role="status" style="width:2rem;height:2rem;"></div>
                             <p class="text-muted mt-2 mb-0 small">Cargando permisos...</p>
                         </td>
@@ -131,7 +133,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" onclick="savePermiso()">Guardar</button>
+                <button type="button" class="btn btn-primary" id="btnGuardarPermiso" onclick="savePermiso()">Guardar</button>
             </div>
         </div>
     </div>
@@ -386,6 +388,20 @@ async function loadPermisos() {
                         }
                     },
                     {
+                        title: 'Creado por',
+                        data: 'creador',
+                        render: function(data) {
+                            return data ? '<small>' + data.name + '</small>' : '<small class="text-muted">—</small>';
+                        }
+                    },
+                    {
+                        title: 'Aprobado por',
+                        data: 'aprobador',
+                        render: function(data) {
+                            return data ? '<small>' + data.name + '</small>' : '<small class="text-muted">—</small>';
+                        }
+                    },
+                    {
                         title: 'Estado',
                         data: 'estado',
                         render: function(data, type) {
@@ -458,6 +474,10 @@ async function savePermiso() {
         return;
     }
 
+    const btn = document.getElementById('btnGuardarPermiso');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Guardando...';
+
     const payload = {
         user_id:         parseInt(userId),
         tipo_permiso_id: parseInt(tipoId),
@@ -466,19 +486,24 @@ async function savePermiso() {
         motivo:          document.getElementById('pMotivo').value,
     };
 
-    const res = await fetch('/admin/permisos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-        body: JSON.stringify(payload),
-    });
-    if (res.ok) {
-        bootstrap.Modal.getInstance(document.getElementById('permisoModal')).hide();
-        loadPermisos();
-    } else {
-        const err = await res.json();
-        const el = document.getElementById('permisoError');
-        el.textContent = Object.values(err.errors || {}).flat().join('\n') || err.message || 'Error';
-        el.style.display = 'block';
+    try {
+        const res = await fetch('/admin/permisos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('permisoModal')).hide();
+            loadPermisos();
+        } else {
+            const err = await res.json();
+            const el = document.getElementById('permisoError');
+            el.textContent = Object.values(err.errors || {}).flat().join('\n') || err.message || 'Error';
+            el.style.display = 'block';
+        }
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Guardar';
     }
 }
 

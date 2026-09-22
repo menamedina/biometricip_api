@@ -37,12 +37,17 @@ class PermisoController extends Controller
 
         $permisos = $query->paginate($request->per_page ?? 30);
 
-        // Adjuntar datos del usuario desde BD central
-        $userIds = $permisos->pluck('user_id')->unique()->toArray();
-        $users   = User::whereIn('id', $userIds)->get(['id','name','codigo_empleado'])->keyBy('id');
+        // Adjuntar datos de usuarios desde BD central
+        $allUserIds = $permisos->pluck('user_id')
+            ->merge($permisos->pluck('creado_por'))
+            ->merge($permisos->pluck('aprobado_por'))
+            ->filter()->unique()->toArray();
+        $users = User::whereIn('id', $allUserIds)->get(['id','name','codigo_empleado'])->keyBy('id');
 
         $permisos->getCollection()->transform(function ($p) use ($users) {
-            $p->user = $users[$p->user_id] ?? null;
+            $p->user        = $users[$p->user_id] ?? null;
+            $p->creador     = $users[$p->creado_por] ?? null;
+            $p->aprobador   = $users[$p->aprobado_por] ?? null;
             return $p;
         });
 
@@ -58,7 +63,9 @@ class PermisoController extends Controller
             'fecha_fin'       => 'required|date|after:fecha_inicio',
             'motivo'          => 'nullable|string|max:500',
         ]);
-        $data['estado'] = 'pendiente';
+        $data['fecha']      = now()->toDateString();
+        $data['estado']     = 'pendiente';
+        $data['creado_por'] = $request->user()->id;
 
         $permiso = Permiso::create($data);
         $permiso->load('tipoPermiso');
