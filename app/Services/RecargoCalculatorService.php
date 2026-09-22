@@ -7,6 +7,7 @@ use App\Models\ConfigRecargo;
 use App\Models\ConceptoRecargo;
 use App\Models\Festivo;
 use App\Models\HorarioDia;
+use App\Models\Permiso;
 use App\Models\RecargoCalculado;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -18,6 +19,7 @@ class RecargoCalculatorService
 
     private Collection $festivos;
     private Collection $conceptos;
+    private array $permisosIndex = [];
 
     /**
      * Calcula recargos para un conjunto de empleados en un período.
@@ -36,6 +38,33 @@ class RecargoCalculatorService
             ->map(fn($f) => Carbon::parse($f)->toDateString());
 
         $this->conceptos = ConceptoRecargo::where('is_active', 1)->get()->keyBy('codigo');
+
+        // Cargar permisos aprobados del período
+        $permisosQuery = Permiso::where('estado', 'aprobado')
+            ->where(function ($q) use ($desde, $hasta) {
+                $q->whereBetween('fecha_inicio', [$desde->toDateString(), $hasta->toDateString() . ' 23:59:59'])
+                  ->orWhere(function ($q2) use ($desde, $hasta) {
+                      $q2->whereNull('fecha_inicio')
+                         ->whereBetween('fecha', [$desde->toDateString(), $hasta->toDateString()]);
+                  });
+            });
+        if (!empty($userIds)) {
+            $permisosQuery->whereIn('user_id', $userIds);
+        }
+        $this->permisosIndex = [];
+        foreach ($permisosQuery->get() as $p) {
+            if ($p->fecha_inicio && $p->fecha_fin) {
+                $cursor = Carbon::parse($p->fecha_inicio)->startOfDay();
+                $end    = Carbon::parse($p->fecha_fin)->startOfDay();
+                while ($cursor->lte($end)) {
+                    $this->permisosIndex["{$p->user_id}_{$cursor->toDateString()}"][] = $p;
+                    $cursor->addDay();
+                }
+            } elseif ($p->fecha) {
+                $fechaStr = $p->fecha instanceof Carbon ? $p->fecha->toDateString() : (string) $p->fecha;
+                $this->permisosIndex["{$p->user_id}_{$fechaStr}"][] = $p;
+            }
+        }
 
         // Cargar registros de asistencia del período
         $query = AttendanceRecord::query()
@@ -80,6 +109,23 @@ class RecargoCalculatorService
 
             if (!$userId) continue;
 
+            // Si tiene permiso aprobado de día completo, saltar cálculo de recargos
+            $permisosDia = $this->permisosIndex["{$userId}_{$fecha}"] ?? [];
+            $tienePermisoDiaCompleto = false;
+            $minutosPermiso = 0;
+
+            foreach ($permisosDia as $p) {
+                if ($p->fecha_inicio && $p->fecha_fin) {
+                    $minutosPermiso += (int) Carbon::parse($p->fecha_inicio)->diffInMinutes(Carbon::parse($p->fecha_fin));
+                } elseif ($p->horas_permiso) {
+                    $minutosPermiso += (int) ($p->horas_permiso * 60);
+                } else {
+                    $tienePermisoDiaCompleto = true;
+                }
+            }
+
+            if ($tienePermisoDiaCompleto) continue;
+
             // Emparejar entrada/salida
             $sorted   = collect($g['registros'])->sortBy('fecha_hora')->values();
             $sessions = $this->emparejarSesiones($sorted);
@@ -116,8 +162,11 @@ class RecargoCalculatorService
             $almuerzoMin = (int) ($dia->duracion_almuerzo_min ?? 0);
             $totalEfectivo = max(0, $totalMinutosTrabajados - $almuerzoMin);
 
-            // Minutos extra = efectivo - contratado (si > 0)
-            $minutosExtra = max(0, $totalEfectivo - $minutosContrato);
+            // Si hay permiso parcial, reducir los minutos contratados (el permiso cubre parte de la jornada)
+            $minutosContratoAjustado = max(0, $minutosContrato - $minutosPermiso);
+
+            // Minutos extra = efectivo - contratado ajustado (si > 0)
+            $minutosExtra = max(0, $totalEfectivo - $minutosContratoAjustado);
 
             // Los minutos regulares (no extra) son el total bruto menos los extras
             $minutosRegularesRestantes = $totalMinutosTrabajados - $minutosExtra;

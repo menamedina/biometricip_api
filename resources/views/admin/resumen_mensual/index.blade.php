@@ -135,6 +135,8 @@ div.dataTables_wrapper div.dataTables_info { font-size: 12px; color: #6c757d; }
 #mensualTable td.celda-parcial { background-color: #fdecea !important; color: #c62828 !important; font-weight: 600; }
 #mensualTable td.celda-ausente { background-color: #fafafa !important; color: #bdbdbd !important; }
 #mensualTable td.celda-fin     { background-color: #f5f5f5 !important; color: #9e9e9e !important; font-style: italic; }
+#mensualTable td.celda-permiso { background-color: #e3f2fd !important; color: #1565c0 !important; font-weight: 600; }
+#mensualTable td.celda-permiso-parcial { background-color: #fff3e0 !important; color: #e65100 !important; font-weight: 600; }
 
 /* Pantalla completa */
 #tablaWrapper:fullscreen,
@@ -267,6 +269,7 @@ async function cargarMensual() {
             porEmpleado[d.user_id].dias[d.fecha] = {
                 total_min:     d.total_min,
                 min_esperados: d.min_esperados ?? 0,
+                permiso:       d.permiso ?? null,
             };
         });
 
@@ -314,19 +317,41 @@ async function cargarMensual() {
                 } else {
                     const totalMin    = mins.total_min;
                     const minEsp      = mins.min_esperados;
+                    const permiso     = mins.permiso;
                     const h = String(Math.floor(totalMin / 60)).padStart(2, '0');
                     const m = String(totalMin % 60).padStart(2, '0');
-                    // Verde si cumplió el horario esperado (o no hay horario definido y trabajó algo)
-                    const cumple = minEsp > 0 ? totalMin >= minEsp : totalMin >= 420;
-                    const cls = cumple ? 'celda-ok' : 'celda-parcial';
-                    const hEsp = String(Math.floor(minEsp/60)).padStart(2,'0');
-                    const mEsp = String(minEsp%60).padStart(2,'0');
-                    const tooltip = minEsp > 0
-                        ? `${fecha}: ${h}:${m} trabajadas / ${hEsp}:${mEsp} esperadas`
-                        : `${fecha}: ${h}:${m} trabajadas`;
-                    celdas += `<td class="dia-col ${cls}" title="${tooltip}">${h}:${m}</td>`;
-                    totalEmpleadoMin += totalMin;
-                    colTotalesDia[d] = (colTotalesDia[d] || 0) + totalMin;
+
+                    let cls, tooltip;
+
+                    if (permiso && totalMin === 0) {
+                        // Solo permiso, sin marcación → celda azul
+                        cls = 'celda-permiso';
+                        tooltip = `${fecha}: ${permiso.tipo}${permiso.es_remunerado ? ' (Rem.)' : ' (No rem.)'}`;
+                        celdas += `<td class="dia-col ${cls}" title="${tooltip}"><i class="ti ti-clipboard-check" style="font-size:13px;"></i></td>`;
+                    } else if (permiso && totalMin > 0) {
+                        // Permiso parcial + marcación
+                        const minConPermiso = totalMin + permiso.minutos;
+                        const cumple = minEsp > 0 ? minConPermiso >= minEsp : true;
+                        cls = cumple ? 'celda-ok' : 'celda-permiso-parcial';
+                        const hEsp = String(Math.floor(minEsp/60)).padStart(2,'0');
+                        const mEsp = String(minEsp%60).padStart(2,'0');
+                        tooltip = `${fecha}: ${h}:${m} trab. + ${permiso.tipo}${permiso.es_remunerado ? ' (Rem.)' : ''} / ${hEsp}:${mEsp} esp.`;
+                        celdas += `<td class="dia-col ${cls}" title="${tooltip}">${h}:${m}*</td>`;
+                        totalEmpleadoMin += totalMin;
+                        colTotalesDia[d] = (colTotalesDia[d] || 0) + totalMin;
+                    } else {
+                        // Sin permiso — lógica normal
+                        const cumple = minEsp > 0 ? totalMin >= minEsp : totalMin >= 420;
+                        cls = cumple ? 'celda-ok' : 'celda-parcial';
+                        const hEsp = String(Math.floor(minEsp/60)).padStart(2,'0');
+                        const mEsp = String(minEsp%60).padStart(2,'0');
+                        tooltip = minEsp > 0
+                            ? `${fecha}: ${h}:${m} trabajadas / ${hEsp}:${mEsp} esperadas`
+                            : `${fecha}: ${h}:${m} trabajadas`;
+                        celdas += `<td class="dia-col ${cls}" title="${tooltip}">${h}:${m}</td>`;
+                        totalEmpleadoMin += totalMin;
+                        colTotalesDia[d] = (colTotalesDia[d] || 0) + totalMin;
+                    }
                 }
             }
 

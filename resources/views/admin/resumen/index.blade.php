@@ -414,6 +414,7 @@ async function cargarResumen() {
         }
         const data = await res.json();
         let registros = data.data || [];
+        const permisosData = data.permisos || [];
 
         if (deptoId) {
             registros = registros.filter(r => r.user?.departamento_id == deptoId);
@@ -434,6 +435,22 @@ async function cargarResumen() {
         }
 
         allRegistros = registros;
+
+        // Indexar permisos por user_id_fecha
+        const permisosIdx = {};
+        permisosData.forEach(p => {
+            if (p.fecha_inicio && p.fecha_fin) {
+                let cur = new Date(p.fecha_inicio.slice(0,10));
+                const end = new Date(p.fecha_fin.slice(0,10));
+                while (cur <= end) {
+                    const key = `${p.user_id}_${cur.toISOString().slice(0,10)}`;
+                    permisosIdx[key] = p;
+                    cur.setDate(cur.getDate() + 1);
+                }
+            } else if (p.fecha) {
+                permisosIdx[`${p.user_id}_${p.fecha}`] = p;
+            }
+        });
 
         if (!registros.length) {
             tbody.innerHTML = '<tr><td colspan="15" class="text-center text-muted py-4">Sin registros para el período seleccionado</td></tr>';
@@ -525,9 +542,16 @@ async function cargarResumen() {
             totalMinGlobal += totalMin;
             totalDias++;
 
+            // Verificar permiso para este empleado+fecha
+            const permisoKey = `${g.user?.id}_${g.fecha}`;
+            const permiso = permisosIdx[permisoKey] || null;
+            const permisoBadge = permiso
+                ? `<br><span class="badge ${permiso.es_remunerado ? 'bg-info' : 'bg-warning'} mt-1" style="font-size:9px;" title="${permiso.motivo || ''}">${permiso.tipo}</span>`
+                : '';
+
             const totalStr = totalMin > 0
-                ? `<strong>${Math.floor(totalMin/60)}h ${String(totalMin%60).padStart(2,'0')}m</strong>`
-                : '<span class="text-muted">—</span>';
+                ? `<strong>${Math.floor(totalMin/60)}h ${String(totalMin%60).padStart(2,'0')}m</strong>${permisoBadge}`
+                : (permiso ? `<span class="text-info"><i class="ti ti-clipboard-check"></i></span>${permisoBadge}` : '<span class="text-muted">—</span>');
 
             const deptoNombre   = deptoMap[g.user?.departamento_id] || g.user?.departamento || '—';
             const horarioNombre = g.registros[0]?.horario?.nombre || '—';

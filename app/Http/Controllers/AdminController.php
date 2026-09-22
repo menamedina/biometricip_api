@@ -390,7 +390,36 @@ class AdminController extends Controller
             return $record;
         });
 
-        return response()->json(['data' => $records]);
+        // Cargar permisos aprobados del período
+        $permisosQuery = \App\Models\Permiso::where('estado', 'aprobado')
+            ->with('tipoPermiso')
+            ->where(function ($q) use ($request) {
+                $q->whereBetween('fecha_inicio', [$request->date_from, $request->date_to . ' 23:59:59'])
+                  ->orWhere(function ($q2) use ($request) {
+                      $q2->whereNull('fecha_inicio')
+                         ->whereBetween('fecha', [$request->date_from, $request->date_to]);
+                  });
+            });
+        if ($request->filled('user_id')) {
+            $permisosQuery->where('user_id', $request->user_id);
+        } elseif (!empty($userIds)) {
+            $permisosQuery->whereIn('user_id', $userIds);
+        }
+        $permisos = $permisosQuery->get()->map(function ($p) {
+            return [
+                'id'            => $p->id,
+                'user_id'       => $p->user_id,
+                'tipo'          => $p->tipoPermiso?->nombre ?? $p->tipo ?? '',
+                'es_remunerado' => $p->tipoPermiso?->es_remunerado ?? false,
+                'fecha_inicio'  => $p->fecha_inicio?->toDateTimeString(),
+                'fecha_fin'     => $p->fecha_fin?->toDateTimeString(),
+                'fecha'         => $p->fecha?->toDateString(),
+                'motivo'        => $p->motivo,
+                'estado'        => $p->estado,
+            ];
+        });
+
+        return response()->json(['data' => $records, 'permisos' => $permisos]);
     }
 
     public function resumenMensualIndex(): View
@@ -437,6 +466,42 @@ class AdminController extends Controller
 
         $records = $query->get();
 
+        // Cargar permisos aprobados del período
+        $permisosQuery = \App\Models\Permiso::where('estado', 'aprobado')
+            ->with('tipoPermiso')
+            ->where(function ($q) use ($inicio, $fin) {
+                $q->whereBetween('fecha_inicio', [$inicio, $fin])
+                  ->orWhere(function ($q2) use ($inicio, $fin) {
+                      $q2->whereNull('fecha_inicio')
+                         ->whereBetween('fecha', [substr($inicio, 0, 10), substr($fin, 0, 10)]);
+                  });
+            });
+
+        if (auth()->user()->cannot('empleados.ver')) {
+            $permisosQuery->where('user_id', auth()->id());
+        } elseif ($request->filled('user_id')) {
+            $permisosQuery->where('user_id', $request->user_id);
+        }
+
+        $permisosRaw = $permisosQuery->get();
+
+        // Indexar permisos por user_id+fecha para acceso rápido
+        $permisosIndex = [];
+        foreach ($permisosRaw as $p) {
+            if ($p->fecha_inicio && $p->fecha_fin) {
+                $cursor = \Carbon\Carbon::parse($p->fecha_inicio)->startOfDay();
+                $end    = \Carbon\Carbon::parse($p->fecha_fin)->startOfDay();
+                while ($cursor->lte($end)) {
+                    $key = "{$p->user_id}_{$cursor->toDateString()}";
+                    $permisosIndex[$key][] = $p;
+                    $cursor->addDay();
+                }
+            } elseif ($p->fecha) {
+                $key = "{$p->user_id}_{$p->fecha->toDateString()}";
+                $permisosIndex[$key][] = $p;
+            }
+        }
+
         // Agrupar por empleado + fecha → calcular horas
         $grupos = [];
         foreach ($records as $r) {
@@ -452,10 +517,28 @@ class AdminController extends Controller
             $grupos[$key]['registros'][] = $r;
         }
 
+        // Agregar días donde solo hay permiso pero no marcación
+        $userIds = $records->pluck('user_id')->unique();
+        foreach ($permisosIndex as $key => $permisos) {
+            if (!isset($grupos[$key])) {
+                $parts  = explode('_', $key, 2);
+                $uid    = (int) $parts[0];
+                $fecha  = $parts[1];
+                if (!$userIds->contains($uid)) continue;
+                $user = $records->first(fn($r) => $r->user_id === $uid)?->user;
+                if (!$user) continue;
+                $grupos[$key] = [
+                    'user'      => $user,
+                    'fecha'     => $fecha,
+                    'registros' => [],
+                ];
+            }
+        }
+
         $toDate = fn($str) => new \DateTime(str_replace(' ', 'T', $str));
 
         $resultado = [];
-        foreach ($grupos as $g) {
+        foreach ($grupos as $gKey => $g) {
             $sorted = collect($g['registros'])->sortBy('fecha_hora')->values();
 
             $sessions  = [];
@@ -502,18 +585,47 @@ class AdminController extends Controller
                 [$hE, $mE] = explode(':', substr($diaHorario->hora_entrada, 0, 5));
                 [$hS, $mS] = explode(':', substr($diaHorario->hora_salida,  0, 5));
                 $diff = ((int)$hS * 60 + (int)$mS) - ((int)$hE * 60 + (int)$mE);
-                if ($diff < 0) $diff += 1440; // +24h para turnos que cruzan medianoche
+                if ($diff < 0) $diff += 1440;
                 $minEsperados = max(0, $diff - (int)($diaHorario->duracion_almuerzo_min ?? 0));
             }
 
+            // Verificar permisos aprobados para este empleado+fecha
+            $userId = $g['user']?->id;
+            $permisosDia = $permisosIndex["{$userId}_{$g['fecha']}"] ?? [];
+            $permisoInfo = null;
+            $minPermiso  = 0;
+
+            foreach ($permisosDia as $p) {
+                $tipoNombre = $p->tipoPermiso?->nombre ?? $p->tipo ?? '';
+                $esRemunerado = $p->tipoPermiso?->es_remunerado ?? false;
+
+                if ($p->fecha_inicio && $p->fecha_fin) {
+                    $pInicio = \Carbon\Carbon::parse($p->fecha_inicio);
+                    $pFin    = \Carbon\Carbon::parse($p->fecha_fin);
+                    $minPermiso += (int) $pInicio->diffInMinutes($pFin);
+                } elseif ($p->horas_permiso) {
+                    $minPermiso += (int) ($p->horas_permiso * 60);
+                } else {
+                    // Día completo
+                    $minPermiso = $minEsperados > 0 ? $minEsperados : 480;
+                }
+
+                $permisoInfo = [
+                    'tipo'          => $tipoNombre,
+                    'es_remunerado' => $esRemunerado,
+                    'minutos'       => $minPermiso,
+                ];
+            }
+
             $resultado[] = [
-                'user_id'         => $g['user']?->id,
+                'user_id'         => $userId,
                 'nombre'          => $g['user']?->name ?? 'N/A',
                 'codigo_empleado' => $g['user']?->codigo_empleado ?? '',
                 'departamento_id' => $g['user']?->departamento_id,
                 'fecha'           => $g['fecha'],
                 'total_min'       => max(0, $totalMin),
                 'min_esperados'   => $minEsperados,
+                'permiso'         => $permisoInfo,
             ];
         }
 
