@@ -105,14 +105,22 @@ class RecargoCalculatorService
                 }
             }
 
-            // Calcular minutos totales trabajados en el día para determinar extras
+            // Calcular minutos totales trabajados en el día
             $totalMinutosTrabajados = 0;
             foreach ($segmentosDia as $seg) {
                 $totalMinutosTrabajados += $seg['minutos'];
             }
 
-            // Clasificar segmentos: los primeros N minutos son regulares, el resto extras
-            $minutosRegularesRestantes = min($totalMinutosTrabajados, $minutosContrato);
+            // Descontar almuerzo del total para determinar extras
+            $dia = collect($horario?->dias ?? [])->firstWhere('dia_semana', $diaSemana);
+            $almuerzoMin = (int) ($dia->duracion_almuerzo_min ?? 0);
+            $totalEfectivo = max(0, $totalMinutosTrabajados - $almuerzoMin);
+
+            // Minutos extra = efectivo - contratado (si > 0)
+            $minutosExtra = max(0, $totalEfectivo - $minutosContrato);
+
+            // Los minutos regulares (no extra) son el total bruto menos los extras
+            $minutosRegularesRestantes = $totalMinutosTrabajados - $minutosExtra;
             $conceptoMinutos = [];
 
             foreach ($segmentosDia as $seg) {
