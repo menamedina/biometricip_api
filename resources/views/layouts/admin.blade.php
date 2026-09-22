@@ -294,7 +294,7 @@
                         @endcan
 
                         {{-- ── Configuración ───────────────────────────────── --}}
-                        @canany(['horarios.ver','festivos.ver','recargos.configurar','roles.ver','ia.ver'])
+                        @canany(['horarios.ver','festivos.ver','recargos.configurar','permisos.ver','roles.ver','ia.ver'])
                         <li class="side-nav-title mt-2">Configuración</li>
                         @endcanany
                         @can('horarios.ver')
@@ -318,6 +318,14 @@
                             <a href="{{ route('admin.recargos.conceptos') }}" class="side-nav-link {{ request()->routeIs('admin.recargos.conceptos') ? 'active' : '' }}">
                                 <span class="menu-icon"><i class="ti ti-percentage"></i></span>
                                 <span class="menu-text">Conceptos Recargo</span>
+                            </a>
+                        </li>
+                        @endcan
+                        @can('permisos.ver')
+                        <li class="side-nav-item">
+                            <a href="{{ route('admin.permisos.tipos') }}" class="side-nav-link {{ request()->routeIs('admin.permisos.tipos') ? 'active' : '' }}">
+                                <span class="menu-icon"><i class="ti ti-clipboard-list"></i></span>
+                                <span class="menu-text">Tipos de Permiso</span>
                             </a>
                         </li>
                         @endcan

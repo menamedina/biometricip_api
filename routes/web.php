@@ -237,6 +237,11 @@ Route::middleware(['auth', 'admin', 'tenancy.session'])->group(function () {
     Route::post  ('/admin/permisos/{id}/aprobar',    [ApiPermisoController::class, 'aprobar']);
     Route::post  ('/admin/permisos/{id}/rechazar',   [ApiPermisoController::class, 'rechazar']);
     Route::delete('/admin/permisos/{id}',            [ApiPermisoController::class, 'destroy']);
+    Route::get   ('/admin/permisos/tipos-activos',   [ApiPermisoController::class, 'tiposPermiso']);
+    // Tipos de permiso - Configuración
+    Route::get   ('/admin/permisos/tipos',           [AdminController::class, 'tiposPermisoIndex'])->name('admin.permisos.tipos');
+    Route::post  ('/admin/permisos/tipos',           [AdminController::class, 'tiposPermisoStore']);
+    Route::put   ('/admin/permisos/tipos/{id}',      [AdminController::class, 'tiposPermisoUpdate']);
     // Capacitaciones
     Route::get   ('/admin/capacitaciones',                      [CapacitacionController::class, 'index'])->name('admin.capacitaciones.index');
     Route::get   ('/admin/capacitaciones/list',                 [CapacitacionController::class, 'list']);

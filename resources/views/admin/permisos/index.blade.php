@@ -7,7 +7,7 @@
         <div class="col-12 d-flex justify-content-between align-items-center">
             <div>
                 <h4 class="mb-1"><i class="fa-solid fa-file-signature me-2 text-primary"></i>Permisos</h4>
-                <p class="text-muted mb-0">Gestión de permisos de empleados</p>
+                <p class="text-muted mb-0">Gestion de permisos de empleados</p>
             </div>
             @can('permisos.crear')
             <button class="btn btn-primary" onclick="openModal()">
@@ -67,9 +67,10 @@
                 <thead class="table-light">
                     <tr>
                         <th>Empleado</th>
-                        <th>Fecha</th>
                         <th>Tipo</th>
-                        <th>Horas</th>
+                        <th>Fecha Inicio</th>
+                        <th>Fecha Fin</th>
+                        <th>Duracion</th>
                         <th>Motivo</th>
                         <th>Estado</th>
                         <th>Acciones</th>
@@ -77,7 +78,7 @@
                 </thead>
                 <tbody id="permisosTbody">
                     <tr id="trLoadingPerm">
-                        <td colspan="7" class="text-center py-5">
+                        <td colspan="8" class="text-center py-5">
                             <div class="spinner-border text-primary" role="status" style="width:2rem;height:2rem;"></div>
                             <p class="text-muted mt-2 mb-0 small">Cargando permisos...</p>
                         </td>
@@ -101,28 +102,30 @@
                     <label class="form-label">Empleado <span class="text-danger">*</span></label>
                     <select id="pEmpleado" class="form-select"></select>
                 </div>
+                <div class="mb-3">
+                    <label class="form-label">Tipo de Permiso <span class="text-danger">*</span></label>
+                    <select id="pTipoPermiso" class="form-select">
+                        <option value="">-- Seleccionar --</option>
+                    </select>
+                    <small id="pRemuneradoBadge" class="mt-1 d-none"></small>
+                </div>
                 <div class="row">
                     <div class="col-6 mb-3">
-                        <label class="form-label">Fecha <span class="text-danger">*</span></label>
-                        <input type="date" id="pFecha" class="form-control">
+                        <label class="form-label">Fecha/hora inicio <span class="text-danger">*</span></label>
+                        <input type="datetime-local" id="pFechaInicio" class="form-control" onchange="calcularDuracion()">
                     </div>
                     <div class="col-6 mb-3">
-                        <label class="form-label">Tipo <span class="text-danger">*</span></label>
-                        <select id="pTipo" class="form-select">
-                            <option value="salida_temprana">Salida Temprana</option>
-                            <option value="llegada_tarde">Llegada Tarde</option>
-                            <option value="dia_completo">Día Completo</option>
-                            <option value="horas">Horas</option>
-                        </select>
+                        <label class="form-label">Fecha/hora fin <span class="text-danger">*</span></label>
+                        <input type="datetime-local" id="pFechaFin" class="form-control" onchange="calcularDuracion()">
                     </div>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">Horas de permiso <span class="text-danger">*</span></label>
-                    <input type="number" id="pHoras" class="form-control" min="0" max="24" step="0.5" placeholder="Ej: 2">
+                    <label class="form-label">Duracion calculada</label>
+                    <input type="text" id="pDuracion" class="form-control" readonly placeholder="Se calcula automaticamente">
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Motivo</label>
-                    <textarea id="pMotivo" class="form-control" rows="2" placeholder="Descripción del permiso..."></textarea>
+                    <textarea id="pMotivo" class="form-control" rows="2" placeholder="Descripcion del permiso..."></textarea>
                 </div>
                 <div id="permisoError" class="alert alert-danger py-2 mb-0" style="display:none;"></div>
             </div>
@@ -173,18 +176,13 @@ div.dataTables_wrapper div.dataTables_info {
 const csrfToken = '{{ csrf_token() }}';
 const canAprobarPermiso  = {{ auth()->user()->can('permisos.aprobar')  ? 'true' : 'false' }};
 const canEliminarPermiso = {{ auth()->user()->can('permisos.eliminar') ? 'true' : 'false' }};
-const tipoLabels = {
-    salida_temprana: 'Salida Temprana',
-    llegada_tarde:   'Llegada Tarde',
-    dia_completo:    'Día Completo',
-    horas:           'Horas',
-};
 const estadoBadge = {
     pendiente: 'bg-warning text-dark',
     aprobado:  'bg-success',
     rechazado: 'bg-danger',
 };
 var tablaPermisos = null;
+var tiposPermiso  = [];
 
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
@@ -193,6 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('filterFrom').value = inicio.toISOString().slice(0,10);
     document.getElementById('filterTo').value   = hoy;
     loadEmpleados();
+    loadTiposPermiso();
     loadPermisos();
 });
 
@@ -202,12 +201,85 @@ async function loadEmpleados() {
     const empleados = data.data || [];
     const sel  = document.getElementById('filterEmpleado');
     const pSel = document.getElementById('pEmpleado');
-    pSel.innerHTML = '<option value="">— Seleccionar —</option>';
+    pSel.innerHTML = '<option value="">-- Seleccionar --</option>';
     empleados.forEach(e => {
         const opt = `<option value="${e.id}">${e.name} (${e.codigo_empleado})</option>`;
         sel.innerHTML += opt;
         pSel.innerHTML += opt;
     });
+}
+
+async function loadTiposPermiso() {
+    try {
+        const res = await fetch('/admin/permisos/tipos-activos', { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
+        tiposPermiso = await res.json();
+        const sel = document.getElementById('pTipoPermiso');
+        sel.innerHTML = '<option value="">-- Seleccionar --</option>';
+        tiposPermiso.forEach(t => {
+            const badge = t.es_remunerado ? '(Remunerado)' : '(No remunerado)';
+            sel.innerHTML += `<option value="${t.id}" data-remunerado="${t.es_remunerado}">${t.nombre} ${badge}</option>`;
+        });
+    } catch(e) { console.error('loadTiposPermiso:', e); }
+}
+
+function onTipoChange() {
+    const sel = document.getElementById('pTipoPermiso');
+    const opt = sel.options[sel.selectedIndex];
+    const badge = document.getElementById('pRemuneradoBadge');
+    if (opt && opt.value) {
+        const esRem = opt.dataset.remunerado === '1' || opt.dataset.remunerado === 'true';
+        badge.className = esRem ? 'badge bg-success mt-1' : 'badge bg-danger mt-1';
+        badge.textContent = esRem ? 'Remunerado' : 'No remunerado';
+        badge.classList.remove('d-none');
+    } else {
+        badge.classList.add('d-none');
+    }
+}
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('pTipoPermiso').addEventListener('change', onTipoChange);
+});
+
+function calcularDuracion() {
+    const inicio = document.getElementById('pFechaInicio').value;
+    const fin    = document.getElementById('pFechaFin').value;
+    const el     = document.getElementById('pDuracion');
+    if (!inicio || !fin) { el.value = ''; return; }
+
+    const ms   = new Date(fin) - new Date(inicio);
+    if (ms <= 0) { el.value = 'Fecha fin debe ser posterior'; return; }
+
+    const totalMin = Math.round(ms / 60000);
+    const dias     = Math.floor(totalMin / (24 * 60));
+    const horas    = Math.floor((totalMin % (24 * 60)) / 60);
+    const mins     = totalMin % 60;
+
+    let txt = '';
+    if (dias > 0) txt += dias + 'd ';
+    if (horas > 0) txt += horas + 'h ';
+    if (mins > 0) txt += mins + 'min';
+    el.value = txt.trim() || '0min';
+}
+
+function formatDuracion(fechaInicio, fechaFin) {
+    if (!fechaInicio || !fechaFin) return '—';
+    const ms = new Date(fechaFin) - new Date(fechaInicio);
+    if (ms <= 0) return '—';
+    const totalMin = Math.round(ms / 60000);
+    const dias  = Math.floor(totalMin / (24 * 60));
+    const horas = Math.floor((totalMin % (24 * 60)) / 60);
+    const mins  = totalMin % 60;
+    let txt = '';
+    if (dias > 0) txt += dias + 'd ';
+    if (horas > 0) txt += horas + 'h ';
+    if (mins > 0) txt += mins + 'min';
+    return txt.trim() || '0min';
+}
+
+function formatFecha(dt) {
+    if (!dt) return '—';
+    const d = new Date(dt);
+    return d.toLocaleDateString('es-CO', { day:'2-digit', month:'2-digit', year:'numeric' })
+         + ' ' + d.toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit' });
 }
 
 async function loadPermisos() {
@@ -235,7 +307,7 @@ async function loadPermisos() {
             tablaPermisos = $('#permisosTable').DataTable({
                 data: items,
                 processing: true,
-                order: [[1, 'desc']],
+                order: [[2, 'desc']],
                 scrollX: true,
                 pageLength: 25,
                 lengthMenu: [10, 25, 50, 100],
@@ -246,7 +318,7 @@ async function loadPermisos() {
                     infoEmpty: 'Mostrando 0 registros',
                     infoFiltered: '(filtrado de _MAX_ registros)',
                     search: 'Buscar:',
-                    paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' },
+                    paginate: { first: 'Primero', last: 'Ultimo', next: 'Siguiente', previous: 'Anterior' },
                     processing: 'Procesando...',
                 },
                 drawCallback: function() {
@@ -257,9 +329,6 @@ async function loadPermisos() {
                 initComplete: function() {
                     $('#permisosTable_length select').addClass('form-select form-select-sm d-inline-block w-auto');
                     $('#permisosTable_filter input').addClass('form-control form-control-sm d-inline-block w-auto');
-                    $('#permisosTable_filter').prepend(
-                        '<button class="btn btn-sm btn-outline-secondary me-2" onclick="loadPermisos()" title="Recargar tabla"><i class="ti ti-refresh"></i></button>'
-                    );
                 },
                 columns: [
                     {
@@ -273,19 +342,41 @@ async function loadPermisos() {
                         }
                     },
                     {
-                        title: 'Fecha',
-                        data: 'fecha',
-                        render: function(data) { return data ? data.slice(0,10) : '—'; }
-                    },
-                    {
                         title: 'Tipo',
-                        data: 'tipo',
-                        render: function(data) { return tipoLabels[data] ?? data; }
+                        data: 'tipo_permiso',
+                        render: function(data, type, row) {
+                            if (!data) {
+                                // Permiso viejo con tipo ENUM
+                                const labels = { salida_temprana:'Salida Temprana', llegada_tarde:'Llegada Tarde', dia_completo:'Dia Completo', horas:'Horas' };
+                                return '<span class="badge bg-secondary">' + (labels[row.tipo] || row.tipo || '—') + '</span>';
+                            }
+                            const badge = data.es_remunerado
+                                ? '<span class="badge bg-success ms-1" style="font-size:9px;">Rem</span>'
+                                : '<span class="badge bg-danger ms-1" style="font-size:9px;">No rem</span>';
+                            return data.nombre + badge;
+                        }
                     },
                     {
-                        title: 'Horas',
-                        data: 'horas_permiso',
-                        render: function(data) { return data + 'h'; }
+                        title: 'Fecha Inicio',
+                        data: null,
+                        render: function(data, type, row) {
+                            if (row.fecha_inicio) return formatFecha(row.fecha_inicio);
+                            return row.fecha ? row.fecha.slice(0,10) : '—';
+                        }
+                    },
+                    {
+                        title: 'Fecha Fin',
+                        data: 'fecha_fin',
+                        render: function(data) { return data ? formatFecha(data) : '—'; }
+                    },
+                    {
+                        title: 'Duracion',
+                        data: null,
+                        render: function(data, type, row) {
+                            if (row.fecha_inicio && row.fecha_fin) return formatDuracion(row.fecha_inicio, row.fecha_fin);
+                            if (row.horas_permiso) return row.horas_permiso + 'h';
+                            return '—';
+                        }
                     },
                     {
                         title: 'Motivo',
@@ -343,32 +434,38 @@ function limpiarFiltros() {
 function openModal() {
     document.getElementById('permisoId').value = '';
     document.getElementById('pEmpleado').value = '';
-    document.getElementById('pFecha').value    = new Date().toISOString().slice(0,10);
-    document.getElementById('pTipo').value     = 'salida_temprana';
-    document.getElementById('pHoras').value    = '';
-    document.getElementById('pMotivo').value   = '';
+    document.getElementById('pTipoPermiso').value = '';
+    document.getElementById('pFechaInicio').value = '';
+    document.getElementById('pFechaFin').value = '';
+    document.getElementById('pDuracion').value = '';
+    document.getElementById('pMotivo').value = '';
+    document.getElementById('pRemuneradoBadge').classList.add('d-none');
     document.getElementById('modalTitle').textContent = 'Nuevo Permiso';
     document.getElementById('permisoError').style.display = 'none';
     new bootstrap.Modal(document.getElementById('permisoModal')).show();
 }
 
 async function savePermiso() {
-    const userId = document.getElementById('pEmpleado').value;
-    const fecha  = document.getElementById('pFecha').value;
-    const horas  = document.getElementById('pHoras').value;
-    if (!userId || !fecha || !horas) {
+    const userId       = document.getElementById('pEmpleado').value;
+    const tipoId       = document.getElementById('pTipoPermiso').value;
+    const fechaInicio  = document.getElementById('pFechaInicio').value;
+    const fechaFin     = document.getElementById('pFechaFin').value;
+
+    if (!userId || !tipoId || !fechaInicio || !fechaFin) {
         const el = document.getElementById('permisoError');
-        el.textContent = 'Empleado, fecha y horas son obligatorios.';
+        el.textContent = 'Empleado, tipo, fecha inicio y fecha fin son obligatorios.';
         el.style.display = 'block';
         return;
     }
+
     const payload = {
-        user_id:       parseInt(userId),
-        fecha,
-        tipo:          document.getElementById('pTipo').value,
-        horas_permiso: parseFloat(horas),
-        motivo:        document.getElementById('pMotivo').value,
+        user_id:         parseInt(userId),
+        tipo_permiso_id: parseInt(tipoId),
+        fecha_inicio:    fechaInicio,
+        fecha_fin:       fechaFin,
+        motivo:          document.getElementById('pMotivo').value,
     };
+
     const res = await fetch('/admin/permisos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
@@ -386,19 +483,19 @@ async function savePermiso() {
 }
 
 async function aprobar(id) {
-    if (!confirm('¿Aprobar este permiso?')) return;
+    if (!confirm('Aprobar este permiso?')) return;
     await fetch(`/admin/permisos/${id}/aprobar`, { method: 'POST', headers: { 'X-CSRF-TOKEN': csrfToken } });
     loadPermisos();
 }
 
 async function rechazar(id) {
-    if (!confirm('¿Rechazar este permiso?')) return;
+    if (!confirm('Rechazar este permiso?')) return;
     await fetch(`/admin/permisos/${id}/rechazar`, { method: 'POST', headers: { 'X-CSRF-TOKEN': csrfToken } });
     loadPermisos();
 }
 
 async function eliminar(id) {
-    if (!confirm('¿Eliminar este permiso?')) return;
+    if (!confirm('Eliminar este permiso?')) return;
     await fetch(`/admin/permisos/${id}`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': csrfToken } });
     loadPermisos();
 }

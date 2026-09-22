@@ -20,6 +20,7 @@ use App\Models\Horario;
 use App\Models\ConfigRecargo;
 use App\Models\ConceptoRecargo;
 use App\Models\Sede;
+use App\Models\TipoPermiso;
 use App\Services\RecargoCalculatorService;
 use App\Models\TenantTabla;
 use App\Models\User;
@@ -832,6 +833,41 @@ class AdminController extends Controller
     {
         abort_unless(auth()->user()->can('permisos.ver'), 403, 'No tienes permiso para acceder a esta sección.');
         return view('admin.permisos.index');
+    }
+
+    public function tiposPermisoIndex(): View
+    {
+        abort_unless(auth()->user()->can('permisos.ver'), 403, 'No tienes permiso para acceder a esta sección.');
+        $tipos = TipoPermiso::orderBy('id')->get();
+        return view('admin.permisos.tipos', compact('tipos'));
+    }
+
+    public function tiposPermisoStore(Request $request): JsonResponse
+    {
+        abort_unless(auth()->user()->can('permisos.ver'), 403);
+
+        $data = $request->validate([
+            'nombre'        => 'required|string|max:100',
+            'es_remunerado' => 'required|boolean',
+        ]);
+        $data['is_active'] = true;
+
+        $tipo = TipoPermiso::create($data);
+        return response()->json(['data' => $tipo], 201);
+    }
+
+    public function tiposPermisoUpdate(Request $request, int $id): JsonResponse
+    {
+        abort_unless(auth()->user()->can('permisos.ver'), 403);
+
+        $tipo = TipoPermiso::findOrFail($id);
+        $data = $request->validate([
+            'nombre'        => 'sometimes|string|max:100',
+            'es_remunerado' => 'sometimes|boolean',
+            'is_active'     => 'sometimes|boolean',
+        ]);
+        $tipo->update($data);
+        return response()->json(['data' => $tipo]);
     }
 
     public function festivosIndex(): View
