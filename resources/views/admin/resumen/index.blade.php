@@ -81,6 +81,14 @@
                             @endforeach
                         </select>
                     </div>
+                    <div class="col-md-3">
+                        <select id="filterSede" class="form-select form-select-sm">
+                            <option value="">Todas las sedes</option>
+                            @foreach($sedes as $s)
+                                <option value="{{ $s->id }}">{{ $s->nombre }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
@@ -350,6 +358,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('filterEmpleado').closest('.col-md-3').style.display = 'none';
         document.getElementById('filterDepto').closest('.col-md-3').style.display    = 'none';
         document.getElementById('filterHorario').closest('.col-md-3').style.display  = 'none';
+        document.getElementById('filterSede').closest('.col-md-3').style.display     = 'none';
     }
 
     cargarFiltros();
@@ -442,6 +451,11 @@ async function cargarResumen() {
         const horarioId = isEmpleado ? '' : document.getElementById('filterHorario').value;
         if (horarioId) {
             registros = registros.filter(r => r.horario_id == horarioId);
+        }
+
+        const sedeId = isEmpleado ? '' : document.getElementById('filterSede').value;
+        if (sedeId) {
+            registros = registros.filter(r => r.sede_id == sedeId);
         }
 
         const search = document.getElementById('filterSearch').value.trim().toLowerCase();
@@ -975,6 +989,7 @@ function limpiarFiltros() {
     document.getElementById('filterEmpleado').value = '';
     document.getElementById('filterDepto').value    = '';
     document.getElementById('filterHorario').value  = '';
+    document.getElementById('filterSede').value     = '';
     cargarResumen();
 }
 
