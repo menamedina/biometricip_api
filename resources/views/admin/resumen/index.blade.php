@@ -86,6 +86,9 @@
         </div>
     </div>
 
+    {{-- Cards por sede --}}
+    <div id="sedeCardsContainer" class="row g-2 mb-3" style="display:none;"></div>
+
     {{-- Tabla resumen --}}
     <div class="card shadow-lg border-0">
         <div class="card-body p-0">
@@ -468,6 +471,8 @@ async function cargarResumen() {
             }
         });
 
+        renderSedeCards(registros);
+
         if (!registros.length) {
             tbody.innerHTML = '<tr><td colspan="16" class="text-center text-muted py-4">Sin registros para el período seleccionado</td></tr>';
             const elInfo  = document.getElementById('resumenInfo');
@@ -810,6 +815,55 @@ async function guardarManual() {
     } catch(e) {
         alert('Error al crear registro: ' + e.message);
     }
+}
+
+// ── Cards por sede ────────────────────────────────────────────────────────────
+function renderSedeCards(registros) {
+    const container = document.getElementById('sedeCardsContainer');
+    if (!registros.length) {
+        container.style.display = 'none';
+        container.innerHTML = '';
+        return;
+    }
+
+    // Contar empleados únicos por sede
+    const sedeCounts = {};
+    registros.forEach(r => {
+        const nombre = r.sede?.nombre || 'Sin sede';
+        if (!sedeCounts[nombre]) sedeCounts[nombre] = new Set();
+        sedeCounts[nombre].add(r.user_id);
+    });
+
+    const colors = ['primary', 'success', 'info', 'warning', 'secondary', 'danger'];
+    const icons  = ['fa-building', 'fa-map-marker-alt', 'fa-location-dot', 'fa-warehouse', 'fa-store', 'fa-city'];
+    let html = '';
+    let i = 0;
+
+    // Ordenar por cantidad descendente
+    const sorted = Object.entries(sedeCounts).sort((a, b) => b[1].size - a[1].size);
+
+    sorted.forEach(([sede, users]) => {
+        const color = colors[i % colors.length];
+        const icon  = icons[i % icons.length];
+        html += `
+        <div class="col-6 col-md-3 col-lg-2">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-2 d-flex align-items-center gap-2">
+                    <div class="rounded-circle bg-${color} bg-opacity-10 d-flex align-items-center justify-content-center" style="width:36px;height:36px;flex-shrink:0;">
+                        <i class="fa-solid ${icon} text-${color}" style="font-size:14px;"></i>
+                    </div>
+                    <div style="min-width:0;">
+                        <div class="fw-bold" style="font-size:18px;line-height:1;">${users.size}</div>
+                        <div class="text-muted text-truncate" style="font-size:11px;" title="${sede}">${sede}</div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+        i++;
+    });
+
+    container.innerHTML = html;
+    container.style.display = 'flex';
 }
 
 // ── Visibilidad de columnas (resumen) ─────────────────────────────────────────
