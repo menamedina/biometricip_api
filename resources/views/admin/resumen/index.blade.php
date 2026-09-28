@@ -96,6 +96,7 @@
                         <th class="col-res-codigo">Código</th>
                         <th class="col-res-depto">Departamento</th>
                         <th class="col-res-horario">Horario</th>
+                        <th class="col-res-ruta">Ruta</th>
                         <th class="col-res-fecha text-center">Fecha</th>
                         <th class="col-res-e1">Entrada 1</th>
                         <th class="col-res-s1">Salida 1</th>
@@ -111,7 +112,7 @@
                 </thead>
                 <tbody id="resumenTbody">
                     <tr id="trLoadingRes">
-                        <td colspan="15" class="text-center py-5">
+                        <td colspan="16" class="text-center py-5">
                             <div class="spinner-border text-primary" role="status" style="width:2rem;height:2rem;"></div>
                             <p class="text-muted mt-2 mb-0 small">Cargando registros...</p>
                         </td>
@@ -419,7 +420,7 @@ async function cargarResumen() {
     if ($.fn.DataTable.isDataTable('#resumenTable')) {
         $('#resumenTable').DataTable().destroy();
     }
-    tbody.innerHTML = '<tr id="trLoadingRes"><td colspan="15" class="text-center py-5"><div class="spinner-border text-primary" role="status" style="width:2rem;height:2rem;"></div><p class="text-muted mt-2 mb-0 small">Cargando registros...</p></td></tr>';
+    tbody.innerHTML = '<tr id="trLoadingRes"><td colspan="16" class="text-center py-5"><div class="spinner-border text-primary" role="status" style="width:2rem;height:2rem;"></div><p class="text-muted mt-2 mb-0 small">Cargando registros...</p></td></tr>';
 
     try {
         const res  = await fetch(url, { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
@@ -468,7 +469,7 @@ async function cargarResumen() {
         });
 
         if (!registros.length) {
-            tbody.innerHTML = '<tr><td colspan="15" class="text-center text-muted py-4">Sin registros para el período seleccionado</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="16" class="text-center text-muted py-4">Sin registros para el período seleccionado</td></tr>';
             const elInfo  = document.getElementById('resumenInfo');
             const elTotal = document.getElementById('resumenTotal');
             if (elInfo)  elInfo.textContent  = '';
@@ -481,7 +482,8 @@ async function cargarResumen() {
         registros.forEach(r => {
             const fecha = r.fecha_hora.slice(0, 10);
             const key   = `${r.user_id}_${fecha}`;
-            if (!grupos[key]) grupos[key] = { user: r.user, fecha, thumbnail: r.foto_perfil_thumbnail, registros: [] };
+            if (!grupos[key]) grupos[key] = { user: r.user, fecha, thumbnail: r.foto_perfil_thumbnail, registros: [], sedes: new Set() };
+            if (r.sede?.nombre) grupos[key].sedes.add(r.sede.nombre);
             grupos[key].registros.push(r);
         });
 
@@ -570,6 +572,7 @@ async function cargarResumen() {
 
             const deptoNombre   = deptoMap[g.user?.departamento_id] || g.user?.departamento || '—';
             const horarioNombre = g.registros[0]?.horario?.nombre || '—';
+            const rutaNombre    = g.sedes.size ? [...g.sedes].join(', ') : '—';
             const fechaFmt      = g.fecha.split('-').reverse().join('/');
 
             // Botón para agregar registro en ese día para ese usuario (solo admin/supervisor)
@@ -590,6 +593,7 @@ async function cargarResumen() {
                 <td class="col-res-codigo"><span class="badge bg-primary">${g.user?.codigo_empleado ?? '—'}</span></td>
                 <td class="col-res-depto"><small class="text-muted">${deptoNombre}</small></td>
                 <td class="col-res-horario"><small class="text-muted text-truncate d-inline-block" style="max-width:90px;vertical-align:middle;" title="${horarioNombre}">${horarioNombre}</small></td>
+                <td class="col-res-ruta"><small class="text-muted text-truncate d-inline-block" style="max-width:100px;vertical-align:middle;" title="${rutaNombre}">${rutaNombre}</small></td>
                 <td class="col-res-fecha text-center">${fechaFmt}</td>
                 ${celdas.map((c, i) => `<td class="${colCls[i]}">${c}</td>`).join('')}
                 <td class="col-res-total text-end">${totalStr}</td>
@@ -627,7 +631,7 @@ async function cargarResumen() {
 
 
     } catch(e) {
-        tbody.innerHTML = `<tr><td colspan="15" class="text-center text-danger py-3">Error al cargar datos: ${e.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="16" class="text-center text-danger py-3">Error al cargar datos: ${e.message}</td></tr>`;
         console.error('cargarResumen error:', e);
     }
 }
@@ -815,6 +819,7 @@ var COL_VIS_DEFS_RES = [
     { cls: 'col-res-codigo',    label: 'Código',       default: true  },
     { cls: 'col-res-depto',     label: 'Departamento', default: false },
     { cls: 'col-res-horario',   label: 'Horario',      default: true  },
+    { cls: 'col-res-ruta',      label: 'Ruta',         default: true  },
     { cls: 'col-res-fecha',     label: 'Fecha',        default: true  },
     { cls: 'col-res-e1',        label: 'Entrada 1',    default: true  },
     { cls: 'col-res-s1',        label: 'Salida 1',     default: true  },
