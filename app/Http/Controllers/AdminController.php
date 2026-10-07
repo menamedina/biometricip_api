@@ -318,7 +318,9 @@ class AdminController extends Controller
     public function empleadosLideres(Request $request): JsonResponse
     {
         $authUser  = Auth::user();
-        $empresaId = $request->integer('empresa_id') ?: $authUser->empresa_id;
+        $empresaId = $authUser->admin_tenant
+            ? $request->integer('empresa_id')
+            : $authUser->empresa_id;
 
         $usuariosQuery = User::query();
         if ($empresaId) {
