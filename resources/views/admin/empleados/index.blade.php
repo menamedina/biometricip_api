@@ -634,7 +634,9 @@ async function cargarLideres(empresaId = null, selectedId = null) {
         : '/admin/empleados/lideres';
     const res = await fetch(url);
     if (!res.ok) return;
-    const lideres = (await res.json()).data || [];
+    const response = await res.json();
+    const lideres = response.data || [];
+    const lideresFiltro = response.filter_data || lideres;
     liderMap = Object.fromEntries(lideres.map(l => [l.id, l.name]));
     const sel = document.getElementById('empLider');
     sel.innerHTML = '<option value="">— Sin líder —</option>';
@@ -644,7 +646,7 @@ async function cargarLideres(empresaId = null, selectedId = null) {
     const filterLider = document.getElementById('filterLider');
     if (filterLider) {
         filterLider.innerHTML = '<option value="">Todos los líderes</option>';
-        lideres.forEach(l => { filterLider.innerHTML += `<option value="${l.id}">${l.name}</option>`; });
+        lideresFiltro.forEach(l => { filterLider.innerHTML += `<option value="${l.id}">${l.name}</option>`; });
     }
 }
 

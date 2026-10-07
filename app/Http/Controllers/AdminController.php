@@ -320,12 +320,34 @@ class AdminController extends Controller
         $authUser  = Auth::user();
         $empresaId = $request->integer('empresa_id') ?: $authUser->empresa_id;
 
-        $lideres = User::where('empresa_id', $empresaId)
+        $usuariosQuery = User::query();
+        if ($empresaId) {
+            $usuariosQuery->where('empresa_id', $empresaId);
+        }
+
+        $lideresIds = (clone $usuariosQuery)
+            ->whereNotNull('lider_id')
+            ->distinct()
+            ->pluck('lider_id');
+
+        $lideresQuery = User::whereIn('id', $lideresIds)
+            ->where('is_active', true);
+        if ($empresaId) {
+            $lideresQuery->where('empresa_id', $empresaId);
+        }
+        $lideres = $lideresQuery
+            ->orderBy('name')
+            ->get(['id', 'name', 'codigo_empleado']);
+
+        $empleados = (clone $usuariosQuery)
             ->where('is_active', true)
             ->orderBy('name')
             ->get(['id', 'name', 'codigo_empleado']);
 
-        return response()->json(['data' => $lideres]);
+        return response()->json([
+            'data'        => $empleados,
+            'filter_data' => $lideres,
+        ]);
     }
 
     public function empleadosSedes(Request $request): JsonResponse
