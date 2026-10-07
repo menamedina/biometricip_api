@@ -626,7 +626,9 @@ async function cargarResumen() {
             paging:    true,
             pageLength: 25,
             lengthMenu: [10, 25, 50, 100],
-            ordering:  false,
+            ordering:  true,
+            order:     [[0, 'asc'], [5, 'asc']],
+            columnDefs: [{ orderable: false, targets: 15 }],
             scrollX:   true,
             language: {
                 lengthMenu: 'Mostrar _MENU_ registros',
