@@ -234,9 +234,9 @@
                             </a>
                         </li>
                         @endcan
-                        @can('permisos.ver')
-                        <li class="side-nav-item">
-                            <a href="{{ route('admin.permisos.index') }}" class="side-nav-link {{ request()->routeIs('admin.permisos.*') ? 'active' : '' }}">
+                         @can('permisos.ver')
+                         <li class="side-nav-item">
+                             <a href="{{ route('admin.permisos.index') }}" class="side-nav-link {{ request()->routeIs('admin.permisos.*') ? 'active' : '' }}">
                                 <span class="menu-icon"><i class="ti ti-file-certificate"></i></span>
                                 <span class="menu-text">Permisos / Ausencias</span>
                             </a>
@@ -322,9 +322,9 @@
                             </a>
                         </li>
                         @endcan
-                        @can('permisos.ver')
-                        <li class="side-nav-item">
-                            <a href="{{ route('admin.permisos.tipos') }}" class="side-nav-link {{ request()->routeIs('admin.permisos.tipos') ? 'active' : '' }}">
+                         @can('tipos_permisos.ver')
+                         <li class="side-nav-item">
+                             <a href="{{ route('admin.permisos.tipos') }}" class="side-nav-link {{ request()->routeIs('admin.permisos.tipos') ? 'active' : '' }}">
                                 <span class="menu-icon"><i class="ti ti-clipboard-list"></i></span>
                                 <span class="menu-text">Tipos de Permiso</span>
                             </a>

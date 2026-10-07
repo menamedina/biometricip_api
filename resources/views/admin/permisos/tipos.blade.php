@@ -1,5 +1,5 @@
 @extends('layouts.admin')
-@section('title', 'Tipos de Permiso')
+@section('title', 'Tipos de Permisos')
 
 @section('content')
 <div class="container-fluid">
@@ -7,12 +7,19 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h4 class="mb-1"><i class="ti ti-clipboard-list me-2 text-primary"></i>Tipos de Permiso</h4>
+                    <h4 class="mb-1"><i class="ti ti-clipboard-list me-2 text-primary"></i>Tipos de Permisos</h4>
                     <p class="text-muted mb-0">Catalogo de tipos de permiso/ausencia configurables por empresa</p>
                 </div>
+                @can('tipos_permisos.crear')
                 <button class="btn btn-primary btn-sm" onclick="abrirModalNuevo()">
                     <i class="fa-solid fa-plus me-1"></i> Nuevo Tipo
                 </button>
+                @else
+                <button class="btn btn-primary btn-sm" disabled data-bs-toggle="tooltip" title="No tiene permiso"
+                    style="pointer-events:auto;cursor:not-allowed;">
+                    <i class="fa-solid fa-plus me-1"></i> Nuevo Tipo
+                </button>
+                @endcan
             </div>
         </div>
     </div>
@@ -42,6 +49,7 @@
                             <div class="form-check form-switch d-flex justify-content-center mb-0">
                                 <input class="form-check-input input-remunerado" type="checkbox"
                                        {{ $t->es_remunerado ? 'checked' : '' }}
+                                       {{ auth()->user()->cannot('tipos_permisos.editar') ? 'disabled' : '' }}
                                        onchange="guardarCambio({{ $t->id }})">
                             </div>
                         </td>
@@ -49,11 +57,15 @@
                             <div class="form-check form-switch d-flex justify-content-center mb-0">
                                 <input class="form-check-input input-activo" type="checkbox"
                                        {{ $t->is_active ? 'checked' : '' }}
+                                       {{ auth()->user()->cannot('tipos_permisos.editar') ? 'disabled' : '' }}
                                        onchange="guardarCambio({{ $t->id }})">
                             </div>
                         </td>
                         <td class="text-center">
-                            <button class="btn btn-sm btn-outline-primary py-0 px-2" onclick="editarNombre(this)" title="Editar nombre">
+                            <button class="btn btn-sm btn-outline-primary py-0 px-2"
+                                    onclick="editarNombre(this)"
+                                    {{ auth()->user()->cannot('tipos_permisos.editar') ? 'disabled' : '' }}
+                                    title="{{ auth()->user()->can('tipos_permisos.editar') ? 'Editar nombre' : 'No tiene permiso' }}">
                                 <i class="ti ti-pencil"></i>
                             </button>
                         </td>
@@ -108,6 +120,8 @@
 @push('scripts')
 <script>
 const csrfToken = '{{ csrf_token() }}';
+const puedeCrearTipo = {{ auth()->user()->can('tipos_permisos.crear') ? 'true' : 'false' }};
+const puedeEditarTipo = {{ auth()->user()->can('tipos_permisos.editar') ? 'true' : 'false' }};
 
 function abrirModalNuevo() {
     document.getElementById('nuevoNombre').value = '';
@@ -117,6 +131,8 @@ function abrirModalNuevo() {
 }
 
 async function crearTipo() {
+    if (!puedeCrearTipo) return;
+
     const nombre = document.getElementById('nuevoNombre').value.trim();
     const esRemunerado = document.getElementById('nuevoRemunerado').checked;
     const errorDiv = document.getElementById('nuevoError');
@@ -149,6 +165,8 @@ async function crearTipo() {
 }
 
 async function guardarCambio(id) {
+    if (!puedeEditarTipo) return;
+
     const row = document.querySelector(`tr[data-id="${id}"]`);
     const esRemunerado = row.querySelector('.input-remunerado').checked;
     const isActive = row.querySelector('.input-activo').checked;

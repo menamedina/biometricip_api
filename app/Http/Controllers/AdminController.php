@@ -985,14 +985,14 @@ class AdminController extends Controller
 
     public function tiposPermisoIndex(): View
     {
-        abort_unless(auth()->user()->can('permisos.ver'), 403, 'No tienes permiso para acceder a esta sección.');
+        abort_unless(auth()->user()->can('tipos_permisos.ver'), 403, 'No tienes permiso para acceder a esta sección.');
         $tipos = TipoPermiso::orderBy('id')->get();
         return view('admin.permisos.tipos', compact('tipos'));
     }
 
     public function tiposPermisoStore(Request $request): JsonResponse
     {
-        abort_unless(auth()->user()->can('permisos.ver'), 403);
+        abort_unless(auth()->user()->can('tipos_permisos.crear'), 403);
 
         $data = $request->validate([
             'nombre'        => 'required|string|max:100',
@@ -1006,7 +1006,7 @@ class AdminController extends Controller
 
     public function tiposPermisoUpdate(Request $request, int $id): JsonResponse
     {
-        abort_unless(auth()->user()->can('permisos.ver'), 403);
+        abort_unless(auth()->user()->can('tipos_permisos.editar'), 403);
 
         $tipo = TipoPermiso::findOrFail($id);
         $data = $request->validate([

@@ -190,6 +190,8 @@ const moduloLabels = {
     horarios:        'Horarios',
     festivos:       'Festivos',
     roles:          'Roles y Permisos',
+    tipos_permisos: 'Tipos de Permiso',
+    configuracion:  'Configuración',
     ia:             'Asistente IA',
     // ia.chat = usar el widget, ia.ver = ver config, ia.configurar = editar config
 };
@@ -199,7 +201,7 @@ const moduloOrden = [
     'departamentos','empleadores',
     'empresa',
     'notificaciones',
-    'horarios','festivos','roles','ia',
+    'horarios','festivos','roles','configuracion','tipos_permisos','ia',
 ];
 const moduloSecciones = {
     sedes:          'Administración',
@@ -218,7 +220,11 @@ const moduloSecciones = {
     horarios:       'Configuración',
     festivos:       'Configuración',
     roles:          'Configuración',
+    tipos_permisos: 'Configuración',
+    configuracion:  'Configuración',
     ia:             'Configuración',
+};
+const permisoLabels = {
 };
 function moduloLabel(key) {
     return moduloLabels[key] || key.charAt(0).toUpperCase() + key.slice(1);
@@ -304,8 +310,8 @@ async function mostrarPermisosRol(id) {
     let html = '<div class="row g-3">';
     for (const [modulo, permisos] of Object.entries(sortedModulos(todosPermisos))) {
         const badges = permisos.map(p => tieneSet.has(p.name)
-            ? `<span class="badge-permiso">${p.accion}</span>`
-            : `<span class="badge-permiso-no">${p.accion}</span>`
+            ? `<span class="badge-permiso">${permisoLabels[p.name] || p.accion}</span>`
+            : `<span class="badge-permiso-no">${permisoLabels[p.name] || p.accion}</span>`
         ).join('');
         html += `
             <div class="col-md-6">
@@ -378,12 +384,12 @@ function renderPermisosModal(seleccionados) {
                 </button>
             </div>
             <div class="check-group d-flex flex-wrap gap-3">
-                ${permisos.map(p => `
+                     ${permisos.map(p => `
                     <label>
                         <input type="checkbox" class="form-check-input me-1 perm-check"
                             name="permissions[]" value="${p.name}" data-modulo="${modulo}"
                             ${seleccionados.includes(p.name) ? 'checked' : ''}>
-                        ${p.accion}
+                        ${permisoLabels[p.name] || p.accion}
                     </label>`).join('')}
             </div>
         </div>`;

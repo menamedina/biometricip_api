@@ -60,6 +60,9 @@ class RolesSeeder extends Seeder
 
             // Roles y permisos
             'roles.ver', 'roles.crear', 'roles.editar', 'roles.eliminar',
+
+            // Tipos de permiso/ausencia
+            'tipos_permisos.ver', 'tipos_permisos.crear', 'tipos_permisos.editar', 'tipos_permisos.eliminar',
         ];
 
         foreach ($permissions as $permission) {
@@ -91,6 +94,7 @@ class RolesSeeder extends Seeder
             'notificaciones.ver', 'notificaciones.enviar',
             'empresa.ver', 'empresa.crear', 'empresa.editar', 'empresa.eliminar', 'empresa.token',
             'roles.ver', 'roles.crear', 'roles.editar', 'roles.eliminar',
+            'tipos_permisos.ver', 'tipos_permisos.crear', 'tipos_permisos.editar', 'tipos_permisos.eliminar',
         ]);
 
         // Supervisor — gestión operativa sin administración de sistema
