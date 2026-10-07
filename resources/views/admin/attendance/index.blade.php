@@ -191,14 +191,9 @@
                 @endunless
                 <div class="mb-3">
                     <label class="form-label">Empleado <span class="text-danger">*</span></label>
-                    <div class="position-relative">
-                        <input type="text" id="manualAttEmpleadoInput" class="form-control form-control-sm"
-                            placeholder="Buscar por nombre o código..." autocomplete="off"
-                            oninput="filtrarEmpleadosAtt(this.value)">
-                        <input type="hidden" id="manualAttEmpleado">
-                        <div id="manualAttEmpleadoDropdown" class="d-none position-absolute w-100 bg-white border rounded shadow-lg"
-                            style="z-index:1060;max-height:200px;overflow-y:auto;top:100%"></div>
-                    </div>
+                    <select id="manualAttEmpleado" class="form-select form-select-sm" style="width:100%;">
+                        <option value="">Buscar por nombre o código...</option>
+                    </select>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Sede <span class="text-danger">*</span></label>
@@ -315,45 +310,26 @@ let manualAttEmpleados = [];
 async function cargarEmpleadosManualAtt() {
     if (manualAttEmpleados.length || !puedeVerEquipo) return;
     manualAttEmpleados = empleadosEquipo || [];
-}
-
-function filtrarEmpleadosAtt(query) {
-    const dropdown = document.getElementById('manualAttEmpleadoDropdown');
-    const value = query.trim().toLowerCase();
-    document.getElementById('manualAttEmpleado').value = '';
-    if (!value) {
-        dropdown.classList.add('d-none');
-        return;
+    const select = $('#manualAttEmpleado');
+    select.empty().append('<option value="">Buscar por nombre o código...</option>');
+    manualAttEmpleados.forEach(e => {
+        select.append(new Option(`${e.name || ''} (${e.codigo_empleado || 'Sin código'})`, e.id));
+    });
+    if (!select.hasClass('select2-hidden-accessible')) {
+        select.select2({
+            dropdownParent: $('#modalManualAtt'),
+            placeholder: 'Buscar por nombre o código...',
+            allowClear: true,
+            width: '100%',
+            language: {
+                noResults: function() { return 'No se encontraron colaboradores'; }
+            }
+        });
     }
-
-    const coincidencias = manualAttEmpleados.filter(e =>
-        (e.name || '').toLowerCase().includes(value) ||
-        (e.codigo_empleado || '').toLowerCase().includes(value)
-    ).slice(0, 10);
-
-    if (!coincidencias.length) {
-        dropdown.classList.add('d-none');
-        return;
-    }
-
-    dropdown.innerHTML = coincidencias.map(e => `
-        <div class="px-3 py-2 small" style="cursor:pointer"
-            onmousedown="seleccionarEmpleadoAtt(${e.id}, '${(e.name || '').replace(/'/g, "\\'")} (${e.codigo_empleado || ''})')">
-            <strong>${e.name || ''}</strong>
-            <span class="text-muted ms-1">${e.codigo_empleado || ''}</span>
-        </div>`).join('');
-    dropdown.classList.remove('d-none');
-}
-
-function seleccionarEmpleadoAtt(id, label) {
-    document.getElementById('manualAttEmpleado').value = id;
-    document.getElementById('manualAttEmpleadoInput').value = label;
-    document.getElementById('manualAttEmpleadoDropdown').classList.add('d-none');
 }
 
 function resetManualAtt() {
-    document.getElementById('manualAttEmpleado').value = '';
-    document.getElementById('manualAttEmpleadoInput').value = '';
+    $('#manualAttEmpleado').val('').trigger('change');
     document.getElementById('manualAttSede').value = '';
     document.getElementById('manualAttTipo').value = 'entrada';
     document.getElementById('manualAttFecha').value = new Date().toISOString().slice(0, 10);
@@ -377,7 +353,7 @@ async function guardarManualAtt() {
         return;
     }
 
-    const userId = document.getElementById('manualAttEmpleado').value;
+    const userId = $('#manualAttEmpleado').val();
     const sedeId = document.getElementById('manualAttSede').value;
     const tipo = document.getElementById('manualAttTipo').value;
     const fecha = document.getElementById('manualAttFecha').value;
