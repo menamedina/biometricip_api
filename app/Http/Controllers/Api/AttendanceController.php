@@ -823,6 +823,8 @@ class AttendanceController extends Controller
 
     public function storeManual(Request $request): JsonResponse
     {
+        abort_unless($request->user()->can('asistencia.crear'), 403, 'No tienes permiso para crear registros manuales.');
+
         $request->validate([
             'user_id'     => 'required|integer|exists:users,id',
             'sede_id'     => 'required|integer',

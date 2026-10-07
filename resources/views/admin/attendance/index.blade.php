@@ -19,7 +19,19 @@
 <div class="container-fluid">
     <div class="row mb-3 mt-3">
         <div class="col-12">
-            <h4 class="mb-1"><i class="fa-solid fa-clock me-2 text-primary"></i>Registros</h4>
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-1"><i class="fa-solid fa-clock me-2 text-primary"></i>Registros</h4>
+                @can('asistencia.crear')
+                <button class="btn btn-primary btn-sm" onclick="abrirModalManualAtt()">
+                    <i class="fa-solid fa-plus me-1"></i> Registro Manual
+                </button>
+                @else
+                <button class="btn btn-primary btn-sm" disabled data-bs-toggle="tooltip" title="No tiene permiso"
+                    style="pointer-events:auto;cursor:not-allowed;">
+                    <i class="fa-solid fa-plus me-1"></i> Registro Manual
+                </button>
+                @endcan
+            </div>
             <p class="text-muted mb-0">Historial completo de entradas y salidas</p>
         </div>
     </div>
@@ -162,6 +174,67 @@
         </div>
     </div>
 </div>
+
+@can('asistencia.crear')
+<div class="modal fade" id="modalManualAtt" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title">Crear Registro Manual</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Empleado <span class="text-danger">*</span></label>
+                    <div class="position-relative">
+                        <input type="text" id="manualAttEmpleadoInput" class="form-control form-control-sm"
+                            placeholder="Buscar por nombre o código..." autocomplete="off"
+                            oninput="filtrarEmpleadosAtt(this.value)">
+                        <input type="hidden" id="manualAttEmpleado">
+                        <div id="manualAttEmpleadoDropdown" class="d-none position-absolute w-100 bg-white border rounded shadow-lg"
+                            style="z-index:1060;max-height:200px;overflow-y:auto;top:100%"></div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Sede <span class="text-danger">*</span></label>
+                    <select id="manualAttSede" class="form-select form-select-sm">
+                        <option value="">Seleccionar sede...</option>
+                        @foreach($sedes as $s)
+                            <option value="{{ $s->id }}">{{ $s->nombre }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Tipo</label>
+                    <select id="manualAttTipo" class="form-select form-select-sm">
+                        <option value="entrada">Entrada</option>
+                        <option value="salida">Salida</option>
+                    </select>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Fecha <span class="text-danger">*</span></label>
+                        <input type="date" id="manualAttFecha" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Hora <span class="text-danger">*</span></label>
+                        <input type="time" id="manualAttHora" class="form-control form-control-sm">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Observaciones <span class="text-danger">*</span></label>
+                    <textarea id="manualAttObservacion" class="form-control form-control-sm" rows="2"
+                        placeholder="Motivo del registro manual u observación..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="guardarManualAtt()">Crear Registro</button>
+            </div>
+        </div>
+    </div>
+</div>
+@endcan
 @endsection
 
 @push('styles')
@@ -232,6 +305,112 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
 });
 var tablaAtt = null;
+let manualAttEmpleados = [];
+
+async function cargarEmpleadosManualAtt() {
+    if (manualAttEmpleados.length) return;
+
+    const res = await fetch('/admin/empleados/list?per_page=500&fields=id,name,codigo_empleado', {
+        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
+    });
+    if (!res.ok) throw new Error('No se pudieron cargar los empleados.');
+    manualAttEmpleados = (await res.json()).data || [];
+}
+
+function filtrarEmpleadosAtt(query) {
+    const dropdown = document.getElementById('manualAttEmpleadoDropdown');
+    const value = query.trim().toLowerCase();
+    document.getElementById('manualAttEmpleado').value = '';
+    if (!value) {
+        dropdown.classList.add('d-none');
+        return;
+    }
+
+    const coincidencias = manualAttEmpleados.filter(e =>
+        (e.name || '').toLowerCase().includes(value) ||
+        (e.codigo_empleado || '').toLowerCase().includes(value)
+    ).slice(0, 10);
+
+    if (!coincidencias.length) {
+        dropdown.classList.add('d-none');
+        return;
+    }
+
+    dropdown.innerHTML = coincidencias.map(e => `
+        <div class="px-3 py-2 small" style="cursor:pointer"
+            onmousedown="seleccionarEmpleadoAtt(${e.id}, '${(e.name || '').replace(/'/g, "\\'")} (${e.codigo_empleado || ''})')">
+            <strong>${e.name || ''}</strong>
+            <span class="text-muted ms-1">${e.codigo_empleado || ''}</span>
+        </div>`).join('');
+    dropdown.classList.remove('d-none');
+}
+
+function seleccionarEmpleadoAtt(id, label) {
+    document.getElementById('manualAttEmpleado').value = id;
+    document.getElementById('manualAttEmpleadoInput').value = label;
+    document.getElementById('manualAttEmpleadoDropdown').classList.add('d-none');
+}
+
+function resetManualAtt() {
+    document.getElementById('manualAttEmpleado').value = '';
+    document.getElementById('manualAttEmpleadoInput').value = '';
+    document.getElementById('manualAttSede').value = '';
+    document.getElementById('manualAttTipo').value = 'entrada';
+    document.getElementById('manualAttFecha').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('manualAttHora').value = '';
+    document.getElementById('manualAttObservacion').value = '';
+}
+
+async function abrirModalManualAtt() {
+    try {
+        await cargarEmpleadosManualAtt();
+        resetManualAtt();
+        new bootstrap.Modal(document.getElementById('modalManualAtt')).show();
+    } catch (e) {
+        alert(e.message);
+    }
+}
+
+async function guardarManualAtt() {
+    const userId = document.getElementById('manualAttEmpleado').value;
+    const sedeId = document.getElementById('manualAttSede').value;
+    const tipo = document.getElementById('manualAttTipo').value;
+    const fecha = document.getElementById('manualAttFecha').value;
+    const hora = document.getElementById('manualAttHora').value;
+    const observacion = document.getElementById('manualAttObservacion').value.trim();
+
+    if (!userId || !sedeId || !fecha || !hora || !observacion) {
+        alert('Completa todos los campos obligatorios.');
+        return;
+    }
+
+    try {
+        const res = await fetch('/admin/attendance/manual', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                user_id: parseInt(userId),
+                sede_id: parseInt(sedeId),
+                tipo,
+                fecha_hora: `${fecha} ${hora}:00`,
+                observacion,
+            }),
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.message || `HTTP ${res.status}`);
+        }
+
+        bootstrap.Modal.getInstance(document.getElementById('modalManualAtt')).hide();
+        loadRecords();
+    } catch (e) {
+        alert('Error al crear registro: ' + e.message);
+    }
+}
 
 async function loadRecords() {
     const from   = document.getElementById('reportFrom').value;

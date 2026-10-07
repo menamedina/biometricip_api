@@ -377,7 +377,8 @@ class AdminController extends Controller
             ->get(['id', 'name', 'codigo_empleado']);
 
         $horarios = \App\Models\Horario::orderBy('nombre')->get(['id', 'nombre']);
-        return view('admin.attendance.index', compact('horarios', 'puedeVerEquipo', 'empleadosEquipo'));
+        $sedes = Sede::where('is_active', true)->orderBy('nombre')->get(['id', 'nombre']);
+        return view('admin.attendance.index', compact('horarios', 'sedes', 'puedeVerEquipo', 'empleadosEquipo'));
     }
 
     public function resumenIndex(): View
