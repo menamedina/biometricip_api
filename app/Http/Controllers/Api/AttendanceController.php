@@ -823,6 +823,13 @@ class AttendanceController extends Controller
 
     public function storeManual(Request $request): JsonResponse
     {
+        abort_unless($request->user()->can('reportes.crear'), 403, 'No tienes permiso para crear registros manuales.');
+
+        return $this->crearRegistroManual($request);
+    }
+
+    public function storeManualEquipo(Request $request): JsonResponse
+    {
         abort_unless($request->user()->can('asistencia.crear'), 403, 'No tienes permiso para crear registros manuales.');
 
         $request->validate([
@@ -833,7 +840,28 @@ class AttendanceController extends Controller
             'observacion' => 'required|string|max:1000',
         ]);
 
-        $empleado = User::findOrFail($request->user_id);
+        $empleado = User::where('id', $request->user_id)
+            ->where('empresa_id', $request->user()->empresa_id)
+            ->where('lider_id', $request->user()->id)
+            ->where('is_active', true)
+            ->first();
+
+        abort_unless($empleado, 403, 'Solo puedes crear registros para tus colaboradores.');
+
+        return $this->crearRegistroManual($request, $empleado);
+    }
+
+    private function crearRegistroManual(Request $request, ?User $empleado = null): JsonResponse
+    {
+        $request->validate([
+            'user_id'     => 'required|integer|exists:users,id',
+            'sede_id'     => 'required|integer',
+            'tipo'        => 'required|in:entrada,salida',
+            'fecha_hora'  => 'required|date',
+            'observacion' => 'required|string|max:1000',
+        ]);
+
+        $empleado ??= User::findOrFail($request->user_id);
         $horario = $empleado->horario_id ? Horario::find($empleado->horario_id) : null;
 
         $record = null;

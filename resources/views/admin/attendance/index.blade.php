@@ -175,7 +175,7 @@
     </div>
 </div>
 
-@can('asistencia.crear')
+@if(auth()->user()->can('asistencia.crear'))
 <div class="modal fade" id="modalManualAtt" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -184,6 +184,11 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
+                @unless($puedeVerEquipo)
+                <div class="alert alert-warning small py-2">
+                    Solo los líderes pueden crear registros para sus colaboradores.
+                </div>
+                @endunless
                 <div class="mb-3">
                     <label class="form-label">Empleado <span class="text-danger">*</span></label>
                     <div class="position-relative">
@@ -308,13 +313,8 @@ var tablaAtt = null;
 let manualAttEmpleados = [];
 
 async function cargarEmpleadosManualAtt() {
-    if (manualAttEmpleados.length) return;
-
-    const res = await fetch('/admin/empleados/list?per_page=500&fields=id,name,codigo_empleado', {
-        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
-    });
-    if (!res.ok) throw new Error('No se pudieron cargar los empleados.');
-    manualAttEmpleados = (await res.json()).data || [];
+    if (manualAttEmpleados.length || !puedeVerEquipo) return;
+    manualAttEmpleados = empleadosEquipo || [];
 }
 
 function filtrarEmpleadosAtt(query) {
@@ -372,6 +372,11 @@ async function abrirModalManualAtt() {
 }
 
 async function guardarManualAtt() {
+    if (!puedeVerEquipo) {
+        alert('Solo los líderes pueden crear registros para sus colaboradores.');
+        return;
+    }
+
     const userId = document.getElementById('manualAttEmpleado').value;
     const sedeId = document.getElementById('manualAttSede').value;
     const tipo = document.getElementById('manualAttTipo').value;
@@ -385,7 +390,7 @@ async function guardarManualAtt() {
     }
 
     try {
-        const res = await fetch('/admin/attendance/manual', {
+        const res = await fetch('/admin/attendance/manual-equipo', {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': csrfToken,

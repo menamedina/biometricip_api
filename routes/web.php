@@ -138,6 +138,7 @@ Route::middleware(['auth', 'admin', 'tenancy.session'])->group(function () {
     Route::get ('/admin/attendance/stats',        [ApiAttendanceController::class, 'stats']);
     Route::get ('/admin/attendance/weekly-hours', [ApiAttendanceController::class, 'weeklyHours']);
     Route::post('/admin/attendance/manual',       [ApiAttendanceController::class, 'storeManual']);
+    Route::post('/admin/attendance/manual-equipo', [ApiAttendanceController::class, 'storeManualEquipo']);
     Route::put ('/admin/attendance/{id}',         [ApiAttendanceController::class, 'update']);
     Route::get ('/admin/attendance/{id}/photo',   [ApiAttendanceController::class, 'getPhoto']);
     Route::get ('/admin/catalogos',               [\App\Http\Controllers\Api\DepartamentoController::class, 'catalogos']);
