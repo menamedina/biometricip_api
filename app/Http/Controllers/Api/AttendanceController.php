@@ -17,8 +17,19 @@ use Illuminate\Support\Facades\Log;
 
 class AttendanceController extends Controller
 {
+    private function attendanceScopeUserIds(User $user): ?\Illuminate\Support\Collection
+    {
+        return User::where('empresa_id', $user->empresa_id)
+            ->where(function ($query) use ($user) {
+                $query->where('id', $user->id)
+                    ->orWhere('lider_id', $user->id);
+            })
+            ->pluck('id');
+    }
+
     public function index(Request $request): JsonResponse
     {
+        $scopeUserIds = $this->attendanceScopeUserIds($request->user());
         $query = AttendanceRecord::select(
                 'id','user_id','sede_id','horario_id','tipo','fecha_hora','metodo',
                 'qr_validado','geocerca_validada','distancia_oficina_mts','observacion','foto_evidencia'
@@ -49,6 +60,10 @@ class AttendanceController extends Controller
 
         if ($request->filled('metodo')) {
             $query->where('metodo', $request->metodo);
+        }
+
+        if ($scopeUserIds !== null) {
+            $query->whereIn('user_id', $scopeUserIds);
         }
 
         if ($request->filled('user_id')) {
@@ -503,7 +518,14 @@ class AttendanceController extends Controller
 
     public function getPhoto(int $id): JsonResponse
     {
-        $photo = AttendancePhoto::where('attendance_record_id', $id)->first();
+        $scopeUserIds = $this->attendanceScopeUserIds(request()->user());
+        $photo = AttendancePhoto::where('attendance_record_id', $id)
+            ->when($scopeUserIds !== null, function ($query) use ($scopeUserIds) {
+                $query->whereHas('attendanceRecord', fn ($recordQuery) =>
+                    $recordQuery->whereIn('user_id', $scopeUserIds)
+                );
+            })
+            ->first();
 
         if (!$photo) {
             return response()->json(['message' => 'Sin foto'], 404);
@@ -638,24 +660,29 @@ class AttendanceController extends Controller
     {
         $date = $request->date ?? today();
 
-        $empresaId = $request->user()->empresa_id;
+        $user = $request->user();
+        $scopeUserIds = $this->attendanceScopeUserIds($user);
+        $empresaId = $user->empresa_id;
 
-        $totalEmpleados = User::where('empresa_id', $empresaId)
+        $empleadoIds = $scopeUserIds ?? User::where('empresa_id', $empresaId)
             ->where('role', 'empleado')
             ->where('is_active', true)
-            ->count();
+            ->pluck('id');
 
-        $presentes = AttendanceRecord::whereDate('fecha_hora', $date)
+        $totalEmpleados = $empleadoIds->count();
+
+        $presentesQuery = AttendanceRecord::whereDate('fecha_hora', $date)
             ->whereIn('tipo', ['entrada', 'regreso_almuerzo'])
-            ->distinct('user_id')
-            ->count('user_id');
+            ->whereIn('user_id', $empleadoIds);
+        $presentes = $presentesQuery->distinct('user_id')->count('user_id');
 
         $ausentes = $totalEmpleados - $presentes;
 
-        $tardanzas = AttendanceRecord::with(['horario.dias'])
+        $tardanzasQuery = AttendanceRecord::with(['horario.dias'])
             ->whereDate('fecha_hora', $date)
             ->where('tipo', 'entrada')
-            ->get()
+            ->whereIn('user_id', $empleadoIds);
+        $tardanzas = $tardanzasQuery->get()
             ->filter(function ($r) {
                 $horario = $r->horario;
                 if (!$horario) {
@@ -669,10 +696,6 @@ class AttendanceController extends Controller
                                  ->addMinutes($dia->retardo_min ?? 0);
                 return Carbon::parse($r->fecha_hora)->gt($limite);
             })->count();
-
-        $empleadoIds = User::where('empresa_id', $empresaId)
-            ->where('role', 'empleado')
-            ->pluck('id');
 
         // Empleados actualmente en planta: último registro del día es entrada o regreso_almuerzo
         $ultimosPorUsuario = AttendanceRecord::whereDate('fecha_hora', $date)
@@ -712,12 +735,12 @@ class AttendanceController extends Controller
 
     public function weeklyHours(Request $request): JsonResponse
     {
-        $empresaId   = $request->user()->empresa_id;
+        $user        = $request->user();
+        $scopeUserIds = $this->attendanceScopeUserIds($user);
         $startOfWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
         $endOfWeek   = Carbon::now()->endOfWeek(Carbon::SUNDAY);
 
-        $user        = $request->user();
-        $empleadoIds = collect([$user->id]);
+        $empleadoIds = $scopeUserIds ?? collect([$user->id]);
 
         $records = AttendanceRecord::whereBetween('fecha_hora', [$startOfWeek, $endOfWeek])
             ->whereIn('user_id', $empleadoIds)

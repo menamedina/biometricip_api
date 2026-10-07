@@ -365,8 +365,19 @@ class AdminController extends Controller
 
     public function attendanceIndex(): View
     {
+        $authUser = Auth::user();
+        $puedeVerEquipo = User::where('empresa_id', $authUser->empresa_id)
+                ->where('lider_id', $authUser->id)
+                ->exists();
+
+        $empleadosEquipo = User::where('empresa_id', $authUser->empresa_id)
+            ->where('is_active', true)
+            ->where('lider_id', $authUser->id)
+            ->orderBy('name')
+            ->get(['id', 'name', 'codigo_empleado']);
+
         $horarios = \App\Models\Horario::orderBy('nombre')->get(['id', 'nombre']);
-        return view('admin.attendance.index', compact('horarios'));
+        return view('admin.attendance.index', compact('horarios', 'puedeVerEquipo', 'empleadosEquipo'));
     }
 
     public function resumenIndex(): View

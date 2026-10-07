@@ -226,6 +226,8 @@ const csrfToken  = '{{ csrf_token() }}';
 const isEmpleado   = {{ auth()->user()->cannot('empleados.ver') ? 'true' : 'false' }};
 const canViewPhoto = {{ auth()->user()->can('asistencia.foto') ? 'true' : 'false' }};
 const myUserId   = {{ auth()->id() }};
+const puedeVerEquipo = {{ $puedeVerEquipo ? 'true' : 'false' }};
+const empleadosEquipo = @json($empleadosEquipo);
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
 });
@@ -237,7 +239,7 @@ async function loadRecords() {
     const tipo   = document.getElementById('filterTipo').value;
     const metodo = document.getElementById('filterMetodo').value;
     const search = document.getElementById('filterSearch').value;
-    const empId  = isEmpleado ? myUserId : document.getElementById('filterEmpleado').value;
+    const empId  = !puedeVerEquipo ? myUserId : document.getElementById('filterEmpleado').value;
     let url = `/admin/attendance/records?per_page=1000`;
     if (from)   url += `&date_from=${from}`;
     if (to)     url += `&date_to=${to}`;
@@ -448,8 +450,9 @@ function limpiarFiltros() {
 
 async function loadEmpleadosFilter() {
     try {
-        const res = await fetch('/admin/empleados/list?per_page=200', { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
-        const data = await res.json();
+        const data = empleadosEquipo !== null
+            ? { data: empleadosEquipo || [] }
+            : await (await fetch('/admin/empleados/list?per_page=200', { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } })).json();
         const sel = document.getElementById('filterEmpleado');
         (data.data || []).forEach(e => {
             const option = new Option(`${e.name || ''} (${e.codigo_empleado || 'Sin código'})`, e.id, false, false);
@@ -501,7 +504,7 @@ document.addEventListener('DOMContentLoaded', function() {
             noResults: function() { return 'No se encontraron empleados'; }
         }
     });
-    if (isEmpleado) {
+    if (!puedeVerEquipo) {
         document.getElementById('filterEmpleado').closest('.col-md-3').style.display = 'none';
     } else {
         loadEmpleadosFilter();
