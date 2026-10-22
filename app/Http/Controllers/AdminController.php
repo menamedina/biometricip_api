@@ -398,7 +398,7 @@ class AdminController extends Controller
         $query = \App\Models\AttendanceRecord::query()
             ->select('id', 'user_id', 'sede_id', 'horario_id', 'tipo', 'fecha_hora', 'metodo', 'observacion')
             ->with([
-                'user:id,name,codigo_empleado,departamento_id',
+                'user:id,name,codigo_empleado,departamento_id,ruta',
                 'sede:id,nombre',
                 'horario:id,nombre',
                 'horario.dias',

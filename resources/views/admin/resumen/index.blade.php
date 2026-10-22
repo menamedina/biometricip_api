@@ -89,6 +89,11 @@
                             @endforeach
                         </select>
                     </div>
+                    <div class="col-md-3">
+                        <select id="filterRuta" class="form-select form-select-sm">
+                            <option value="">Todas las rutas</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
@@ -359,6 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('filterDepto').closest('.col-md-3').style.display    = 'none';
         document.getElementById('filterHorario').closest('.col-md-3').style.display  = 'none';
         document.getElementById('filterSede').closest('.col-md-3').style.display     = 'none';
+        document.getElementById('filterRuta').closest('.col-md-3').style.display     = 'none';
     }
 
     cargarFiltros();
@@ -403,7 +409,7 @@ async function cargarEmpleadosParaModal() {
     if (_filtrosCargados) return;
     _filtrosCargados = true;
 
-    const resE = await fetch('/admin/empleados/list?per_page=500&fields=id,name,codigo_empleado,departamento_id', {
+    const resE = await fetch('/admin/empleados/list?per_page=500&fields=id,name,codigo_empleado,departamento_id,ruta', {
         headers: { 'X-CSRF-TOKEN': csrfToken }
     });
     const dataE = await resE.json();
@@ -413,6 +419,12 @@ async function cargarEmpleadosParaModal() {
     const selE = document.getElementById('filterEmpleado');
     empleados.forEach(e => {
         selE.innerHTML += `<option value="${e.id}">${e.name} (${e.codigo_empleado || ''})</option>`;
+    });
+
+    const rutas = [...new Set(empleados.map(e => e.ruta).filter(Boolean))].sort();
+    const selRuta = document.getElementById('filterRuta');
+    rutas.forEach(r => {
+        selRuta.innerHTML += `<option value="${r}">${r}</option>`;
     });
 }
 
@@ -456,6 +468,11 @@ async function cargarResumen() {
         const sedeId = isEmpleado ? '' : document.getElementById('filterSede').value;
         if (sedeId) {
             registros = registros.filter(r => r.sede_id == sedeId);
+        }
+
+        const rutaId = isEmpleado ? '' : document.getElementById('filterRuta').value;
+        if (rutaId) {
+            registros = registros.filter(r => r.user?.ruta === rutaId);
         }
 
         const search = document.getElementById('filterSearch').value.trim().toLowerCase();
@@ -992,6 +1009,7 @@ function limpiarFiltros() {
     document.getElementById('filterDepto').value    = '';
     document.getElementById('filterHorario').value  = '';
     document.getElementById('filterSede').value     = '';
+    document.getElementById('filterRuta').value     = '';
     cargarResumen();
 }
 
