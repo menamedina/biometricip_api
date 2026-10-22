@@ -18,11 +18,13 @@ class PermisoController extends Controller
 
         if ($request->filled('user_id'))  $query->where('user_id', $request->user_id);
         if ($request->filled('estado'))   $query->where('estado', $request->estado);
+        // Filtro por solapamiento de rango: muestra permisos que cubren algún día del periodo buscado
+        // Condición: fecha_inicio <= date_to AND fecha_fin >= date_from
         if ($request->filled('date_from')) {
             $query->where(function ($q) use ($request) {
-                $q->whereDate('fecha_inicio', '>=', $request->date_from)
+                $q->whereDate('fecha_fin', '>=', $request->date_from)
                   ->orWhere(function ($q2) use ($request) {
-                      $q2->whereNull('fecha_inicio')->whereDate('fecha', '>=', $request->date_from);
+                      $q2->whereNull('fecha_fin')->whereDate('fecha', '>=', $request->date_from);
                   });
             });
         }
