@@ -272,18 +272,25 @@ function calcularDuracion() {
     const el     = document.getElementById('pDuracion');
     if (!inicio || !fin) { el.value = ''; return; }
 
-    const ms   = new Date(fin) - new Date(inicio);
+    const ms = new Date(fin) - new Date(inicio);
     if (ms <= 0) { el.value = 'Fecha fin debe ser posterior'; return; }
 
-    const totalMin = Math.round(ms / 60000);
-    const dias     = Math.floor(totalMin / (24 * 60));
-    const horas    = Math.floor((totalMin % (24 * 60)) / 60);
-    const mins     = totalMin % 60;
+    // Conteo inclusivo de días (igual al backend): día inicio y día fin cuentan ambos
+    const startDay = new Date(inicio.substring(0, 10) + 'T00:00:00');
+    const endDay   = new Date(fin.substring(0, 10) + 'T00:00:00');
+    const dias     = Math.round((endDay - startDay) / 86400000) + 1;
 
     let txt = '';
-    if (dias > 0) txt += dias + 'd ';
-    if (horas > 0) txt += horas + 'h ';
-    if (mins > 0) txt += mins + 'min';
+    if (dias > 1) {
+        txt = dias + 'd';
+    } else {
+        // Mismo día calendario: mostrar horas y minutos
+        const totalMin = Math.round(ms / 60000);
+        const horas    = Math.floor(totalMin / 60);
+        const mins     = totalMin % 60;
+        if (horas > 0) txt += horas + 'h ';
+        if (mins > 0)  txt += mins + 'min';
+    }
     el.value = txt.trim() || '0min';
 }
 
@@ -291,14 +298,21 @@ function formatDuracion(fechaInicio, fechaFin) {
     if (!fechaInicio || !fechaFin) return '—';
     const ms = new Date(fechaFin) - new Date(fechaInicio);
     if (ms <= 0) return '—';
+
+    // Conteo inclusivo de días (igual al backend): día inicio y día fin cuentan ambos
+    const startDay = new Date(fechaInicio.substring(0, 10) + 'T00:00:00');
+    const endDay   = new Date(fechaFin.substring(0, 10) + 'T00:00:00');
+    const dias     = Math.round((endDay - startDay) / 86400000) + 1;
+
+    if (dias > 1) return dias + 'd';
+
+    // Mismo día calendario: mostrar horas y minutos
     const totalMin = Math.round(ms / 60000);
-    const dias  = Math.floor(totalMin / (24 * 60));
-    const horas = Math.floor((totalMin % (24 * 60)) / 60);
-    const mins  = totalMin % 60;
+    const horas    = Math.floor(totalMin / 60);
+    const mins     = totalMin % 60;
     let txt = '';
-    if (dias > 0) txt += dias + 'd ';
     if (horas > 0) txt += horas + 'h ';
-    if (mins > 0) txt += mins + 'min';
+    if (mins > 0)  txt += mins + 'min';
     return txt.trim() || '0min';
 }
 
