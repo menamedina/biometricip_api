@@ -28,81 +28,51 @@ class EnviarReporteLiderJob
 
     public function handle(): void
     {
-        Log::info('EnviarReporteLiderJob: iniciando', [
-            'lider_id'   => $this->liderId,
-            'empresa_id' => $this->empresaId,
-        ]);
-
-        $lider = User::find($this->liderId);
-
-        if (!$lider || empty($lider->email)) {
-            Log::warning('EnviarReporteLiderJob: líder no encontrado o sin email', [
-                'lider_id'   => $this->liderId,
-                'empresa_id' => $this->empresaId,
-            ]);
-            return;
-        }
-
-        Log::info('EnviarReporteLiderJob: líder encontrado', [
-            'lider_id' => $lider->id,
-            'nombre'   => $lider->name,
-            'email'    => $lider->email,
-        ]);
-
-        $empresa = Empresa::find($this->empresaId);
-
-        if (!$empresa) {
-            Log::warning('EnviarReporteLiderJob: empresa no encontrada', ['empresa_id' => $this->empresaId]);
-            return;
-        }
-
-        Log::info('EnviarReporteLiderJob: empresa encontrada', ['empresa' => $empresa->nombre]);
-
-        // Cambiar conexión al tenant de la empresa
-        Log::info('EnviarReporteLiderJob: cambiando a tenant', ['empresa_id' => $this->empresaId]);
-        TenantHelper::switchTenant($this->empresaId);
-
-        $fecha = now()->toDateString();
-
-        Log::info('EnviarReporteLiderJob: construyendo reporte', ['fecha' => $fecha]);
-
         try {
-            $datosReporte = $this->construirReporte($lider, $fecha);
-        } finally {
-            TenantHelper::switchToCentral();
-        }
+            $lider = User::find($this->liderId);
 
-        Log::info('EnviarReporteLiderJob: reporte construido', [
-            'empleados'     => $datosReporte['empleados']->count(),
-            'resumen'       => $datosReporte['resumen'],
-        ]);
+            if (!$lider || empty($lider->email)) {
+                return;
+            }
 
-        if ($datosReporte['empleados']->isEmpty()) {
-            Log::info('EnviarReporteLiderJob: líder sin empleados activos, omitido', [
+            $empresa = Empresa::find($this->empresaId);
+
+            if (!$empresa) {
+                return;
+            }
+
+            TenantHelper::switchTenant($this->empresaId);
+
+            $fecha = now()->toDateString();
+
+            try {
+                $datosReporte = $this->construirReporte($lider, $fecha);
+            } finally {
+                TenantHelper::switchToCentral();
+            }
+
+            if ($datosReporte['empleados']->isEmpty()) {
+                return;
+            }
+
+            Mail::to($lider->email, $lider->name)
+                ->send(new ReporteLiderMail(
+                    lider:     $lider,
+                    empresa:   $empresa,
+                    empleados: $datosReporte['empleados'],
+                    resumen:   $datosReporte['resumen'],
+                    fecha:     $fecha,
+                ));
+
+        } catch (\Throwable $e) {
+            Log::error('EnviarReporteLiderJob: error al enviar reporte', [
                 'lider_id'   => $this->liderId,
                 'empresa_id' => $this->empresaId,
+                'error'      => $e->getMessage(),
+                'file'       => $e->getFile(),
+                'line'       => $e->getLine(),
             ]);
-            return;
         }
-
-        Log::info('EnviarReporteLiderJob: enviando email', ['to' => $lider->email]);
-
-        Mail::to($lider->email, $lider->name)
-            ->send(new ReporteLiderMail(
-                lider:     $lider,
-                empresa:   $empresa,
-                empleados: $datosReporte['empleados'],
-                resumen:   $datosReporte['resumen'],
-                fecha:     $fecha,
-            ));
-
-        Log::info('EnviarReporteLiderJob: email enviado correctamente', [
-            'lider_id'   => $this->liderId,
-            'empresa_id' => $this->empresaId,
-            'email'      => $lider->email,
-            'fecha'      => $fecha,
-            'empleados'  => $datosReporte['empleados']->count(),
-        ]);
     }
 
     private function construirReporte(User $lider, string $fecha): array
