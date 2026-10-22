@@ -134,9 +134,10 @@ Route::middleware(['auth', 'admin', 'tenancy.session'])->group(function () {
     Route::get('/admin/recargos/conceptos',  [AdminController::class, 'recargosConceptosIndex'])->name('admin.recargos.conceptos');
     Route::put('/admin/recargos/conceptos',  [AdminController::class, 'recargosConceptosUpdate'])->name('admin.recargos.conceptos.update');
 
-    Route::get ('/admin/attendance/records',      [ApiAttendanceController::class, 'index']);
-    Route::get ('/admin/attendance/stats',        [ApiAttendanceController::class, 'stats']);
-    Route::get ('/admin/attendance/weekly-hours', [ApiAttendanceController::class, 'weeklyHours']);
+    Route::get ('/admin/attendance/records',           [ApiAttendanceController::class, 'index']);
+    Route::get ('/admin/attendance/stats',             [ApiAttendanceController::class, 'stats']);
+    Route::get ('/admin/attendance/weekly-hours',      [ApiAttendanceController::class, 'weeklyHours']);
+    Route::get ('/admin/attendance/employees-by-filter', [ApiAttendanceController::class, 'employeesByFilter']);
     Route::post('/admin/attendance/manual',       [ApiAttendanceController::class, 'storeManual']);
     Route::post('/admin/attendance/manual-equipo', [ApiAttendanceController::class, 'storeManualEquipo']);
     Route::put ('/admin/attendance/{id}',         [ApiAttendanceController::class, 'update']);

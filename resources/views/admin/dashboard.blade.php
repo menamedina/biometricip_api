@@ -18,7 +18,7 @@
 {{-- Tarjetas de estadísticas --}}
 <div class="row g-3 mb-3">
     <div class="col-6 col-xl-3">
-        <div class="card h-100 border-0 shadow-lg" style="border-left: 4px solid #4F46E5 !important;">
+        <div class="card h-100 border-0 shadow-lg stat-card" style="border-left: 4px solid #4F46E5 !important; cursor:pointer;" data-filter="total" data-label="Empleados totales">
             <div class="card-body d-flex align-items-center gap-3 py-3">
                 <span class="avatar-title bg-primary bg-opacity-10 text-primary rounded-2 fs-3" style="width:52px;height:52px;min-width:52px;">
                     <i class="fa-solid fa-users"></i>
@@ -31,7 +31,7 @@
         </div>
     </div>
     <div class="col-6 col-xl-3">
-        <div class="card h-100 border-0 shadow-lg" style="border-left: 4px solid #0acf97 !important;">
+        <div class="card h-100 border-0 shadow-lg stat-card" style="border-left: 4px solid #0acf97 !important; cursor:pointer;" data-filter="presentes" data-label="Presentes hoy">
             <div class="card-body d-flex align-items-center gap-3 py-3">
                 <span class="avatar-title bg-success bg-opacity-10 text-success rounded-2 fs-3" style="width:52px;height:52px;min-width:52px;">
                     <i class="fa-solid fa-user-check"></i>
@@ -44,7 +44,7 @@
         </div>
     </div>
     <div class="col-6 col-xl-3">
-        <div class="card h-100 border-0 shadow-lg" style="border-left: 4px solid #ed5565 !important;">
+        <div class="card h-100 border-0 shadow-lg stat-card" style="border-left: 4px solid #ed5565 !important; cursor:pointer;" data-filter="ausentes" data-label="Ausentes">
             <div class="card-body d-flex align-items-center gap-3 py-3">
                 <span class="avatar-title bg-danger bg-opacity-10 text-danger rounded-2 fs-3" style="width:52px;height:52px;min-width:52px;">
                     <i class="fa-solid fa-user-xmark"></i>
@@ -57,7 +57,7 @@
         </div>
     </div>
     <div class="col-6 col-xl-3">
-        <div class="card h-100 border-0 shadow-lg" style="border-left: 4px solid #f8ac59 !important;">
+        <div class="card h-100 border-0 shadow-lg stat-card" style="border-left: 4px solid #f8ac59 !important; cursor:pointer;" data-filter="tardanzas" data-label="Tardanzas">
             <div class="card-body d-flex align-items-center gap-3 py-3">
                 <span class="avatar-title bg-warning bg-opacity-10 text-warning rounded-2 fs-3" style="width:52px;height:52px;min-width:52px;">
                     <i class="fa-solid fa-clock"></i>
@@ -198,6 +198,8 @@
     font-size: 0.75rem; font-weight: 700;
     color: #fff;
 }
+.stat-card { transition: transform .15s ease, box-shadow .15s ease; }
+.stat-card:hover { transform: translateY(-2px); box-shadow: 0 .5rem 1.25rem rgba(0,0,0,.12) !important; }
 </style>
 @endpush
 @endsection
@@ -357,6 +359,88 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 30000);
 });
 
+// ── Tarjetas clicables — lista de empleados ────────────────────────────────────
+document.querySelectorAll('.stat-card').forEach(card => {
+    card.addEventListener('click', () => {
+        const filter = card.dataset.filter;
+        const label  = card.dataset.label;
+        openEmpleadosFiltroModal(filter, label);
+    });
+});
+
+async function openEmpleadosFiltroModal(filter, label) {
+    const modal = new bootstrap.Modal(document.getElementById('modalEmpleadosFiltro'));
+    document.getElementById('modalEmpleadosFiltroTitle').innerHTML =
+        `<i class="fa-solid fa-users me-1 text-primary"></i> ${label}`;
+    document.getElementById('modalEmpleadosFiltroBody').innerHTML =
+        `<div class="text-center py-5 text-muted"><i class="fa-solid fa-spinner fa-spin fa-lg me-2"></i> Cargando...</div>`;
+    modal.show();
+
+    try {
+        const res  = await fetch(`/admin/attendance/employees-by-filter?filter=${filter}`, {
+            headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
+        });
+        const json = await res.json();
+        const employees = json.data || [];
+
+        if (employees.length === 0) {
+            document.getElementById('modalEmpleadosFiltroBody').innerHTML =
+                `<div class="text-center py-5 text-muted"><i class="fa-solid fa-inbox fa-lg me-2"></i> Sin empleados en esta categoría.</div>`;
+            return;
+        }
+
+        const rows = employees.map(emp => {
+            const initials  = avatarInitials(emp.name);
+            const color     = avatarColor(emp.name);
+            const statusBadge = emp.presente
+                ? (emp.tardanza
+                    ? `<span class="badge bg-warning-subtle text-warning border border-warning-subtle">Tardanza</span>`
+                    : `<span class="badge bg-success-subtle text-success border border-success-subtle">Presente</span>`)
+                : `<span class="badge bg-danger-subtle text-danger border border-danger-subtle">Ausente</span>`;
+
+            const ultimaHora = emp.ultima_hora
+                ? `<span class="text-muted small">${emp.ultima_hora}
+                     <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle ms-1">${emp.ultimo_tipo?.replace(/_/g,' ') ?? ''}</span>
+                   </span>`
+                : `<span class="text-muted small">—</span>`;
+
+            return `<tr>
+                <td class="ps-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="employee-avatar" style="background:${color};">${initials}</span>
+                        <div>
+                            <div class="fw-semibold">${emp.name}</div>
+                            <small class="text-muted">${emp.cedula ?? ''}</small>
+                        </div>
+                    </div>
+                </td>
+                <td>${emp.departamento ?? '<span class="text-muted">—</span>'}</td>
+                <td>${emp.cargo ?? '<span class="text-muted">—</span>'}</td>
+                <td>${statusBadge}</td>
+                <td>${ultimaHora}</td>
+            </tr>`;
+        }).join('');
+
+        document.getElementById('modalEmpleadosFiltroBody').innerHTML = `
+            <table class="table table-hover align-middle mb-0 fs-13">
+                <thead class="table-light sticky-top">
+                    <tr>
+                        <th class="ps-3">Empleado</th>
+                        <th>Departamento</th>
+                        <th>Cargo</th>
+                        <th>Estado</th>
+                        <th>Último reg.</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>`;
+    } catch(e) {
+        console.error('EmployeesByFilter:', e);
+        document.getElementById('modalEmpleadosFiltroBody').innerHTML =
+            `<div class="text-center py-5 text-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i> Error al cargar los empleados.</div>`;
+    }
+}
+
 // ── Foto de perfil ────────────────────────────────────────────────────────────
 async function verFotoPerfil(nombre, thumbnail, userId) {
     const img = document.getElementById('modalFotoPerfilImg');
@@ -371,6 +455,27 @@ async function verFotoPerfil(nombre, thumbnail, userId) {
 }
 </script>
 @endpush
+
+{{-- Modal lista de empleados por filtro --}}
+<div class="modal fade" id="modalEmpleadosFiltro" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title mb-0 fw-semibold" id="modalEmpleadosFiltroTitle">
+                    <i class="fa-solid fa-users me-1 text-primary"></i> Empleados
+                </h6>
+                <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div id="modalEmpleadosFiltroBody">
+                    <div class="text-center py-5 text-muted">
+                        <i class="fa-solid fa-spinner fa-spin fa-lg me-2"></i> Cargando...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 {{-- Modal previsualización foto de perfil --}}
 <div class="modal fade" id="modalFotoPerfil" tabindex="-1">

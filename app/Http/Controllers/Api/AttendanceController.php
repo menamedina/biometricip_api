@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\AttendancePhoto;
 use App\Models\AttendanceRecord;
+use App\Models\Cargo;
+use App\Models\Departamento;
 use App\Models\Horario;
 use App\Models\Sede;
 use App\Models\User;
@@ -970,5 +972,97 @@ class AttendanceController extends Controller
         if (!$output) return null;
 
         return 'data:image/' . $imageType . ';base64,' . base64_encode($output);
+    }
+
+    public function employeesByFilter(Request $request): JsonResponse
+    {
+        $date   = $request->date ?? today();
+        $filter = $request->filter ?? 'total'; // total | presentes | ausentes | tardanzas
+
+        $user         = $request->user();
+        $scopeUserIds = $this->attendanceScopeUserIds($user);
+        $empresaId    = $user->empresa_id;
+
+        $empleadoIds = $scopeUserIds ?? User::where('empresa_id', $empresaId)
+            ->where('role', 'empleado')
+            ->where('is_active', true)
+            ->pluck('id');
+
+        // IDs de presentes hoy (al menos una entrada o regreso_almuerzo)
+        $presentesIds = AttendanceRecord::whereDate('fecha_hora', $date)
+            ->whereIn('tipo', ['entrada', 'regreso_almuerzo'])
+            ->whereIn('user_id', $empleadoIds)
+            ->distinct('user_id')
+            ->pluck('user_id');
+
+        // IDs con tardanza
+        $tardanzasIds = AttendanceRecord::with(['horario.dias'])
+            ->whereDate('fecha_hora', $date)
+            ->where('tipo', 'entrada')
+            ->whereIn('user_id', $empleadoIds)
+            ->get()
+            ->filter(function ($r) {
+                $horario = $r->horario;
+                if (!$horario) {
+                    $limite = Carbon::parse($r->fecha_hora->toDateString() . ' 09:00:00');
+                    return Carbon::parse($r->fecha_hora)->gt($limite);
+                }
+                $diaSemana = Carbon::parse($r->fecha_hora)->isoWeekday();
+                $dia = $horario->dias->firstWhere('dia_semana', $diaSemana);
+                if (!$dia || !$dia->hora_entrada) return false;
+                $limite = Carbon::parse($r->fecha_hora->toDateString() . ' ' . $dia->hora_entrada)
+                                 ->addMinutes($dia->retardo_min ?? 0);
+                return Carbon::parse($r->fecha_hora)->gt($limite);
+            })->pluck('user_id')->unique();
+
+        $ausentesIds = $empleadoIds->diff($presentesIds);
+
+        $targetIds = match ($filter) {
+            'presentes' => $presentesIds,
+            'ausentes'  => $ausentesIds,
+            'tardanzas' => $tardanzasIds,
+            default     => $empleadoIds,
+        };
+
+        $users = User::whereIn('id', $targetIds)
+            ->select('id', 'name', 'cedula', 'codigo_empleado', 'departamento_id', 'cargo_id', 'is_active')
+            ->orderBy('name')
+            ->get();
+
+        // Departamentos y cargos están en el tenant DB — consultar por separado
+        $deptIds  = $users->pluck('departamento_id')->filter()->unique()->values()->all();
+        $cargoIds = $users->pluck('cargo_id')->filter()->unique()->values()->all();
+
+        $deptos = Departamento::whereIn('id', $deptIds)->pluck('nombre', 'id');
+        $cargos = Cargo::whereIn('id', $cargoIds)->pluck('nombre', 'id');
+
+        // Últimos registros del día para los usuarios en bloque (evitar N+1)
+        $lastRecords = AttendanceRecord::whereDate('fecha_hora', $date)
+            ->whereIn('user_id', $users->pluck('id'))
+            ->orderBy('fecha_hora')
+            ->get(['user_id', 'tipo', 'fecha_hora', 'metodo'])
+            ->groupBy('user_id')
+            ->map(fn($rows) => $rows->last());
+
+        $employees = $users->map(function ($u) use ($presentesIds, $tardanzasIds, $deptos, $cargos, $lastRecords) {
+            $last = $lastRecords->get($u->id);
+
+            return [
+                'id'              => $u->id,
+                'name'            => $u->name,
+                'cedula'          => $u->cedula,
+                'codigo_empleado' => $u->codigo_empleado,
+                'departamento'    => $deptos->get($u->departamento_id),
+                'cargo'           => $cargos->get($u->cargo_id),
+                'is_active'       => $u->is_active,
+                'presente'        => $presentesIds->contains($u->id),
+                'tardanza'        => $tardanzasIds->contains($u->id),
+                'ultimo_tipo'     => $last?->tipo,
+                'ultima_hora'     => $last ? Carbon::parse($last->fecha_hora)->format('H:i') : null,
+                'ultimo_metodo'   => $last?->metodo,
+            ];
+        });
+
+        return response()->json(['data' => $employees, 'filter' => $filter, 'date' => $date]);
     }
 }
