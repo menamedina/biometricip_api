@@ -556,6 +556,7 @@ async function cargarResumen() {
             }
 
             // Descuento de almuerzo usando el día específico de cada sesión
+            // Solo se descuenta si la sesión cubre al menos las horas netas programadas
             for (const s of sessions) {
                 if (s.e && s.s) {
                     const fechaEntrada = toDate(s.e.fecha_hora);
@@ -564,7 +565,16 @@ async function cargarResumen() {
                     const dia = (horario?.dias || []).find(d => d.dia_semana === isoDay);
                     if (dia?.duracion_almuerzo_min) {
                         const durMin = Math.round((toDate(s.s.fecha_hora) - fechaEntrada) / 60000);
-                        if (durMin > dia.duracion_almuerzo_min) {
+                        // Calcular horas netas programadas (jornada - almuerzo)
+                        let umbralMin = dia.duracion_almuerzo_min; // fallback mínimo
+                        if (dia.hora_entrada && dia.hora_salida) {
+                            const [eH, eM] = dia.hora_entrada.split(':').map(Number);
+                            const [sH, sM] = dia.hora_salida.split(':').map(Number);
+                            const jornadaTotal = (sH * 60 + sM) - (eH * 60 + eM);
+                            umbralMin = jornadaTotal - dia.duracion_almuerzo_min;
+                        }
+                        // Solo descontar almuerzo si la sesión cubre al menos las horas netas programadas
+                        if (durMin >= umbralMin) {
                             totalMin -= dia.duracion_almuerzo_min;
                         }
                     }
