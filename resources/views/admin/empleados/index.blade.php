@@ -552,6 +552,7 @@ div.dataTables_wrapper div.dataTables_info {
 const csrfToken     = '{{ csrf_token() }}';
 const isAdminTenant = {{ auth()->user()->admin_tenant ? 'true' : 'false' }};
 const isLider       = {{ \App\Models\User::where('lider_id', auth()->id())->exists() ? 'true' : 'false' }};
+const verTodos      = {{ auth()->user()->ver_todos ? 'true' : 'false' }};
 const myUserId      = {{ auth()->id() }};
 const canDeleteEmpleado   = {{ auth()->user()->can('empleados.eliminar') ? 'true' : 'false' }};
 const canEditEmpleado     = {{ auth()->user()->can('empleados.editar') ? 'true' : 'false' }};
@@ -791,8 +792,8 @@ async function loadEmpleados() {
     if (estado)      url += `&is_active=${estado}`;
     if (horarioId)   url += `&horario_id=${horarioId}`;
     if (empleadorId) url += `&empleador_id=${empleadorId}`;
-    if (isLider)     url += `&lider_id=${myUserId}`;
-    else if (liderId) url += `&lider_id=${liderId}`;
+    if (isLider && !verTodos) url += `&lider_id=${myUserId}`;
+    else if (liderId)         url += `&lider_id=${liderId}`;
     if (empresaId)   url += `&empresa_id=${empresaId}`;
 
     try {
