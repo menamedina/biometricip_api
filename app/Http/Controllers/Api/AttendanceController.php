@@ -240,8 +240,16 @@ class AttendanceController extends Controller
         // o el tipo no fue enviado (app omite tipo en sedes doble registro).
         $qrEsDoble = isset($qrData['dr']) && $qrData['dr'] === 1;
 
+        // ── Último registro del empleado ─────────────────────────────────────
+        // Se busca dentro de una ventana de 36 horas para soportar turnos nocturnos
+        // que cruzan la medianoche (ej: entrada 22:00 día 1, salida 06:00 día 2).
+        // Si se usara solo la fecha de hoy, la entrada nocturna del día anterior
+        // no sería encontrada y el sistema crearía otra entrada incorrectamente.
+        // Con 36 horas se cubre cualquier turno realista; si el empleado lleva más
+        // de 36 horas sin registrar, se trata como inicio de jornada (entrada).
+        $ventanaNocturna = Carbon::now(config('app.timezone'))->subHours(36);
         $ultimoRegistro = AttendanceRecord::where('user_id', $user->id)
-            ->whereDate('fecha_hora', $hoy)
+            ->where('fecha_hora', '>=', $ventanaNocturna)
             ->orderBy('fecha_hora', 'desc')
             ->orderBy('id', 'desc')
             ->first();
@@ -648,12 +656,33 @@ class AttendanceController extends Controller
         $user = $request->user();
         $date = $request->date ?? today();
 
+        // Registros del día solicitado (normalmente hoy)
         $records = AttendanceRecord::with('sede')
             ->where('user_id', $user->id)
             ->whereDate('fecha_hora', $date)
             ->orderBy('fecha_hora', 'desc')
             ->orderBy('id', 'desc')
             ->get();
+
+        // ── Soporte para turnos nocturnos ────────────────────────────────────
+        // Si hoy no hay registros y no se pasó una fecha explícita, verificar si
+        // el empleado tiene una entrada abierta de las últimas 36 horas (turno
+        // que inició ayer y aún no ha registrado salida).
+        // Al incluir esa entrada en la respuesta, la app móvil puede mostrar
+        // correctamente el botón "Registrar Salida" en lugar de "Registrar Entrada".
+        if ($records->isEmpty() && !$request->filled('date')) {
+            $ventana = Carbon::now(config('app.timezone'))->subHours(36);
+            $ultimoAbsoluto = AttendanceRecord::with('sede')
+                ->where('user_id', $user->id)
+                ->where('fecha_hora', '>=', $ventana)
+                ->orderBy('fecha_hora', 'desc')
+                ->first();
+
+            // Solo incluir si fue entrada (turno abierto pendiente de salida)
+            if ($ultimoAbsoluto && $ultimoAbsoluto->tipo === 'entrada') {
+                $records = collect([$ultimoAbsoluto]);
+            }
+        }
 
         return response()->json(['data' => $records]);
     }
