@@ -36,22 +36,38 @@
         </span>
     </div>
 
-    {{-- Asignación masiva --}}
+    {{-- Filtro + Asignación masiva --}}
     @can('programacion_turno.crear')
     <div class="card border-0 bg-light mb-3">
         <div class="card-body py-2 px-3 d-flex align-items-center gap-3 flex-wrap">
+
+            {{-- Filtro por turno actual --}}
             <span class="text-muted small fw-semibold text-nowrap">
-                <i class="fa-solid fa-users me-1"></i> Asignar a todos:
+                <i class="fa-solid fa-filter me-1"></i> Filtrar por turno actual:
             </span>
-            <select id="selMasivo" class="form-select form-select-sm" style="max-width:280px">
+            <select id="selFiltro" class="form-select form-select-sm" style="max-width:250px" onchange="filtrarPorTurno()">
+                <option value="">— Todos —</option>
+                @foreach($horariosData as $h)
+                <option value="{{ $h['id'] }}">{{ $h['nombre'] }}</option>
+                @endforeach
+            </select>
+
+            <div class="vr mx-1"></div>
+
+            {{-- Asignación masiva --}}
+            <span class="text-muted small fw-semibold text-nowrap">
+                <i class="fa-solid fa-users me-1"></i> Asignar a visibles:
+            </span>
+            <select id="selMasivo" class="form-select form-select-sm" style="max-width:250px">
                 <option value="">— Selecciona un turno —</option>
                 @foreach($horariosData as $h)
                 <option value="{{ $h['id'] }}">{{ $h['nombre'] }}</option>
                 @endforeach
             </select>
             <button class="btn btn-sm btn-outline-primary" onclick="aplicarMasivo()">
-                <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Aplicar a todos
+                <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Aplicar
             </button>
+
         </div>
     </div>
     @endcan
@@ -247,21 +263,39 @@ async function loadEquipo() {
     }
 }
 
+function filtrarPorTurno() {
+    const filtroId = parseInt(document.getElementById('selFiltro').value) || null;
+
+    document.querySelectorAll('#turnoTbody tr[id^="row_"]').forEach(tr => {
+        const userId   = parseInt(tr.id.replace('row_', ''));
+        const emp      = equipoData.find(e => e.id === userId);
+        if (!emp) return;
+
+        const visible = !filtroId || emp.horario_id === filtroId;
+        tr.style.display = visible ? '' : 'none';
+    });
+}
+
 function aplicarMasivo() {
     const horarioId = parseInt(document.getElementById('selMasivo').value);
     if (!horarioId) {
-        mostrarAlerta('warning', 'Selecciona un turno para aplicar a todos.');
+        mostrarAlerta('warning', 'Selecciona un turno para aplicar.');
         return;
     }
 
-    document.querySelectorAll('#turnoTbody select').forEach(sel => {
+    // Solo aplica a filas visibles (respeta el filtro activo)
+    let count = 0;
+    document.querySelectorAll('#turnoTbody tr[id^="row_"]').forEach(tr => {
+        if (tr.style.display === 'none') return;
+        const sel = tr.querySelector('select');
+        if (!sel) return;
         sel.value = horarioId;
-        // Disparar change para actualizar badge y resumen
         sel.dispatchEvent(new Event('change'));
+        count++;
     });
 
     const nombre = horarios.find(h => h.id === horarioId)?.nombre ?? '';
-    mostrarAlerta('success', `<i class="fa-solid fa-check me-1"></i>Turno <strong>${nombre}</strong> asignado a todos. Recuerda guardar.`);
+    mostrarAlerta('success', `<i class="fa-solid fa-check me-1"></i>Turno <strong>${nombre}</strong> asignado a ${count} empleado(s) visible(s). Recuerda guardar.`);
 }
 
 async function guardarProgramacion() {
