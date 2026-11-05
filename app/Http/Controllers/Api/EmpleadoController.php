@@ -351,6 +351,7 @@ class EmpleadoController extends Controller
             'centro_costo'    => 'nullable|string|max:100',
             'ruta'            => 'nullable|string|max:100',
             'is_active'       => 'nullable|boolean',
+            'ver_todos'       => 'nullable|boolean',
             'exportar_empleados' => 'nullable|boolean',
             'importar_empleados' => 'nullable|boolean',
             'crear_empleado'     => 'nullable|boolean',

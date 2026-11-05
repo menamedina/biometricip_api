@@ -295,6 +295,15 @@
                             <label class="form-label">Ruta</label>
                             <input type="text" id="empRuta" class="form-control" placeholder="Ej: Ruta Norte">
                         </div>
+                        <div class="col-md-6 mb-3 d-flex align-items-end">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="empVerTodos" role="switch">
+                                <label class="form-check-label" for="empVerTodos">
+                                    Ver todos los empleados
+                                    <small class="d-block text-muted" style="font-size:11px">Acceso a toda la empresa sin filtro de líder</small>
+                                </label>
+                            </div>
+                        </div>
                         <div class="col-12 mb-3">
                             <label class="form-label">Sedes asignadas</label>
                             <div id="empSedesContainer" class="border rounded p-2" style="min-height:42px; max-height:160px; overflow-y:auto; background:#fff;">
@@ -990,6 +999,7 @@ async function editEmpleado(id, encryptedId) {
         document.getElementById('empRuta').value         = e.ruta || '';
         document.getElementById('empRole').value         = e.spatie_role || '';
         document.getElementById('empActivo').checked     = !!e.is_active;
+        document.getElementById('empVerTodos').checked   = !!e.ver_todos;
         document.getElementById('empleadoModalTitle').textContent = 'Editar Usuario';
 
         // Tratamiento de datos
@@ -1076,6 +1086,7 @@ async function saveEmpleado(id) {
         sede_ids:         getSelectedSedeIds(),
         spatie_role:      document.getElementById('empRole').value || null,
         is_active:        document.getElementById('empActivo').checked,
+        ver_todos:        document.getElementById('empVerTodos').checked,
     };
     if (isAdminTenant) {
         const selEmp = document.getElementById('empEmpresaId');
