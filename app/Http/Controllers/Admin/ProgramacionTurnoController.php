@@ -71,10 +71,8 @@ class ProgramacionTurnoController extends Controller
         $lider        = Auth::user();
         $semanaInicio = $this->proximoDiaEjecucion($lider->empresa_id)->toDateString();
 
-        // Equipo del líder en la misma empresa
-        $equipo = User::where('lider_id', $lider->id)
-            ->where('empresa_id', $lider->empresa_id)
-            ->where('is_active', true)
+        // Equipo visible para este líder (respeta ver_todos)
+        $equipo = $lider->equipoQuery()
             ->orderBy('name')
             ->get(['id', 'name', 'foto_url', 'cargo_id', 'departamento_id', 'horario_id']);
 
@@ -137,12 +135,8 @@ class ProgramacionTurnoController extends Controller
 
         $semanaInicio = $request->semana_inicio;
 
-        // Validar que todos los user_id pertenecen al equipo del líder
-        $equipoIds = User::where('lider_id', $lider->id)
-            ->where('empresa_id', $lider->empresa_id)
-            ->where('is_active', true)
-            ->pluck('id')
-            ->toArray();
+        // Validar que todos los user_id pertenecen al equipo visible del líder
+        $equipoIds = $lider->equipoQuery()->pluck('id')->toArray();
 
         $horarioIds = Horario::where('is_active', true)->pluck('id')->toArray();
 

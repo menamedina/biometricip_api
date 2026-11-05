@@ -871,11 +871,16 @@ class AttendanceController extends Controller
             'observacion' => 'required|string|max:1000',
         ]);
 
-        $empleado = User::where('id', $request->user_id)
-            ->where('empresa_id', $request->user()->empresa_id)
-            ->where('lider_id', $request->user()->id)
-            ->where('is_active', true)
-            ->first();
+        $authUser = $request->user();
+        $empleadoQuery = User::where('id', $request->user_id)
+            ->where('empresa_id', $authUser->empresa_id)
+            ->where('is_active', true);
+
+        if (!$authUser->ver_todos) {
+            $empleadoQuery->where('lider_id', $authUser->id);
+        }
+
+        $empleado = $empleadoQuery->first();
 
         abort_unless($empleado, 403, 'Solo puedes crear registros para tus colaboradores.');
 

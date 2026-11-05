@@ -366,13 +366,11 @@ class AdminController extends Controller
     public function attendanceIndex(): View
     {
         $authUser = Auth::user();
-        $puedeVerEquipo = User::where('empresa_id', $authUser->empresa_id)
+        $puedeVerEquipo = $authUser->ver_todos || User::where('empresa_id', $authUser->empresa_id)
                 ->where('lider_id', $authUser->id)
                 ->exists();
 
-        $empleadosEquipo = User::where('empresa_id', $authUser->empresa_id)
-            ->where('is_active', true)
-            ->where('lider_id', $authUser->id)
+        $empleadosEquipo = $authUser->equipoQuery()
             ->orderBy('name')
             ->get(['id', 'name', 'codigo_empleado']);
 
@@ -407,13 +405,10 @@ class AdminController extends Controller
             $scopeIds = [$authUser->id];
         } else {
             // ¿Tiene equipo asignado? (es líder)
-            $equipoIds = \App\Models\User::where('lider_id', $authUser->id)
-                ->pluck('id')
-                ->toArray();
+            $equipoIds = $authUser->equipoIds();
 
-            if (!empty($equipoIds)) {
-                // Líder: ve su equipo + él mismo
-                $scopeIds = array_merge($equipoIds, [$authUser->id]);
+            if ($authUser->ver_todos || count($equipoIds) > 1) {
+                $scopeIds = $equipoIds;
             }
         }
 

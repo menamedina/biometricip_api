@@ -33,13 +33,15 @@ class EmpleadoController extends Controller
         if (!$authUser->admin_tenant) {
             $query->where('empresa_id', $authUser->empresa_id);
 
-            // Si es líder (tiene equipo asignado), solo ve su equipo + él mismo
-            $equipoIds = User::where('lider_id', $authUser->id)->pluck('id')->toArray();
-            if (!empty($equipoIds)) {
-                $query->where(function ($q) use ($authUser, $equipoIds) {
-                    $q->whereIn('id', $equipoIds)
-                      ->orWhere('id', $authUser->id);
-                });
+            // Si ver_todos → ve toda la empresa; si es líder → su equipo + él mismo
+            if (!$authUser->ver_todos) {
+                $equipoIds = User::where('lider_id', $authUser->id)->pluck('id')->toArray();
+                if (!empty($equipoIds)) {
+                    $query->where(function ($q) use ($authUser, $equipoIds) {
+                        $q->whereIn('id', $equipoIds)
+                          ->orWhere('id', $authUser->id);
+                    });
+                }
             }
         } elseif ($request->filled('empresa_id')) {
             $query->where('empresa_id', $request->empresa_id);

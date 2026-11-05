@@ -20,9 +20,9 @@ class PermisoController extends Controller
         if ($authUser->cannot('permisos.ver')) {
             $scopeIds = [$authUser->id];
         } else {
-            $equipoIds = User::where('lider_id', $authUser->id)->pluck('id')->toArray();
-            if (!empty($equipoIds)) {
-                $scopeIds = array_merge($equipoIds, [$authUser->id]);
+            $equipoIds = $authUser->equipoIds();
+            if ($authUser->ver_todos || count($equipoIds) > 1) {
+                $scopeIds = $equipoIds;
             }
         }
 

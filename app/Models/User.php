@@ -47,6 +47,7 @@ class User extends Authenticatable
         'tratamiento_datos',
         'tratamiento_datos_at',
         'dias_tratamiento_dato',
+        'ver_todos',
     ];
 
     protected $hidden = [
@@ -67,6 +68,7 @@ class User extends Authenticatable
             'tratamiento_datos'    => 'boolean',
             'tratamiento_datos_at' => 'datetime',
             'dias_tratamiento_dato' => 'integer',
+            'ver_todos'             => 'boolean',
         ];
     }
 
@@ -84,6 +86,44 @@ class User extends Authenticatable
     public function sendPasswordResetNotification($token): void
     {
         $this->notify(new ResetPasswordNotification($token));
+    }
+
+    /**
+     * Devuelve los IDs del equipo visible para este usuario.
+     * Si ver_todos=true devuelve todos los empleados de la empresa.
+     * Si es líder devuelve su equipo + él mismo.
+     * Si es empleado regular devuelve solo su propio ID.
+     */
+    public function equipoIds(): array
+    {
+        if ($this->ver_todos) {
+            return User::where('empresa_id', $this->empresa_id)
+                ->where('is_active', true)
+                ->pluck('id')
+                ->toArray();
+        }
+
+        $equipo = User::where('lider_id', $this->id)
+            ->where('empresa_id', $this->empresa_id)
+            ->where('is_active', true)
+            ->pluck('id')
+            ->toArray();
+
+        return empty($equipo) ? [$this->id] : array_merge($equipo, [$this->id]);
+    }
+
+    /**
+     * Query de empleados visibles para este usuario (sin incluirse a sí mismo).
+     */
+    public function equipoQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = User::where('empresa_id', $this->empresa_id)->where('is_active', true);
+
+        if (!$this->ver_todos) {
+            $query->where('lider_id', $this->id);
+        }
+
+        return $query;
     }
 
     public function isAdmin(): bool
