@@ -186,6 +186,8 @@ div.dataTables_wrapper div.dataTables_info {
 <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script>
 const csrfToken = '{{ csrf_token() }}';
+const isLider   = {{ \App\Models\User::where('lider_id', auth()->id())->exists() ? 'true' : 'false' }};
+const myUserId  = {{ auth()->id() }};
 const canAprobarPermiso  = {{ auth()->user()->can('permisos.aprobar')  ? 'true' : 'false' }};
 const canEliminarPermiso = {{ auth()->user()->can('permisos.eliminar') ? 'true' : 'false' }};
 const estadoBadge = {
@@ -223,7 +225,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function loadEmpleados() {
-    const res  = await fetch('/admin/empleados/list?per_page=500', { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
+    let empUrl = '/admin/empleados/list?per_page=500';
+    if (isLider) empUrl += `&lider_id=${myUserId}`;
+    const res  = await fetch(empUrl, { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } });
     const data = await res.json();
     const empleados = data.data || [];
     const sel  = document.getElementById('filterEmpleado');

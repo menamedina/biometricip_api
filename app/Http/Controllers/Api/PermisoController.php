@@ -13,10 +13,32 @@ class PermisoController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        $authUser = $request->user();
+
+        // Scope de visibilidad: empleado → solo suyos; líder → su equipo; admin → todos
+        $scopeIds = null;
+        if ($authUser->cannot('permisos.ver')) {
+            $scopeIds = [$authUser->id];
+        } else {
+            $equipoIds = User::where('lider_id', $authUser->id)->pluck('id')->toArray();
+            if (!empty($equipoIds)) {
+                $scopeIds = array_merge($equipoIds, [$authUser->id]);
+            }
+        }
+
         $query = Permiso::with('tipoPermiso')
             ->orderByRaw('COALESCE(fecha_inicio, fecha) DESC');
 
-        if ($request->filled('user_id'))  $query->where('user_id', $request->user_id);
+        if ($scopeIds !== null) {
+            if ($request->filled('user_id') && in_array((int) $request->user_id, $scopeIds)) {
+                $query->where('user_id', $request->user_id);
+            } else {
+                $query->whereIn('user_id', $scopeIds);
+            }
+        } elseif ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+
         if ($request->filled('estado'))   $query->where('estado', $request->estado);
         // Filtro por solapamiento de rango: muestra permisos que cubren algún día del periodo buscado
         // Condición: fecha_inicio <= date_to AND fecha_fin >= date_from
