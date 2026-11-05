@@ -508,6 +508,19 @@ class AdminController extends Controller
         $inicio = sprintf('%04d-%02d-01 00:00:00', $anio, $mes);
         $fin    = date('Y-m-t 23:59:59', mktime(0, 0, 0, $mes, 1, $anio));
 
+        $authUser = auth()->user();
+
+        // Scope de visibilidad (mismo criterio que resumenRecords)
+        $scopeIds = null;
+        if ($authUser->cannot('empleados.ver')) {
+            $scopeIds = [$authUser->id];
+        } else {
+            $equipoIds = \App\Models\User::where('lider_id', $authUser->id)->pluck('id')->toArray();
+            if (!empty($equipoIds)) {
+                $scopeIds = array_merge($equipoIds, [$authUser->id]);
+            }
+        }
+
         $query = \App\Models\AttendanceRecord::query()
             ->select('id', 'user_id', 'sede_id', 'horario_id', 'tipo', 'fecha_hora')
             ->with([
@@ -518,9 +531,12 @@ class AdminController extends Controller
             ->whereBetween('fecha_hora', [$inicio, $fin])
             ->orderBy('fecha_hora', 'asc');
 
-        // Empleados solo ven sus propios registros
-        if (auth()->user()->cannot('empleados.ver')) {
-            $query->where('user_id', auth()->id());
+        if ($scopeIds !== null) {
+            if ($request->filled('user_id') && in_array((int) $request->user_id, $scopeIds)) {
+                $query->where('user_id', $request->user_id);
+            } else {
+                $query->whereIn('user_id', $scopeIds);
+            }
         } elseif ($request->filled('user_id')) {
             $query->where('user_id', $request->user_id);
         }
@@ -542,8 +558,12 @@ class AdminController extends Controller
                   });
             });
 
-        if (auth()->user()->cannot('empleados.ver')) {
-            $permisosQuery->where('user_id', auth()->id());
+        if ($scopeIds !== null) {
+            if ($request->filled('user_id') && in_array((int) $request->user_id, $scopeIds)) {
+                $permisosQuery->where('user_id', $request->user_id);
+            } else {
+                $permisosQuery->whereIn('user_id', $scopeIds);
+            }
         } elseif ($request->filled('user_id')) {
             $permisosQuery->where('user_id', $request->user_id);
         }

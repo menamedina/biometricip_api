@@ -174,6 +174,7 @@ div.dataTables_wrapper div.dataTables_info { font-size: 12px; color: #6c757d; }
 <script>
 const csrfToken   = '{{ csrf_token() }}';
 const esEmpleado  = {{ auth()->user()->cannot('empleados.ver') ? 'true' : 'false' }};
+const isLider     = {{ \App\Models\User::where('lider_id', auth()->id())->exists() ? 'true' : 'false' }};
 const myUserId    = {{ auth()->id() }};
 let deptoMap      = {};
 let _tablaData    = [];   // datos crudos para exportar
@@ -212,7 +213,9 @@ async function cargarCatalogos() {
         if (selD) deptos.forEach(d => selD.innerHTML += `<option value="${d.id}">${d.nombre}</option>`);
 
         if (!esEmpleado) {
-            const resE = await fetch('/admin/empleados/list?per_page=500&fields=id,name,codigo_empleado,departamento_id', {
+            let empUrl = '/admin/empleados/list?per_page=500&fields=id,name,codigo_empleado,departamento_id';
+            if (isLider) empUrl += `&lider_id=${myUserId}`;
+            const resE = await fetch(empUrl, {
                 headers: { 'X-CSRF-TOKEN': csrfToken }
             });
             const dataE = await resE.json();
