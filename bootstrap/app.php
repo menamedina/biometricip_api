@@ -3,7 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Support\Facades\Schedule;
+use Illuminate\Console\Scheduling\Schedule;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -36,7 +36,6 @@ return Application::configure(basePath: dirname(__DIR__))
         // Reporte diario de personal para líderes – todos los días a las 8:00 AM
         $schedule->command('reporte:lideres')
             ->dailyAt('08:00')
-            ->withoutOverlapping()
             ->runInBackground()
             ->appendOutputTo(storage_path('logs/reporte-lideres.log'));
     })
