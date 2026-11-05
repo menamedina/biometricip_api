@@ -395,6 +395,28 @@ class AdminController extends Controller
             'date_to'   => 'required|date',
         ]);
 
+        $authUser = auth()->user();
+
+        // Determinar scope de visibilidad:
+        // null  → sin restricción (admin/supervisor sin equipo)
+        // array → solo esos user_ids (empleado o líder)
+        $scopeIds = null;
+
+        if ($authUser->cannot('empleados.ver')) {
+            // Empleado regular: solo sus propios registros
+            $scopeIds = [$authUser->id];
+        } else {
+            // ¿Tiene equipo asignado? (es líder)
+            $equipoIds = \App\Models\User::where('lider_id', $authUser->id)
+                ->pluck('id')
+                ->toArray();
+
+            if (!empty($equipoIds)) {
+                // Líder: ve su equipo + él mismo
+                $scopeIds = array_merge($equipoIds, [$authUser->id]);
+            }
+        }
+
         $query = \App\Models\AttendanceRecord::query()
             ->select('id', 'user_id', 'sede_id', 'horario_id', 'tipo', 'fecha_hora', 'metodo', 'observacion')
             ->with([
@@ -409,7 +431,14 @@ class AdminController extends Controller
             ])
             ->orderBy('fecha_hora', 'asc');
 
-        if ($request->filled('user_id')) {
+        if ($scopeIds !== null) {
+            // Con restricción: respetar filtro por user_id solo si está dentro del scope
+            if ($request->filled('user_id') && in_array((int) $request->user_id, $scopeIds)) {
+                $query->where('user_id', $request->user_id);
+            } else {
+                $query->whereIn('user_id', $scopeIds);
+            }
+        } elseif ($request->filled('user_id')) {
             $query->where('user_id', $request->user_id);
         }
 

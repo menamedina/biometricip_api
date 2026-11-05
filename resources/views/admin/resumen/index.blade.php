@@ -334,12 +334,13 @@ div.dataTables_wrapper div.dataTables_info {
 <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 <script>
-const csrfToken  = '{{ csrf_token() }}';
-const isEmpleado  = {{ auth()->user()->cannot('empleados.ver')  ? 'true' : 'false' }};
-const canCrearReg = {{ auth()->user()->can('reportes.crear')   ? 'true' : 'false' }};
+const csrfToken   = '{{ csrf_token() }}';
+const isEmpleado  = {{ auth()->user()->cannot('empleados.ver') ? 'true' : 'false' }};
+const isLider     = {{ \App\Models\User::where('lider_id', auth()->id())->exists() ? 'true' : 'false' }};
+const canCrearReg = {{ auth()->user()->can('reportes.crear')  ? 'true' : 'false' }};
 const canEditarReg = {{ auth()->user()->can('reportes.editar') ? 'true' : 'false' }};
 const isAdmin     = canEditarReg;
-const myUserId   = {{ auth()->id() }};
+const myUserId    = {{ auth()->id() }};
 let deptoMap = {};
 let allRegistros = [];
 
@@ -409,7 +410,9 @@ async function cargarEmpleadosParaModal() {
     if (_filtrosCargados) return;
     _filtrosCargados = true;
 
-    const resE = await fetch('/admin/empleados/list?per_page=500&fields=id,name,codigo_empleado,departamento_id,ruta', {
+    let empleadosUrl = '/admin/empleados/list?per_page=500&fields=id,name,codigo_empleado,departamento_id,ruta';
+    if (isLider) empleadosUrl += `&lider_id=${myUserId}`;
+    const resE = await fetch(empleadosUrl, {
         headers: { 'X-CSRF-TOKEN': csrfToken }
     });
     const dataE = await resE.json();
