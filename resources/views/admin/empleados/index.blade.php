@@ -191,158 +191,180 @@
 </div>
 
 <div class="modal fade" id="empleadoModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
-            <div class="modal-header">
+            <div class="modal-header py-2">
                 <h5 class="modal-title" id="empleadoModalTitle">Nuevo Empleado</h5>
                 <span id="conteoUsuariosBadge" class="badge bg-info ms-2 d-none"></span>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body px-4">
                 <div id="empleadoModalLoader" class="d-none text-center py-5">
                     <div class="spinner-border text-primary" role="status"></div>
                     <div class="text-muted mt-2 small">Cargando datos...</div>
                 </div>
                 <form id="empleadoForm">
                     <input type="hidden" id="empleadoId">
-                    {{-- Foto de perfil (solo visible al editar) --}}
-                    <div id="empFotoPerfilRow" class="d-none mb-3 d-flex align-items-center gap-3">
-                        <div id="empFotoAvatar" style="width:72px;height:72px;border-radius:50%;background:#e9ecef;display:flex;align-items:center;justify-content:center;color:#adb5bd;font-size:32px;flex-shrink:0;">
-                            <i class="fa-solid fa-user"></i>
-                        </div>
-                        <img id="empFotoImg" src="" alt="Foto" style="display:none;width:72px;height:72px;object-fit:cover;border-radius:50%;border:3px solid #1ab394;flex-shrink:0;">
-                        <div class="d-flex flex-column gap-1">
-                            <label class="form-label mb-0 small fw-semibold">Foto de perfil</label>
-                            <div class="d-flex align-items-center gap-1">
-                                <input type="file" id="empFotoInput" accept="image/*" class="form-control form-control-sm" style="max-width:220px" onchange="empPrevisualizarFoto(this)">
-                                <button type="button" id="empBtnEliminarFoto" class="btn btn-sm btn-outline-danger" onclick="empEliminarFoto()" title="Eliminar foto">
-                                    <i class="fa-solid fa-trash"></i>
-                                </button>
-                                <button type="button" id="empBtnGuardarFoto" class="btn btn-sm btn-success d-none" onclick="empGuardarFoto()">
-                                    <i class="fa-solid fa-floppy-disk me-1"></i> Guardar
-                                </button>
+
+                    {{-- Fila superior: foto + empresa (admin_tenant) --}}
+                    <div class="row align-items-center mb-3">
+                        <div class="col-auto">
+                            <div id="empFotoPerfilRow" class="d-none d-flex align-items-center gap-3">
+                                <div id="empFotoAvatar" style="width:64px;height:64px;border-radius:50%;background:#e9ecef;display:flex;align-items:center;justify-content:center;color:#adb5bd;font-size:28px;flex-shrink:0;">
+                                    <i class="fa-solid fa-user"></i>
+                                </div>
+                                <img id="empFotoImg" src="" alt="Foto" style="display:none;width:64px;height:64px;object-fit:cover;border-radius:50%;border:3px solid #1ab394;flex-shrink:0;">
+                                <div class="d-flex flex-column gap-1">
+                                    <label class="form-label mb-0 small fw-semibold">Foto de perfil</label>
+                                    <div class="d-flex align-items-center gap-1">
+                                        <input type="file" id="empFotoInput" accept="image/*" class="form-control form-control-sm" style="max-width:200px" onchange="empPrevisualizarFoto(this)">
+                                        <button type="button" id="empBtnEliminarFoto" class="btn btn-sm btn-outline-danger" onclick="empEliminarFoto()" title="Eliminar foto">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                        <button type="button" id="empBtnGuardarFoto" class="btn btn-sm btn-success d-none" onclick="empGuardarFoto()">
+                                            <i class="fa-solid fa-floppy-disk me-1"></i> Guardar
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="row">
                         @if(auth()->user()->admin_tenant)
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label">Empresa <span class="text-danger">*</span></label>
-                            <select id="empEmpresaId" class="form-select" required>
+                        <div class="col">
+                            <label class="form-label mb-1">Empresa <span class="text-danger">*</span></label>
+                            <select id="empEmpresaId" class="form-select form-select-sm" required>
                                 <option value="">— Seleccionar empresa —</option>
                             </select>
                         </div>
                         @endif
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Cédula <span class="text-danger">*</span></label>
-                            <input type="text" id="empCedula" class="form-control" required placeholder="Ej: 1234567890" inputmode="numeric">
+                    </div>
+
+                    {{-- Sección: Datos personales --}}
+                    <div class="border-start border-primary border-3 ps-2 mb-2">
+                        <span class="text-primary fw-semibold small text-uppercase">Datos personales</span>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label mb-1">Cédula <span class="text-danger">*</span></label>
+                            <input type="text" id="empCedula" class="form-control form-control-sm" required placeholder="Ej: 1234567890" inputmode="numeric">
                         </div>
-                        <div class="col-md-6 mb-3" id="empCodigoRow" style="display:none">
-                            <label class="form-label">Código Empleado</label>
-                            <input type="text" id="empCodigo" class="form-control" readonly style="background-color:#f8f9fa;font-weight:600;">
+                        <div class="col-md-4" id="empCodigoRow" style="display:none">
+                            <label class="form-label mb-1">Código Empleado</label>
+                            <input type="text" id="empCodigo" class="form-control form-control-sm" readonly style="background-color:#f8f9fa;font-weight:600;">
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Nombre completo</label>
-                            <input type="text" id="empName" class="form-control" required>
+                        <div class="col-md-4">
+                            <label class="form-label mb-1">Teléfono</label>
+                            <input type="text" id="empTelefono" class="form-control form-control-sm">
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Email <span class="text-danger">*</span></label>
-                            <input type="email" id="empEmail" class="form-control" required>
+                        <div class="col-md-4">
+                            <label class="form-label mb-1">Nombre completo</label>
+                            <input type="text" id="empName" class="form-control form-control-sm" required>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Contraseña <small class="text-muted">(dejar vacío para mantener)</small></label>
-                            <input type="password" id="empPassword" class="form-control" minlength="6">
+                        <div class="col-md-4">
+                            <label class="form-label mb-1">Email <span class="text-danger">*</span></label>
+                            <input type="email" id="empEmail" class="form-control form-control-sm" required>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Teléfono</label>
-                            <input type="text" id="empTelefono" class="form-control">
+                        <div class="col-md-4">
+                            <label class="form-label mb-1">Contraseña <small class="text-muted">(vacío = mantener)</small></label>
+                            <input type="password" id="empPassword" class="form-control form-control-sm" minlength="6">
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Departamento</label>
-                            <select id="empDepartamento" class="form-select">
+                    </div>
+
+                    {{-- Sección: Organización --}}
+                    <div class="border-start border-primary border-3 ps-2 mb-2">
+                        <span class="text-primary fw-semibold small text-uppercase">Organización</span>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label mb-1">Departamento</label>
+                            <select id="empDepartamento" class="form-select form-select-sm">
                                 <option value="">— Sin departamento —</option>
                             </select>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Cargo</label>
-                            <select id="empCargo" class="form-select">
+                        <div class="col-md-4">
+                            <label class="form-label mb-1">Cargo</label>
+                            <select id="empCargo" class="form-select form-select-sm">
                                 <option value="">— Sin cargo —</option>
                             </select>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Horario <span class="text-danger">*</span></label>
-                            <select id="empHorario" class="form-select" required>
+                        <div class="col-md-4">
+                            <label class="form-label mb-1">Horario <span class="text-danger">*</span></label>
+                            <select id="empHorario" class="form-select form-select-sm" required>
                                 <option value="">— Seleccionar horario —</option>
                             </select>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Empleador</label>
-                            <select id="empEmpleador" class="form-select">
+                        <div class="col-md-4">
+                            <label class="form-label mb-1">Empleador</label>
+                            <select id="empEmpleador" class="form-select form-select-sm">
                                 <option value="">— Sin empleador —</option>
                             </select>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Líder</label>
-                            <select id="empLider" class="form-select">
+                        <div class="col-md-4">
+                            <label class="form-label mb-1">Líder</label>
+                            <select id="empLider" class="form-select form-select-sm">
                                 <option value="">— Sin líder —</option>
                             </select>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Centro de costo</label>
-                            <input type="text" id="empCentroCosto" class="form-control" placeholder="Ej: CC-001">
+                        <div class="col-md-4">
+                            <label class="form-label mb-1">Centro de costo</label>
+                            <input type="text" id="empCentroCosto" class="form-control form-control-sm" placeholder="Ej: CC-001">
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Ruta</label>
-                            <input type="text" id="empRuta" class="form-control" placeholder="Ej: Ruta Norte">
+                        <div class="col-md-4">
+                            <label class="form-label mb-1">Ruta</label>
+                            <input type="text" id="empRuta" class="form-control form-control-sm" placeholder="Ej: Ruta Norte">
                         </div>
-                        <div class="col-md-6 mb-3 d-flex align-items-end">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="empVerTodos" role="switch">
-                                <label class="form-check-label" for="empVerTodos">
-                                    Ver todos los empleados
-                                    <small class="d-block text-muted" style="font-size:11px">Acceso a toda la empresa sin filtro de líder</small>
-                                </label>
-                            </div>
-                        </div>
-                        <div class="col-12 mb-3">
-                            <label class="form-label">Sedes asignadas</label>
-                            <div id="empSedesContainer" class="border rounded p-2" style="min-height:42px; max-height:160px; overflow-y:auto; background:#fff;">
-                                <span class="text-muted small" id="empSedesVacio">Sin sedes disponibles</span>
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Rol</label>
-                            <select id="empRole" class="form-select" @cannot('empleados.editar') disabled @endcannot>
+                    </div>
+
+                    {{-- Sección: Acceso y sedes --}}
+                    <div class="border-start border-primary border-3 ps-2 mb-2">
+                        <span class="text-primary fw-semibold small text-uppercase">Acceso y sedes</span>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-3">
+                            <label class="form-label mb-1">Rol</label>
+                            <select id="empRole" class="form-select form-select-sm" @cannot('empleados.editar') disabled @endcannot>
                                 <option value="">— Sin rol —</option>
                             </select>
                         </div>
-                        <div class="col-md-4 mb-3 d-flex align-items-end">
-                            <div class="form-check form-switch">
+                        <div class="col-md-3 d-flex align-items-end pb-1 gap-4">
+                            <div class="form-check form-switch mb-0">
                                 <input class="form-check-input" type="checkbox" id="empActivo" checked>
-                                <label class="form-check-label">Activo</label>
+                                <label class="form-check-label small" for="empActivo">Activo</label>
+                            </div>
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input" type="checkbox" id="empVerTodos" role="switch">
+                                <label class="form-check-label small" for="empVerTodos">
+                                    Ver todos
+                                    <i class="fa-solid fa-circle-info text-muted ms-1" style="font-size:11px;" title="Acceso a toda la empresa sin filtro de líder"></i>
+                                </label>
                             </div>
                         </div>
-                        <div class="col-12 d-none" id="empTratamientoInfo">
-                            <div id="empTratamientoAlert" class="alert d-flex align-items-start gap-2 py-2 px-3 mb-3" role="alert">
-                                <span id="empTratamientoIcon" class="fs-5"></span>
-                                <div>
-                                    <div class="fw-semibold small" id="empTratamientoTitulo"></div>
-                                    <div class="small text-muted" id="empTratamientoDetalle"></div>
-                                </div>
+                        <div class="col-md-6">
+                            <label class="form-label mb-1">Sedes asignadas</label>
+                            <div id="empSedesContainer" class="border rounded p-2" style="min-height:36px; max-height:100px; overflow-y:auto; background:#fff;">
+                                <span class="text-muted small" id="empSedesVacio">Sin sedes disponibles</span>
                             </div>
                         </div>
                     </div>
-                    <hr class="mt-0 mb-2">
-                    <div class="row">
-                        <div class="col-12 mb-1">
-                            <small class="text-muted">Los permisos del usuario se gestionan desde <strong>Roles y Permisos</strong>.</small>
+
+                    {{-- Tratamiento de datos --}}
+                    <div class="col-12 d-none" id="empTratamientoInfo">
+                        <div id="empTratamientoAlert" class="alert d-flex align-items-start gap-2 py-2 px-3 mb-2" role="alert">
+                            <span id="empTratamientoIcon" class="fs-5"></span>
+                            <div>
+                                <div class="fw-semibold small" id="empTratamientoTitulo"></div>
+                                <div class="small text-muted" id="empTratamientoDetalle"></div>
+                            </div>
                         </div>
+                    </div>
+
+                    <div class="mt-1">
+                        <small class="text-muted">Los permisos se gestionan desde <strong>Roles y Permisos</strong>.</small>
                     </div>
                 </form>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" id="btnGuardarEmpleado" class="btn btn-primary" onclick="saveEmpleado()">Guardar</button>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" id="btnGuardarEmpleado" class="btn btn-primary btn-sm" onclick="saveEmpleado()">Guardar</button>
             </div>
         </div>
     </div>
