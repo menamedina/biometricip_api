@@ -38,5 +38,29 @@ return Application::configure(basePath: dirname(__DIR__))
             ->dailyAt('08:00')
             ->runInBackground()
             ->appendOutputTo(storage_path('logs/reporte-lideres.log'));
+
+        // Programación de turno – una entrada por cada combinación (dia, hora) distinta en tbl_empresas
+        try {
+            $configs = \Illuminate\Support\Facades\DB::table('tbl_empresas')
+                ->where('is_active', true)
+                ->whereNotNull('hora_ejecucion_turno')
+                ->whereNotNull('dia_ejecucion_turno')
+                ->select('dia_ejecucion_turno', 'hora_ejecucion_turno')
+                ->distinct()
+                ->get();
+
+            foreach ($configs as $config) {
+                $hora = substr($config->hora_ejecucion_turno, 0, 5);
+                $dia  = (int) $config->dia_ejecucion_turno;
+
+                $schedule->command("turno:aplicar --dia={$dia} --hora={$hora}")
+                    ->dailyAt($hora)
+                    ->days([$dia])
+                    ->withoutOverlapping()
+                    ->appendOutputTo(storage_path('logs/turno-aplicar.log'));
+            }
+        } catch (\Throwable $e) {
+            // BD no disponible al cargar el scheduler
+        }
     })
     ->create();

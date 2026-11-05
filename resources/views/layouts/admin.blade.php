@@ -250,6 +250,14 @@
                             </a>
                         </li>
                         @endcan
+                        @can('programacion_turno.ver')
+                        <li class="side-nav-item">
+                            <a href="{{ route('admin.programacion-turno.index') }}" class="side-nav-link {{ request()->routeIs('admin.programacion-turno.*') ? 'active' : '' }}">
+                                <span class="menu-icon"><i class="ti ti-calendar-week"></i></span>
+                                <span class="menu-text">Prog. de Turno</span>
+                            </a>
+                        </li>
+                        @endcan
 
                         {{-- ── Organización ────────────────────────────────── --}}
                         @canany(['departamentos.ver','empleadores.ver'])

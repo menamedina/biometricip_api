@@ -110,13 +110,15 @@ class EmpresaController extends Controller
         $empresa = Empresa::findOrFail($id);
 
         $data = $request->validate([
-            'nombre'    => 'sometimes|string|max:255',
-            'ruc'       => 'nullable|string|max:20|unique:tbl_empresas,ruc,' . $empresa->id,
-            'email'     => 'nullable|email|max:255',
-            'telefono'  => 'nullable|string|max:20',
-            'plan'          => 'nullable|in:bronce,plata,oro',
-            'max_usuarios'  => 'nullable|integer|min:1',
-            'is_active'     => 'nullable|boolean',
+            'nombre'                => 'sometimes|string|max:255',
+            'ruc'                   => 'nullable|string|max:20|unique:tbl_empresas,ruc,' . $empresa->id,
+            'email'                 => 'nullable|email|max:255',
+            'telefono'              => 'nullable|string|max:20',
+            'plan'                  => 'nullable|in:bronce,plata,oro',
+            'max_usuarios'          => 'nullable|integer|min:1',
+            'is_active'             => 'nullable|boolean',
+            'hora_ejecucion_turno'  => 'nullable|date_format:H:i',
+            'dia_ejecucion_turno'   => 'nullable|integer|between:0,6',
         ]);
 
         $empresa->update($data);
@@ -189,10 +191,11 @@ class EmpresaController extends Controller
         }
 
         $data = $request->validate([
-            'nombre'    => 'sometimes|string|max:255',
-            'ruc'       => 'nullable|string|max:20|unique:tbl_empresas,ruc,' . $empresa->id,
-            'email'     => 'nullable|email|max:255',
-            'telefono'  => 'nullable|string|max:20',
+            'nombre'               => 'sometimes|string|max:255',
+            'ruc'                  => 'nullable|string|max:20|unique:tbl_empresas,ruc,' . $empresa->id,
+            'email'                => 'nullable|email|max:255',
+            'telefono'             => 'nullable|string|max:20',
+            'hora_ejecucion_turno' => 'nullable|date_format:H:i',
         ]);
 
         $empresa->update($data);

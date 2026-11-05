@@ -17,6 +17,7 @@ use App\Http\Controllers\AiChatController;
 use App\Http\Controllers\LoginImageController;
 use App\Http\Controllers\AdminLoginImageController;
 use App\Http\Controllers\CapacitacionController;
+use App\Http\Controllers\Admin\ProgramacionTurnoController;
 use Illuminate\Support\Facades\Route;
 
 // ZKTeco ADMS PUSH — sin autenticación ni CSRF
@@ -244,6 +245,12 @@ Route::middleware(['auth', 'admin', 'tenancy.session'])->group(function () {
     Route::get   ('/admin/permisos/tipos',           [AdminController::class, 'tiposPermisoIndex'])->name('admin.permisos.tipos');
     Route::post  ('/admin/permisos/tipos',           [AdminController::class, 'tiposPermisoStore']);
     Route::put   ('/admin/permisos/tipos/{id}',      [AdminController::class, 'tiposPermisoUpdate']);
+    // Programación de turno
+    Route::get   ('/admin/programacion-turno',         [ProgramacionTurnoController::class, 'index'])->name('admin.programacion-turno.index');
+    Route::get   ('/admin/programacion-turno/data',    [ProgramacionTurnoController::class, 'data']);
+    Route::post  ('/admin/programacion-turno',         [ProgramacionTurnoController::class, 'store']);
+    Route::delete('/admin/programacion-turno/{id}',    [ProgramacionTurnoController::class, 'destroy']);
+
     // Capacitaciones
     Route::get   ('/admin/capacitaciones',                      [CapacitacionController::class, 'index'])->name('admin.capacitaciones.index');
     Route::get   ('/admin/capacitaciones/list',                 [CapacitacionController::class, 'list']);

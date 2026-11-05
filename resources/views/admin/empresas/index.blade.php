@@ -99,6 +99,23 @@
                             <label class="form-label">Teléfono</label>
                             <input type="text" id="frmTelefono" class="form-control">
                         </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Día aplicación turno</label>
+                            <select id="frmDiaEjecucionTurno" class="form-select">
+                                <option value="">— Sin configurar —</option>
+                                <option value="1">Lunes</option>
+                                <option value="2">Martes</option>
+                                <option value="3">Miércoles</option>
+                                <option value="4">Jueves</option>
+                                <option value="5">Viernes</option>
+                                <option value="6">Sábado</option>
+                                <option value="0">Domingo</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Hora aplicación turno</label>
+                            <input type="time" id="frmHoraEjecucionTurno" class="form-control">
+                        </div>
                         <div id="planFields">
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Plan</label>
@@ -380,14 +397,16 @@ async function editEmpresa(id) {
         const data = await res.json();
         const e = data.data;
 
-        document.getElementById('empresaId').value       = e.id;
-        document.getElementById('empresaModoPropio').value = '0';
-        document.getElementById('frmNombre').value       = e.nombre || '';
-        document.getElementById('frmRuc').value          = e.ruc || '';
-        document.getElementById('frmEmail').value        = e.email || '';
-        document.getElementById('frmTelefono').value     = e.telefono || '';
-        document.getElementById('frmPlan').value         = e.plan || 'bronce';
-        document.getElementById('frmMaxUsuarios').value  = e.max_usuarios || 50;
+        document.getElementById('empresaId').value                = e.id;
+        document.getElementById('empresaModoPropio').value        = '0';
+        document.getElementById('frmNombre').value                = e.nombre || '';
+        document.getElementById('frmRuc').value                   = e.ruc || '';
+        document.getElementById('frmEmail').value                 = e.email || '';
+        document.getElementById('frmTelefono').value              = e.telefono || '';
+        document.getElementById('frmDiaEjecucionTurno').value     = e.dia_ejecucion_turno ?? '';
+        document.getElementById('frmHoraEjecucionTurno').value   = e.hora_ejecucion_turno ? e.hora_ejecucion_turno.slice(0, 5) : '';
+        document.getElementById('frmPlan').value                  = e.plan || 'bronce';
+        document.getElementById('frmMaxUsuarios').value           = e.max_usuarios || 50;
 
         document.getElementById('adminFields').style.display = 'none';
         document.getElementById('frmAdminEmail').required = false;
@@ -476,12 +495,14 @@ async function editMiEmpresa() {
         const data = await res.json();
         const e = data.data;
 
-        document.getElementById('empresaId').value         = e.id;
-        document.getElementById('empresaModoPropio').value = '1';
-        document.getElementById('frmNombre').value         = e.nombre || '';
-        document.getElementById('frmRuc').value            = e.ruc || '';
-        document.getElementById('frmEmail').value          = e.email || '';
-        document.getElementById('frmTelefono').value       = e.telefono || '';
+        document.getElementById('empresaId').value                = e.id;
+        document.getElementById('empresaModoPropio').value        = '1';
+        document.getElementById('frmNombre').value                = e.nombre || '';
+        document.getElementById('frmRuc').value                   = e.ruc || '';
+        document.getElementById('frmEmail').value                 = e.email || '';
+        document.getElementById('frmTelefono').value              = e.telefono || '';
+        document.getElementById('frmDiaEjecucionTurno').value     = e.dia_ejecucion_turno ?? '';
+        document.getElementById('frmHoraEjecucionTurno').value    = e.hora_ejecucion_turno ? e.hora_ejecucion_turno.slice(0, 5) : '';
 
         // Ocultar campos de plan y admin (no editables por usuario normal)
         var planFields = document.getElementById('planFields');
@@ -502,10 +523,12 @@ async function saveEmpresa() {
     const modoPropio = document.getElementById('empresaModoPropio').value === '1';
 
     const payload = {
-        nombre:   document.getElementById('frmNombre').value,
-        ruc:      document.getElementById('frmRuc').value || null,
-        email:    document.getElementById('frmEmail').value || null,
-        telefono: document.getElementById('frmTelefono').value || null,
+        nombre:                document.getElementById('frmNombre').value,
+        ruc:                   document.getElementById('frmRuc').value || null,
+        email:                 document.getElementById('frmEmail').value || null,
+        telefono:              document.getElementById('frmTelefono').value || null,
+        dia_ejecucion_turno:   document.getElementById('frmDiaEjecucionTurno').value !== '' ? parseInt(document.getElementById('frmDiaEjecucionTurno').value) : null,
+        hora_ejecucion_turno:  document.getElementById('frmHoraEjecucionTurno').value || null,
     };
 
     if (!modoPropio) {
