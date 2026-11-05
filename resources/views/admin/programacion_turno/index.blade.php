@@ -36,6 +36,26 @@
         </span>
     </div>
 
+    {{-- Asignación masiva --}}
+    @can('programacion_turno.crear')
+    <div class="card border-0 bg-light mb-3">
+        <div class="card-body py-2 px-3 d-flex align-items-center gap-3 flex-wrap">
+            <span class="text-muted small fw-semibold text-nowrap">
+                <i class="fa-solid fa-users me-1"></i> Asignar a todos:
+            </span>
+            <select id="selMasivo" class="form-select form-select-sm" style="max-width:280px">
+                <option value="">— Selecciona un turno —</option>
+                @foreach($horariosData as $h)
+                <option value="{{ $h['id'] }}">{{ $h['nombre'] }}</option>
+                @endforeach
+            </select>
+            <button class="btn btn-sm btn-outline-primary" onclick="aplicarMasivo()">
+                <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Aplicar a todos
+            </button>
+        </div>
+    </div>
+    @endcan
+
     <div class="card shadow-lg border-0">
         <div class="card-body p-0">
             <table class="table table-hover mb-0 w-100" id="turnoTable">
@@ -225,6 +245,23 @@ async function loadEquipo() {
         document.getElementById('turnoTbody').innerHTML =
             '<tr><td colspan="7" class="text-center text-danger py-4"><i class="fa-solid fa-triangle-exclamation me-1"></i>Error al cargar el equipo.</td></tr>';
     }
+}
+
+function aplicarMasivo() {
+    const horarioId = parseInt(document.getElementById('selMasivo').value);
+    if (!horarioId) {
+        mostrarAlerta('warning', 'Selecciona un turno para aplicar a todos.');
+        return;
+    }
+
+    document.querySelectorAll('#turnoTbody select').forEach(sel => {
+        sel.value = horarioId;
+        // Disparar change para actualizar badge y resumen
+        sel.dispatchEvent(new Event('change'));
+    });
+
+    const nombre = horarios.find(h => h.id === horarioId)?.nombre ?? '';
+    mostrarAlerta('success', `<i class="fa-solid fa-check me-1"></i>Turno <strong>${nombre}</strong> asignado a todos. Recuerda guardar.`);
 }
 
 async function guardarProgramacion() {
