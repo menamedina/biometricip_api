@@ -77,6 +77,9 @@
     </div>
     @endcan
 
+    {{-- Cards resumen por turno --}}
+    <div class="d-flex flex-wrap gap-3 mb-3" id="turnoCards"></div>
+
     <div class="card shadow-lg border-0">
         <div class="card-body p-0">
             <table class="table table-hover mb-0 w-100" id="turnoTable">
@@ -121,6 +124,29 @@
     background: #e9ecef; display: inline-flex;
     align-items: center; justify-content: center;
     font-size: 15px; color: #adb5bd;
+}
+.turno-card {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 160px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+.turno-card-icon {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: #e8f5e9;
+    display: flex; align-items: center; justify-content: center;
+    color: #36b37e; font-size: 16px; flex-shrink: 0;
+}
+.turno-card-count {
+    font-size: 22px; font-weight: 700; color: #333; line-height: 1;
+}
+.turno-card-label {
+    font-size: 12px; color: #8c8c8c; margin-top: 2px;
 }
 </style>
 @endpush
@@ -207,6 +233,60 @@ function buildBadge(programadoId, actualId) {
     return '<span class="badge bg-light text-muted border">Sin cambio</span>';
 }
 
+function actualizarCards() {
+    const container = document.getElementById('turnoCards');
+    const filtroId = parseInt(document.getElementById('selFiltro')?.value) || null;
+
+    // Contar empleados visibles por turno actual
+    const conteo = {};
+    equipoData.forEach(emp => {
+        if (filtroId && emp.horario_id !== filtroId) return;
+        const hId = emp.horario_id;
+        if (!hId) return;
+        if (!conteo[hId]) conteo[hId] = { nombre: emp.horario_nombre, count: 0 };
+        conteo[hId].count++;
+    });
+
+    // Total visibles
+    const totalVisibles = Object.values(conteo).reduce((s, c) => s + c.count, 0);
+
+    let html = `<div class="turno-card">
+        <div class="turno-card-icon" style="background:#e3f2fd;color:#1976d2;">
+            <i class="fa-solid fa-users"></i>
+        </div>
+        <div>
+            <div class="turno-card-count">${totalVisibles}</div>
+            <div class="turno-card-label">Total empleados</div>
+        </div>
+    </div>`;
+
+    const colores = [
+        { bg: '#e8f5e9', fg: '#36b37e', icon: 'fa-solid fa-clock' },
+        { bg: '#fff3e0', fg: '#f57c00', icon: 'fa-solid fa-clock' },
+        { bg: '#f3e5f5', fg: '#8e24aa', icon: 'fa-solid fa-clock' },
+        { bg: '#e0f7fa', fg: '#00838f', icon: 'fa-solid fa-clock' },
+        { bg: '#fce4ec', fg: '#c62828', icon: 'fa-solid fa-clock' },
+        { bg: '#e8eaf6', fg: '#3949ab', icon: 'fa-solid fa-clock' },
+    ];
+
+    let i = 0;
+    for (const [hId, data] of Object.entries(conteo)) {
+        const c = colores[i % colores.length];
+        html += `<div class="turno-card">
+            <div class="turno-card-icon" style="background:${c.bg};color:${c.fg};">
+                <i class="${c.icon}"></i>
+            </div>
+            <div>
+                <div class="turno-card-count">${data.count}</div>
+                <div class="turno-card-label">${data.nombre}</div>
+            </div>
+        </div>`;
+        i++;
+    }
+
+    container.innerHTML = html;
+}
+
 async function loadEquipo() {
     try {
         const res = await fetch('/admin/programacion-turno/data');
@@ -248,6 +328,8 @@ async function loadEquipo() {
             `;
             tbody.appendChild(tr);
         });
+
+        actualizarCards();
 
         // Habilitar/deshabilitar botón de exportar según programaciones guardadas
         const tieneGuardadas = equipoData.some(e => e.programacion_id);
@@ -292,6 +374,8 @@ function filtrarPorTurno() {
         const visible = !filtroId || emp.horario_id === filtroId;
         tr.style.display = visible ? '' : 'none';
     });
+
+    actualizarCards();
 }
 
 function aplicarMasivo() {
