@@ -15,7 +15,7 @@
                 </p>
             </div>
             <div class="d-flex gap-2">
-                <a href="{{ route('admin.programacion-turno.export') }}" class="btn btn-success" id="btnExport" style="display:none;">
+                <a href="{{ route('admin.programacion-turno.export') }}" class="btn btn-success disabled" id="btnExport" aria-disabled="true" tabindex="-1">
                     <i class="fa-solid fa-file-excel me-1"></i> Exportar Excel
                 </a>
                 @can('programacion_turno.crear')
@@ -249,9 +249,18 @@ async function loadEquipo() {
             tbody.appendChild(tr);
         });
 
-        // Mostrar botón de exportar si hay programaciones guardadas
+        // Habilitar/deshabilitar botón de exportar según programaciones guardadas
         const tieneGuardadas = equipoData.some(e => e.programacion_id);
-        document.getElementById('btnExport').style.display = tieneGuardadas ? '' : 'none';
+        const btnExport = document.getElementById('btnExport');
+        if (tieneGuardadas) {
+            btnExport.classList.remove('disabled');
+            btnExport.removeAttribute('aria-disabled');
+            btnExport.removeAttribute('tabindex');
+        } else {
+            btnExport.classList.add('disabled');
+            btnExport.setAttribute('aria-disabled', 'true');
+            btnExport.setAttribute('tabindex', '-1');
+        }
 
         // Actualizar badge y resumen al cambiar el select
         document.querySelectorAll('#turnoTbody select').forEach(sel => {
