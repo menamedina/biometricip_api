@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\SimpleCollectionExport;
 use App\Http\Controllers\Controller;
 use App\Models\Cargo;
 use App\Models\Departamento;
@@ -14,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ProgramacionTurnoController extends Controller
 {
@@ -168,6 +170,55 @@ class ProgramacionTurnoController extends Controller
             'message'  => "Programación guardada ({$guardados} empleados).",
             'guardados' => $guardados,
         ]);
+    }
+
+    /**
+     * Exporta a Excel las programaciones guardadas del líder autenticado.
+     */
+    public function exportExcel()
+    {
+        abort_unless(Auth::user()->can('programacion_turno.ver'), 403);
+
+        $lider        = Auth::user();
+        $semanaInicio = $this->proximoDiaEjecucion($lider->empresa_id)->toDateString();
+
+        $programaciones = ProgramacionTurno::where('lider_id', $lider->id)
+            ->where('semana_inicio', $semanaInicio)
+            ->get();
+
+        if ($programaciones->isEmpty()) {
+            return back()->with('warning', 'No hay programaciones guardadas para exportar.');
+        }
+
+        $userIds    = $programaciones->pluck('user_id');
+        $horarioIds = $programaciones->pluck('horario_id')->unique();
+
+        $usuarios = User::whereIn('id', $userIds)->get()->keyBy('id');
+
+        $horActualIds = $usuarios->pluck('horario_id')->filter()->unique();
+        $todosHorIds  = $horarioIds->merge($horActualIds)->unique();
+
+        $horarios = Horario::whereIn('id', $todosHorIds)->pluck('nombre', 'id');
+        $cargos   = Cargo::whereIn('id', $usuarios->pluck('cargo_id')->filter()->unique())->pluck('nombre', 'id');
+        $deptos   = Departamento::whereIn('id', $usuarios->pluck('departamento_id')->filter()->unique())->pluck('nombre', 'id');
+
+        $rows = $programaciones->map(function ($prog) use ($usuarios, $horarios, $cargos, $deptos) {
+            $user = $usuarios->get($prog->user_id);
+            if (!$user) return null;
+
+            return [
+                'Empleado'          => $user->name,
+                'Cargo'             => $cargos[$user->cargo_id] ?? '—',
+                'Departamento'      => $deptos[$user->departamento_id] ?? '—',
+                'Turno Actual'      => $horarios[$user->horario_id] ?? '—',
+                'Turno Programado'  => $horarios[$prog->horario_id] ?? '—',
+                'Semana Inicio'     => $prog->semana_inicio,
+            ];
+        })->filter()->values()->toArray();
+
+        $filename = 'programacion_turno_' . $semanaInicio . '.xlsx';
+
+        return Excel::download(new SimpleCollectionExport($rows), $filename);
     }
 
     /**

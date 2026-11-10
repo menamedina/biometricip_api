@@ -248,6 +248,7 @@ Route::middleware(['auth', 'admin', 'tenancy.session'])->group(function () {
     // Programación de turno
     Route::get   ('/admin/programacion-turno',         [ProgramacionTurnoController::class, 'index'])->name('admin.programacion-turno.index');
     Route::get   ('/admin/programacion-turno/data',    [ProgramacionTurnoController::class, 'data']);
+    Route::get   ('/admin/programacion-turno/export',  [ProgramacionTurnoController::class, 'exportExcel'])->name('admin.programacion-turno.export');
     Route::post  ('/admin/programacion-turno',         [ProgramacionTurnoController::class, 'store']);
     Route::delete('/admin/programacion-turno/{id}',    [ProgramacionTurnoController::class, 'destroy']);
 

@@ -14,15 +14,20 @@
                     <strong>{{ $semanaFin->locale('es')->isoFormat('D [de] MMMM [de] YYYY') }}</strong>
                 </p>
             </div>
-            @can('programacion_turno.crear')
-            <button class="btn btn-primary" onclick="guardarProgramacion()">
-                <i class="fa-solid fa-floppy-disk me-1"></i> Guardar programación
-            </button>
-            @else
-            <button class="btn btn-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;">
-                <i class="fa-solid fa-floppy-disk me-1"></i> Guardar programación
-            </button>
-            @endcan
+            <div class="d-flex gap-2">
+                <a href="{{ route('admin.programacion-turno.export') }}" class="btn btn-success" id="btnExport" style="display:none;">
+                    <i class="fa-solid fa-file-excel me-1"></i> Exportar Excel
+                </a>
+                @can('programacion_turno.crear')
+                <button class="btn btn-primary" onclick="guardarProgramacion()">
+                    <i class="fa-solid fa-floppy-disk me-1"></i> Guardar programación
+                </button>
+                @else
+                <button class="btn btn-primary" disabled data-bs-toggle="tooltip" title="No tiene permiso" style="pointer-events:auto;cursor:not-allowed;">
+                    <i class="fa-solid fa-floppy-disk me-1"></i> Guardar programación
+                </button>
+                @endcan
+            </div>
         </div>
     </div>
 
@@ -243,6 +248,10 @@ async function loadEquipo() {
             `;
             tbody.appendChild(tr);
         });
+
+        // Mostrar botón de exportar si hay programaciones guardadas
+        const tieneGuardadas = equipoData.some(e => e.programacion_id);
+        document.getElementById('btnExport').style.display = tieneGuardadas ? '' : 'none';
 
         // Actualizar badge y resumen al cambiar el select
         document.querySelectorAll('#turnoTbody select').forEach(sel => {
