@@ -173,7 +173,7 @@
         <p class="greeting">Hola, <strong>{{ $lider->name }}</strong></p>
         <p class="subtext">
             <strong>{{ $empresa->nombre }}</strong> &nbsp;·&nbsp;
-            A continuación encontrarás el estado de marcación de tu equipo para el día de hoy.
+            A continuación encontrarás el estado de marcación de tu equipo del día de ayer.
         </p>
 
         {{-- Resumen --}}

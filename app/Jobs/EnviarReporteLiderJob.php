@@ -43,7 +43,7 @@ class EnviarReporteLiderJob
 
             TenantHelper::switchTenant($this->empresaId);
 
-            $fecha = now()->toDateString();
+            $fecha = now()->subDay()->toDateString();
 
             try {
                 $datosReporte = $this->construirReporte($lider, $fecha);
