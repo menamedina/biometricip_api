@@ -98,17 +98,19 @@
                             <label class="form-label">Dirección</label>
                             <input type="text" id="sedeDireccion" class="form-control" placeholder="Bogotá">
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Latitud</label>
-                            <input type="number" step="0.0000001" id="sedeLat" class="form-control" placeholder="19.4326" required oninput="syncMapFromInputs()">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Longitud</label>
-                            <input type="number" step="0.0000001" id="sedeLng" class="form-control" placeholder="-99.1332" required oninput="syncMapFromInputs()">
-                        </div>
-                        <div class="col-md-2 mb-3">
-                            <label class="form-label">Radio (m)</label>
-                            <input type="number" id="sedeRadio" class="form-control" value="150" min="10" max="5000" oninput="syncMapFromInputs()">
+                        <div id="coordsWrapper" class="col-12 row g-2 mb-0">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Latitud</label>
+                                <input type="number" step="0.0000001" id="sedeLat" class="form-control" placeholder="19.4326" required oninput="syncMapFromInputs()">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Longitud</label>
+                                <input type="number" step="0.0000001" id="sedeLng" class="form-control" placeholder="-99.1332" required oninput="syncMapFromInputs()">
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <label class="form-label">Radio (m)</label>
+                                <input type="number" id="sedeRadio" class="form-control" value="150" min="10" max="5000" oninput="syncMapFromInputs()">
+                            </div>
                         </div>
                         <div class="col-md-2 mb-3 d-flex align-items-end">
                             <div class="form-check form-switch">
@@ -123,13 +125,22 @@
                             </div>
                             <div class="form-text">Al escanear en esta sede se registra automáticamente la salida de la sede anterior y la entrada aquí (y viceversa al regresar).</div>
                         </div>
+                        <div class="col-12 mb-2">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="sedePermiteRemota" onchange="toggleCoordsRequired()">
+                                <label class="form-check-label fw-semibold" for="sedePermiteRemota">Permite marcación remota</label>
+                            </div>
+                            <div class="form-text">Usuarios autorizados podrán marcar asistencia desde cualquier ubicación para esta sede. Al activarlo, las coordenadas no son obligatorias.</div>
+                        </div>
                     </div>
                 </form>
                 <!-- Mapa -->
-                <div class="mb-1">
-                    <small class="text-muted"><i class="fa-solid fa-hand-pointer me-1"></i>Haz clic en el mapa para colocar la ubicación. Puedes arrastrar el marcador.</small>
+                <div id="mapWrapper">
+                    <div class="mb-1">
+                        <small class="text-muted"><i class="fa-solid fa-hand-pointer me-1"></i>Haz clic en el mapa para colocar la ubicación. Puedes arrastrar el marcador.</small>
+                    </div>
+                    <div id="sedeMap" style="height: 320px; border-radius: 10px; border: 1px solid #dee2e6;"></div>
                 </div>
-                <div id="sedeMap" style="height: 320px; border-radius: 10px; border: 1px solid #dee2e6;"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -440,13 +451,27 @@ function getNextSedeCodigo() {
     return 'SEDE-' + next;
 }
 
+function toggleCoordsRequired() {
+    const remota  = document.getElementById('sedePermiteRemota').checked;
+    ['coordsWrapper', 'mapWrapper'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = remota ? 'none' : '';
+    });
+    ['sedeLat', 'sedeLng'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.required = !remota;
+    });
+}
+
 function resetForm() {
     document.getElementById('sedeForm').reset();
     document.getElementById('sedeId').value = '';
     document.getElementById('sedeModalTitle').textContent = 'Nueva Sede';
-    document.getElementById('sedeActivo').checked        = true;
-    document.getElementById('sedeDobleRegistro').checked = false;
+    document.getElementById('sedeActivo').checked          = true;
+    document.getElementById('sedeDobleRegistro').checked   = false;
+    document.getElementById('sedePermiteRemota').checked   = false;
     document.getElementById('sedeRadio').value = 150;
+    toggleCoordsRequired();
     document.getElementById('sedeCodigo').value = getNextSedeCodigo();
     clearSedeError();
     if (isAdminTenant) {
@@ -625,9 +650,11 @@ function editSede(sede) {
     document.getElementById('sedeLat').value = sede.lat;
     document.getElementById('sedeLng').value = sede.lng;
     document.getElementById('sedeRadio').value = sede.radio_mts;
-    document.getElementById('sedeActivo').checked        = sede.is_active;
-    document.getElementById('sedeDobleRegistro').checked = !!sede.doble_registro;
+    document.getElementById('sedeActivo').checked          = sede.is_active;
+    document.getElementById('sedeDobleRegistro').checked   = !!sede.doble_registro;
+    document.getElementById('sedePermiteRemota').checked   = !!sede.permite_marcacion_remota;
     document.getElementById('sedeModalTitle').textContent = 'Editar Sede';
+    toggleCoordsRequired();
     if (isAdminTenant) {
         const sel = document.getElementById('sedeEmpresaId');
         if (sel) sel.value = currentEmpresaId || '';
@@ -649,9 +676,11 @@ async function saveSede() {
         currentEmpresaId = empSel.value;
     }
 
+    const permiteRemota = document.getElementById('sedePermiteRemota').checked;
+
     if (!codigo) { showSedeError('El código de la sede es obligatorio.'); return; }
     if (!nombre)  { showSedeError('El nombre de la sede es obligatorio.'); return; }
-    if (isNaN(lat) || isNaN(lng)) {
+    if (!permiteRemota && (isNaN(lat) || isNaN(lng))) {
         showSedeError('Debes hacer clic en el mapa o ingresar latitud y longitud manualmente.');
         return;
     }
@@ -660,11 +689,12 @@ async function saveSede() {
         codigo,
         nombre,
         direccion: document.getElementById('sedeDireccion').value,
-        lat,
-        lng,
-        radio_mts: parseInt(document.getElementById('sedeRadio').value) || 150,
-        is_active:      document.getElementById('sedeActivo').checked,
-        doble_registro: document.getElementById('sedeDobleRegistro').checked,
+        lat:       permiteRemota && isNaN(lat) ? null : lat,
+        lng:       permiteRemota && isNaN(lng) ? null : lng,
+        radio_mts: parseInt(document.getElementById('sedeRadio').value) || null,
+        is_active:               document.getElementById('sedeActivo').checked,
+        doble_registro:          document.getElementById('sedeDobleRegistro').checked,
+        permite_marcacion_remota: permiteRemota,
     };
 
     const url    = id ? `/admin/sedes/${id}` : '/admin/sedes';

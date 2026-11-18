@@ -197,33 +197,48 @@ class AttendanceController extends Controller
             }
         }
 
-        $distancia = $this->calcularDistancia(
-            (float) $request->lat,
-            (float) $request->lng,
-            (float) $sede->lat,
-            (float) $sede->lng
-        );
+        // Sede remota autorizada: omitir geocerca completamente
+        $esMarcacionRemota = ($sede->permite_marcacion_remota ?? false)
+            && ($user->marcacion_global ?? false);
 
-        Log::info('=== GEOCERCA DEBUG ===', [
-            'user_lat' => $request->lat,
-            'user_lng' => $request->lng,
-            'sede_lat' => $sede->lat,
-            'sede_lng' => $sede->lng,
-            'sede_nombre' => $sede->nombre,
-            'distancia_calculada_mts' => round($distancia, 2),
-            'radio_permitido_mts' => $sede->radio_mts,
-            'dentro_de_geocerca' => $distancia <= $sede->radio_mts,
-            'metodo' => $request->metodo,
-        ]);
+        if ($esMarcacionRemota) {
+            $distancia        = 0;
+            $geocercaValidada = true;
+            Log::info('=== MARCACION REMOTA (sin geocerca) ===', [
+                'user_id'    => $user->id,
+                'sede'       => $sede->nombre,
+                'user_lat'   => $request->lat,
+                'user_lng'   => $request->lng,
+            ]);
+        } else {
+            $distancia = $this->calcularDistancia(
+                (float) $request->lat,
+                (float) $request->lng,
+                (float) $sede->lat,
+                (float) $sede->lng
+            );
 
-        $accuracy = min((int) $request->input('accuracy', 0), 250);
-        $geocercaValidada = $distancia <= ($sede->radio_mts + $accuracy);
-        if (!$geocercaValidada && $request->metodo !== 'foto') {
-            return response()->json([
-                'message' => 'Estás fuera del rango permitido de la oficina.',
-                'distancia_mts' => round($distancia, 2),
+            Log::info('=== GEOCERCA DEBUG ===', [
+                'user_lat' => $request->lat,
+                'user_lng' => $request->lng,
+                'sede_lat' => $sede->lat,
+                'sede_lng' => $sede->lng,
+                'sede_nombre' => $sede->nombre,
+                'distancia_calculada_mts' => round($distancia, 2),
                 'radio_permitido_mts' => $sede->radio_mts,
-            ], 422);
+                'dentro_de_geocerca' => $distancia <= $sede->radio_mts,
+                'metodo' => $request->metodo,
+            ]);
+
+            $accuracy = min((int) $request->input('accuracy', 0), 250);
+            $geocercaValidada = $distancia <= ($sede->radio_mts + $accuracy);
+            if (!$geocercaValidada && $request->metodo !== 'foto') {
+                return response()->json([
+                    'message' => 'Estás fuera del rango permitido de la oficina.',
+                    'distancia_mts' => round($distancia, 2),
+                    'radio_permitido_mts' => $sede->radio_mts,
+                ], 422);
+            }
         }
 
         $fotoBase64 = null;

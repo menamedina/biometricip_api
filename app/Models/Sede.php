@@ -20,6 +20,7 @@ class Sede extends Model
             'radio_mts' => 'integer',
             'is_active' => 'boolean',
             'doble_registro' => 'boolean',
+            'permite_marcacion_remota' => 'boolean',
         ];
     }
 

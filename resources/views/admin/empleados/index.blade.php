@@ -325,7 +325,7 @@
                                 <option value="">— Sin rol —</option>
                             </select>
                         </div>
-                        <div class="col-md-3 d-flex align-items-end pb-1 gap-4">
+                        <div class="col-md-3 d-flex flex-column justify-content-end pb-1 gap-2">
                             <div class="form-check form-switch mb-0">
                                 <input class="form-check-input" type="checkbox" id="empActivo" checked>
                                 <label class="form-check-label small" for="empActivo">Activo</label>
@@ -335,6 +335,13 @@
                                 <label class="form-check-label small" for="empVerTodos">
                                     Ver todos
                                     <i class="fa-solid fa-circle-info text-muted ms-1" style="font-size:11px;" title="Acceso a toda la empresa sin filtro de líder"></i>
+                                </label>
+                            </div>
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input" type="checkbox" id="empMarcacionGlobal" role="switch">
+                                <label class="form-check-label small" for="empMarcacionGlobal">
+                                    Marcación global
+                                    <i class="fa-solid fa-circle-info text-muted ms-1" style="font-size:11px;" title="Permite marcar asistencia desde cualquier ubicación en sedes habilitadas"></i>
                                 </label>
                             </div>
                         </div>
@@ -1021,8 +1028,9 @@ async function editEmpleado(id, encryptedId) {
         document.getElementById('empCentroCosto').value  = e.centro_costo || '';
         document.getElementById('empRuta').value         = e.ruta || '';
         document.getElementById('empRole').value         = e.spatie_role || '';
-        document.getElementById('empActivo').checked     = !!e.is_active;
-        document.getElementById('empVerTodos').checked   = !!e.ver_todos;
+        document.getElementById('empActivo').checked          = !!e.is_active;
+        document.getElementById('empVerTodos').checked        = !!e.ver_todos;
+        document.getElementById('empMarcacionGlobal').checked = !!e.marcacion_global;
         document.getElementById('empleadoModalTitle').textContent = 'Editar Usuario';
 
         // Tratamiento de datos
@@ -1110,6 +1118,7 @@ async function saveEmpleado(id) {
         spatie_role:      document.getElementById('empRole').value || null,
         is_active:        document.getElementById('empActivo').checked,
         ver_todos:        document.getElementById('empVerTodos').checked,
+        marcacion_global: document.getElementById('empMarcacionGlobal').checked,
     };
     if (isAdminTenant) {
         const selEmp = document.getElementById('empEmpresaId');

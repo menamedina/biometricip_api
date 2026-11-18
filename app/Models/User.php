@@ -48,6 +48,7 @@ class User extends Authenticatable
         'tratamiento_datos_at',
         'dias_tratamiento_dato',
         'ver_todos',
+        'marcacion_global',
     ];
 
     protected $hidden = [
@@ -69,6 +70,7 @@ class User extends Authenticatable
             'tratamiento_datos_at' => 'datetime',
             'dias_tratamiento_dato' => 'integer',
             'ver_todos'             => 'boolean',
+            'marcacion_global'      => 'boolean',
         ];
     }
 

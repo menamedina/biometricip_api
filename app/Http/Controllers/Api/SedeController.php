@@ -37,15 +37,17 @@ class SedeController extends Controller
         Log::info('SedeController::store iniciado', ['payload' => $request->all(), 'user_id' => $request->user()?->id]);
 
         try {
+            $esRemota = $request->boolean('permite_marcacion_remota', false);
             $data = $request->validate([
                 'codigo'    => 'required|string|unique:tenant.tbl_sedes,codigo|max:20',
                 'nombre'    => 'required|string|max:255',
                 'direccion' => 'nullable|string|max:500',
-                'lat'       => 'required|numeric|between:-90,90',
-                'lng'       => 'required|numeric|between:-180,180',
-                'radio_mts'      => 'nullable|integer|min:10|max:5000',
-                'is_active'      => 'nullable|boolean',
-                'doble_registro' => 'nullable|boolean',
+                'lat'       => $esRemota ? 'nullable|numeric|between:-90,90' : 'required|numeric|between:-90,90',
+                'lng'       => $esRemota ? 'nullable|numeric|between:-180,180' : 'required|numeric|between:-180,180',
+                'radio_mts'               => 'nullable|integer|min:10|max:5000',
+                'is_active'               => 'nullable|boolean',
+                'doble_registro'          => 'nullable|boolean',
+                'permite_marcacion_remota'=> 'nullable|boolean',
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             throw $e; // 422 — Laravel lo maneja correctamente
@@ -93,11 +95,12 @@ class SedeController extends Controller
                 'codigo'    => 'sometimes|string|unique:tenant.tbl_sedes,codigo,' . $id . '|max:20',
                 'nombre'    => 'sometimes|string|max:255',
                 'direccion' => 'nullable|string|max:500',
-                'lat'       => 'sometimes|numeric|between:-90,90',
-                'lng'       => 'sometimes|numeric|between:-180,180',
-                'radio_mts'      => 'nullable|integer|min:10|max:5000',
-                'is_active'      => 'nullable|boolean',
-                'doble_registro' => 'nullable|boolean',
+                'lat'       => 'nullable|numeric|between:-90,90',
+                'lng'       => 'nullable|numeric|between:-180,180',
+                'radio_mts'               => 'nullable|integer|min:10|max:5000',
+                'is_active'               => 'nullable|boolean',
+                'doble_registro'          => 'nullable|boolean',
+                'permite_marcacion_remota'=> 'nullable|boolean',
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             Log::error('SedeController::update validación falló', ['id' => $id, 'errors' => $e->errors()]);

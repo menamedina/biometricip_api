@@ -329,10 +329,11 @@ class AuthController extends Controller
                 $sedesData[] = [
                     'id'        => $sede->id,
                     'nombre'    => $sede->nombre,
-                    'lat'       => (float) $sede->lat,
-                    'lng'       => (float) $sede->lng,
-                    'radio_mts'       => (float) $sede->radio_mts,
-                    'doble_registro'  => (bool) $sede->doble_registro,
+                    'lat'       => $sede->lat !== null ? (float) $sede->lat : null,
+                    'lng'       => $sede->lng !== null ? (float) $sede->lng : null,
+                    'radio_mts'               => $sede->radio_mts !== null ? (float) $sede->radio_mts : null,
+                    'doble_registro'          => (bool) $sede->doble_registro,
+                    'permite_marcacion_remota'=> (bool) $sede->permite_marcacion_remota,
                 ];
             }
         }
@@ -373,6 +374,7 @@ class AuthController extends Controller
             'lider'                  => $liderNombre,
             'tratamiento_datos_at'   => $user->tratamiento_datos_at?->format('Y-m-d H:i:s'),
             'dias_tratamiento_dato'  => $user->dias_tratamiento_dato ?? 365,
+            'marcacion_global'       => (bool) ($user->marcacion_global ?? false),
         ];
     }
 }
