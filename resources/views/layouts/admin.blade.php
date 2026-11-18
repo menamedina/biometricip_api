@@ -199,7 +199,7 @@
                         @endcan
 
                         {{-- ── Asistencia ──────────────────────────────────── --}}
-                        @canany(['asistencia.ver','reportes.ver','resumen_mensual.ver','recargos.ver','permisos.ver','capacitaciones.ver'])
+                        @canany(['asistencia.ver','reportes.ver','resumen_mensual.ver','recargos.ver','permisos.ver','capacitaciones.ver','novedades_nomina.ver'])
                         <li class="side-nav-title mt-2">Asistencia</li>
                         @endcanany
                         @can('asistencia.ver')
@@ -231,6 +231,14 @@
                             <a href="{{ route('admin.recargos.index') }}" class="side-nav-link {{ request()->routeIs('admin.recargos.index') ? 'active' : '' }}">
                                 <span class="menu-icon"><i class="ti ti-receipt-2"></i></span>
                                 <span class="menu-text">Recargos</span>
+                            </a>
+                        </li>
+                        @endcan
+                        @can('novedades_nomina.ver')
+                        <li class="side-nav-item">
+                            <a href="{{ route('admin.novedades-nomina.index') }}" class="side-nav-link {{ request()->routeIs('admin.novedades-nomina*') ? 'active' : '' }}">
+                                <span class="menu-icon"><i class="ti ti-report-money"></i></span>
+                                <span class="menu-text">Novedades Nómina</span>
                             </a>
                         </li>
                         @endcan

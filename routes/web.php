@@ -18,6 +18,7 @@ use App\Http\Controllers\LoginImageController;
 use App\Http\Controllers\AdminLoginImageController;
 use App\Http\Controllers\CapacitacionController;
 use App\Http\Controllers\Admin\ProgramacionTurnoController;
+use App\Http\Controllers\Admin\NovedadesNominaController;
 use Illuminate\Support\Facades\Route;
 
 // ZKTeco ADMS PUSH — sin autenticación ni CSRF
@@ -128,6 +129,10 @@ Route::middleware(['auth', 'admin', 'tenancy.session'])->group(function () {
     Route::get('/admin/resumen/records', [AdminController::class, 'resumenRecords'])->name('admin.resumen.records');
     Route::get('/admin/resumen-mensual',      [AdminController::class, 'resumenMensualIndex'])->name('admin.resumen-mensual.index');
     Route::get('/admin/resumen-mensual/data', [AdminController::class, 'resumenMensualData'])->name('admin.resumen-mensual.data');
+
+    // Novedades de Nómina
+    Route::get('/admin/novedades-nomina',      [NovedadesNominaController::class, 'index'])->name('admin.novedades-nomina.index');
+    Route::get('/admin/novedades-nomina/data', [NovedadesNominaController::class, 'data'])->name('admin.novedades-nomina.data');
 
     // Recargos
     Route::get('/admin/recargos',            [AdminController::class, 'recargosIndex'])->name('admin.recargos.index');
