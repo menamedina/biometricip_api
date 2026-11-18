@@ -502,6 +502,9 @@ class AdminController extends Controller
         $mes    = (int) $request->mes;
         $inicio = sprintf('%04d-%02d-01 00:00:00', $anio, $mes);
         $fin    = date('Y-m-t 23:59:59', mktime(0, 0, 0, $mes, 1, $anio));
+        // Extender la ventana de registros un día extra para capturar las salidas
+        // nocturnas del último día del mes (entrada día 30 23:00 → salida día 31 07:00).
+        $finQuery = date('Y-m-d 23:59:59', mktime(0, 0, 0, $mes, date('t', mktime(0,0,0,$mes,1,$anio)) + 1, $anio));
 
         $authUser = auth()->user();
 
@@ -523,7 +526,7 @@ class AdminController extends Controller
                 'horario:id,nombre',
                 'horario.dias',
             ])
-            ->whereBetween('fecha_hora', [$inicio, $fin])
+            ->whereBetween('fecha_hora', [$inicio, $finQuery])
             ->orderBy('fecha_hora', 'asc');
 
         if ($scopeIds !== null) {
@@ -582,48 +585,26 @@ class AdminController extends Controller
             }
         }
 
-        // Agrupar por empleado + fecha → calcular horas
-        $grupos = [];
-        foreach ($records as $r) {
-            $fecha = substr($r->fecha_hora, 0, 10);
-            $key   = "{$r->user_id}_{$fecha}";
-            if (!isset($grupos[$key])) {
-                $grupos[$key] = [
-                    'user'      => $r->user,
-                    'fecha'     => $fecha,
-                    'registros' => [],
-                ];
-            }
-            $grupos[$key]['registros'][] = $r;
-        }
-
-        // Agregar días donde solo hay permiso pero no marcación
-        $userIds = $records->pluck('user_id')->unique();
-        foreach ($permisosIndex as $key => $permisos) {
-            if (!isset($grupos[$key])) {
-                $parts  = explode('_', $key, 2);
-                $uid    = (int) $parts[0];
-                $fecha  = $parts[1];
-                if (!$userIds->contains($uid)) continue;
-                $user = $records->first(fn($r) => $r->user_id === $uid)?->user;
-                if (!$user) continue;
-                $grupos[$key] = [
-                    'user'      => $user,
-                    'fecha'     => $fecha,
-                    'registros' => [],
-                ];
-            }
-        }
-
         $toDate = fn($str) => new \DateTime(str_replace(' ', 'T', $str));
 
-        $resultado = [];
-        foreach ($grupos as $gKey => $g) {
-            $sorted = collect($g['registros'])->sortBy('fecha_hora')->values();
+        // ── Emparejar sesiones cruzando medianoche (soporte turno nocturno) ───
+        // Agrupa todos los registros por usuario y empareja entrada/salida
+        // globalmente, de modo que la sesión {entrada: día N 22:00, salida: día N+1
+        // 06:00} se atribuye al día N en lugar de aparecer como 00:00 en dos días.
+        $porUsuario    = [];
+        $userObjectMap = [];
+        foreach ($records as $r) {
+            $porUsuario[$r->user_id][]      = $r;
+            $userObjectMap[$r->user_id] = $r->user;
+        }
 
-            $sessions  = [];
+        $grupos = [];
+        foreach ($porUsuario as $userId => $userRecords) {
+            usort($userRecords, fn($a, $b) => strcmp($a->fecha_hora, $b->fecha_hora));
+
+            $sessions    = [];
             $openEntrada = null;
-            foreach ($sorted as $r) {
+            foreach ($userRecords as $r) {
                 if ($r->tipo === 'entrada') {
                     if ($openEntrada) $sessions[] = ['e' => $openEntrada, 's' => null];
                     $openEntrada = $r;
@@ -634,15 +615,56 @@ class AdminController extends Controller
             }
             if ($openEntrada) $sessions[] = ['e' => $openEntrada, 's' => null];
 
-            $totalMin   = 0;
+            // Asignar cada sesión al día de su entrada (si no hay entrada, al de la salida)
+            foreach ($sessions as $s) {
+                $fechaSesion = $s['e']
+                    ? substr($s['e']->fecha_hora, 0, 10)
+                    : substr($s['s']->fecha_hora, 0, 10);
+                $key = "{$userId}_{$fechaSesion}";
+                if (!isset($grupos[$key])) {
+                    $grupos[$key] = [
+                        'user'     => $userObjectMap[$userId],
+                        'fecha'    => $fechaSesion,
+                        'sessions' => [],
+                    ];
+                }
+                $grupos[$key]['sessions'][] = $s;
+            }
+        }
+
+        // Agregar días donde solo hay permiso pero no marcación
+        $allUserIds = $records->pluck('user_id')->unique();
+        foreach ($permisosIndex as $key => $permisos) {
+            if (!isset($grupos[$key])) {
+                $parts = explode('_', $key, 2);
+                $uid   = (int) $parts[0];
+                $fecha = $parts[1];
+                if (!$allUserIds->contains($uid)) continue;
+                $user = $userObjectMap[$uid] ?? null;
+                if (!$user) continue;
+                $grupos[$key] = [
+                    'user'     => $user,
+                    'fecha'    => $fecha,
+                    'sessions' => [],
+                ];
+            }
+        }
+
+        $resultado = [];
+        foreach ($grupos as $gKey => $g) {
+            $sessions = $g['sessions'];
+
+            $totalMin     = 0;
             $minEsperados = 0;
             $diaHorario   = null;
 
-            // Intentar obtener el HorarioDia desde cualquier registro del día
-            foreach ($g['registros'] as $r) {
+            // Obtener HorarioDia desde la entrada de la primera sesión del día
+            foreach ($sessions as $s) {
                 if ($diaHorario) break;
-                $isoD = ((int) $toDate($r->fecha_hora)->format('N'));
-                $d    = collect($r->horario?->dias ?? [])->firstWhere('dia_semana', $isoD);
+                $rRef = $s['e'] ?? $s['s'] ?? null;
+                if (!$rRef) continue;
+                $isoD = (int) $toDate($rRef->fecha_hora)->format('N');
+                $d    = collect($rRef->horario?->dias ?? [])->firstWhere('dia_semana', $isoD);
                 if ($d) $diaHorario = $d;
             }
 
@@ -650,7 +672,7 @@ class AdminController extends Controller
                 if ($s['e'] && $s['s']) {
                     $mins    = round(($toDate($s['s']->fecha_hora)->getTimestamp() - $toDate($s['e']->fecha_hora)->getTimestamp()) / 60);
                     $fechaDt = $toDate($s['e']->fecha_hora);
-                    $isoDay  = ((int) $fechaDt->format('N'));
+                    $isoDay  = (int) $fechaDt->format('N');
                     $horario = $s['e']->horario;
                     $dia     = collect($horario?->dias ?? [])->firstWhere('dia_semana', $isoDay);
                     if ($dia && $dia->duracion_almuerzo_min && $mins > $dia->duracion_almuerzo_min) {
