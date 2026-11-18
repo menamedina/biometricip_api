@@ -76,7 +76,7 @@ class ProgramacionTurnoController extends Controller
         // Equipo visible para este líder (respeta ver_todos)
         $equipo = $lider->equipoQuery()
             ->orderBy('name')
-            ->get(['id', 'name', 'foto_url', 'cargo_id', 'departamento_id', 'horario_id']);
+            ->get(['id', 'name', 'cedula', 'foto_url', 'cargo_id', 'departamento_id', 'horario_id']);
 
         if ($equipo->isEmpty()) {
             return response()->json(['equipo' => [], 'semana_inicio' => $semanaInicio]);
@@ -102,6 +102,7 @@ class ProgramacionTurnoController extends Controller
             return [
                 'id'                    => $u->id,
                 'name'                  => $u->name,
+                'cedula'                => $u->cedula ?? '',
                 'foto_url'              => $u->foto_url,
                 'cargo'                 => $cargos[$u->cargo_id] ?? '—',
                 'departamento'          => $deptos[$u->departamento_id] ?? '—',

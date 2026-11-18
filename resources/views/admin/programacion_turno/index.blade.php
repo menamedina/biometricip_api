@@ -41,41 +41,58 @@
         </span>
     </div>
 
-    {{-- Filtro + Asignación masiva --}}
-    @can('programacion_turno.crear')
-    <div class="card border-0 bg-light mb-3">
+    {{-- Barra de filtros unificada --}}
+    <div class="card border-0 shadow-sm mb-3">
         <div class="card-body py-2 px-3 d-flex align-items-center gap-3 flex-wrap">
 
-            {{-- Filtro por turno actual --}}
-            <span class="text-muted small fw-semibold text-nowrap">
-                <i class="fa-solid fa-filter me-1"></i> Filtrar por turno actual:
-            </span>
-            <select id="selFiltro" class="form-select form-select-sm" style="max-width:250px" onchange="filtrarPorTurno()">
-                <option value="">— Todos —</option>
-                @foreach($horariosData as $h)
-                <option value="{{ $h['id'] }}">{{ $h['nombre'] }}</option>
-                @endforeach
-            </select>
+            {{-- Búsqueda por nombre/cédula --}}
+            <div class="input-group input-group-sm" style="width:260px;min-width:180px">
+                <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                <input type="text" id="inputBuscarEmpleado" class="form-control"
+                    placeholder="Buscar empleado…" oninput="aplicarFiltros()">
+                <button class="btn btn-outline-secondary" type="button"
+                    onclick="limpiarBusqueda()" title="Limpiar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
 
-            <div class="vr mx-1"></div>
+            @can('programacion_turno.crear')
+            <div class="vr"></div>
+
+            {{-- Filtro por turno actual --}}
+            <div class="d-flex align-items-center gap-2 flex-nowrap">
+                <span class="text-muted small fw-semibold text-nowrap">
+                    <i class="fa-solid fa-filter me-1"></i>Turno actual:
+                </span>
+                <select id="selFiltro" class="form-select form-select-sm" style="width:200px" onchange="aplicarFiltros()">
+                    <option value="">— Todos —</option>
+                    @foreach($horariosData as $h)
+                    <option value="{{ $h['id'] }}">{{ $h['nombre'] }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="vr"></div>
 
             {{-- Asignación masiva --}}
-            <span class="text-muted small fw-semibold text-nowrap">
-                <i class="fa-solid fa-users me-1"></i> Asignar a visibles:
-            </span>
-            <select id="selMasivo" class="form-select form-select-sm" style="max-width:250px">
-                <option value="">— Selecciona un turno —</option>
-                @foreach($horariosData as $h)
-                <option value="{{ $h['id'] }}">{{ $h['nombre'] }}</option>
-                @endforeach
-            </select>
-            <button class="btn btn-sm btn-outline-primary" onclick="aplicarMasivo()">
-                <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Aplicar
-            </button>
+            <div class="d-flex align-items-center gap-2 flex-nowrap">
+                <span class="text-muted small fw-semibold text-nowrap">
+                    <i class="fa-solid fa-users me-1"></i>Asignar a visibles:
+                </span>
+                <select id="selMasivo" class="form-select form-select-sm" style="width:200px">
+                    <option value="">— Selecciona un turno —</option>
+                    @foreach($horariosData as $h)
+                    <option value="{{ $h['id'] }}">{{ $h['nombre'] }}</option>
+                    @endforeach
+                </select>
+                <button class="btn btn-sm btn-outline-primary text-nowrap" onclick="aplicarMasivo()">
+                    <i class="fa-solid fa-wand-magic-sparkles me-1"></i>Aplicar
+                </button>
+            </div>
+            @endcan
 
         </div>
     </div>
-    @endcan
 
     {{-- Cards resumen por turno --}}
     <div class="d-flex flex-wrap gap-3 mb-3" id="turnoCards"></div>
@@ -363,20 +380,35 @@ async function loadEquipo() {
     }
 }
 
-function filtrarPorTurno() {
-    const filtroId = parseInt(document.getElementById('selFiltro').value) || null;
+function aplicarFiltros() {
+    const filtroId  = parseInt(document.getElementById('selFiltro')?.value) || null;
+    const busqueda  = (document.getElementById('inputBuscarEmpleado')?.value ?? '').trim().toLowerCase();
 
     document.querySelectorAll('#turnoTbody tr[id^="row_"]').forEach(tr => {
-        const userId   = parseInt(tr.id.replace('row_', ''));
-        const emp      = equipoData.find(e => e.id === userId);
+        const userId = parseInt(tr.id.replace('row_', ''));
+        const emp    = equipoData.find(e => e.id === userId);
         if (!emp) return;
 
-        const visible = !filtroId || emp.horario_id === filtroId;
-        tr.style.display = visible ? '' : 'none';
+        const matchTurno    = !filtroId || emp.horario_id === filtroId;
+        const hayTexto      = busqueda.length > 0;
+        const nombre        = (emp.name ?? '').toLowerCase();
+        const cedula        = (emp.cedula ?? '').toLowerCase();
+        const matchBusqueda = !hayTexto || nombre.includes(busqueda) || cedula.includes(busqueda);
+
+        tr.style.display = (matchTurno && matchBusqueda) ? '' : 'none';
     });
 
     actualizarCards();
 }
+
+function limpiarBusqueda() {
+    const input = document.getElementById('inputBuscarEmpleado');
+    if (input) { input.value = ''; input.focus(); }
+    aplicarFiltros();
+}
+
+// Alias para compatibilidad con llamadas heredadas
+function filtrarPorTurno() { aplicarFiltros(); }
 
 function aplicarMasivo() {
     const horarioId = parseInt(document.getElementById('selMasivo').value);
