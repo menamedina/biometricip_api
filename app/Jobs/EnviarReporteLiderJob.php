@@ -98,8 +98,18 @@ class EnviarReporteLiderJob
             ->groupBy('user_id');
 
         // Permisos del día (conexión tenant)
+        // Se cubre permiso de un día (campo `fecha`) y permisos multi-día
+        // (rango fecha_inicio – fecha_fin agregado posteriormente).
         $permisos = Permiso::whereIn('user_id', $empleadoIds)
-            ->where('fecha', $fecha)
+            ->where(function ($q) use ($fecha) {
+                $q->where('fecha', $fecha)
+                  ->orWhere(function ($q2) use ($fecha) {
+                      $q2->whereNotNull('fecha_inicio')
+                         ->whereNotNull('fecha_fin')
+                         ->whereDate('fecha_inicio', '<=', $fecha)
+                         ->whereDate('fecha_fin', '>=', $fecha);
+                  });
+            })
             ->with('tipoPermiso')
             ->get()
             ->keyBy('user_id');
