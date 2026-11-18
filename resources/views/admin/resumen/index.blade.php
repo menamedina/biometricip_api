@@ -343,6 +343,7 @@ const isAdmin     = canEditarReg;
 const myUserId    = {{ auth()->id() }};
 let deptoMap = {};
 let allRegistros = [];
+let _cargandoResumen = false;
 
 // ── Inicialización ────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -433,6 +434,9 @@ async function cargarEmpleadosParaModal() {
 
 // ── Cargar resumen ────────────────────────────────────────────────────────────
 async function cargarResumen() {
+    if (_cargandoResumen) return;
+    _cargandoResumen = true;
+
     const from    = document.getElementById('dateFrom').value;
     const to      = document.getElementById('dateTo').value;
     const userId  = isEmpleado ? myUserId : document.getElementById('filterEmpleado').value;
@@ -507,16 +511,9 @@ async function cargarResumen() {
 
         renderSedeCards(registros);
 
-        if (!registros.length) {
-            tbody.innerHTML = '<tr><td colspan="16" class="text-center text-muted py-4">Sin registros para el período seleccionado</td></tr>';
-            const elInfo  = document.getElementById('resumenInfo');
-            const elTotal = document.getElementById('resumenTotal');
-            if (elInfo)  elInfo.textContent  = '';
-            if (elTotal) elTotal.textContent = '';
-            return;
-        }
-
         // Agrupar por empleado + fecha
+        // Si registros está vacío, grupos queda {}, filas queda '' y DataTable
+        // muestra su mensaje zeroRecords — sin return temprano que rompería el init.
         const grupos = {};
         registros.forEach(r => {
             const fecha = r.fecha_hora.slice(0, 10);
@@ -652,6 +649,11 @@ async function cargarResumen() {
 
         tbody.innerHTML = filas;
 
+        // Doble check: por si otra llamada concurrente ya inicializó la tabla
+        if ($.fn.DataTable.isDataTable('#resumenTable')) {
+            $('#resumenTable').DataTable().destroy();
+        }
+
         $('#resumenTable').DataTable({
             paging:    true,
             pageLength: 25,
@@ -662,7 +664,7 @@ async function cargarResumen() {
             scrollX:   true,
             language: {
                 lengthMenu: 'Mostrar _MENU_ registros',
-                zeroRecords: 'Sin registros',
+                zeroRecords: 'Sin registros para el período seleccionado',
                 info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
                 infoEmpty: 'Mostrando 0 registros',
                 infoFiltered: '(filtrado de _MAX_ registros)',
@@ -684,6 +686,8 @@ async function cargarResumen() {
     } catch(e) {
         tbody.innerHTML = `<tr><td colspan="16" class="text-center text-danger py-3">Error al cargar datos: ${e.message}</td></tr>`;
         console.error('cargarResumen error:', e);
+    } finally {
+        _cargandoResumen = false;
     }
 }
 

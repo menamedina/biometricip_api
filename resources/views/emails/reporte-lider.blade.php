@@ -22,18 +22,19 @@
         }
         /* Header */
         .header {
-            background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+            background-color: #1a73e8;
             padding: 28px 32px;
-            color: #fff;
+            color: #1a1a1a;
         }
         .header h1 {
             font-size: 20px;
             font-weight: 600;
             margin-bottom: 4px;
+            color: #1a1a1a;
         }
         .header p {
             font-size: 13px;
-            opacity: 0.85;
+            color: #1a1a1a;
         }
         /* Content */
         .content {
@@ -157,10 +158,10 @@
 <body>
 <div class="wrapper">
 
-    {{-- Header --}}
-    <div class="header">
-        <h1>Reporte de Personal</h1>
-        <p>
+    {{-- Header (inline styles para compatibilidad con clientes de correo) --}}
+    <div class="header" style="background-color:#1a73e8;padding:28px 32px;">
+        <h1 style="font-size:20px;font-weight:600;margin-bottom:4px;color:#1a1a1a;">Reporte de Personal</h1>
+        <p style="font-size:13px;color:#1a1a1a;">
             {{ $empresa->nombre }} &nbsp;·&nbsp;
             {{ \Carbon\Carbon::parse($fecha)->translatedFormat('l d \d\e F \d\e Y') }}
             &nbsp;·&nbsp; Generado a las {{ now()->format('H:i') }}
