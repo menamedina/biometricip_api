@@ -109,7 +109,7 @@ class ProgramacionTurnoController extends Controller
             'user_ids'      => $userIds,
         ]);
 
-        $permisosMap = Permiso::whereIn('user_id', $userIds)
+        $permisosRaw = Permiso::whereIn('user_id', $userIds)
             ->where('estado', 'aprobado')
             ->where(function ($q) use ($semanaInicio, $semanaFin) {
                 // Permiso de rango (fecha_inicio / fecha_fin) que se solapa con la semana
