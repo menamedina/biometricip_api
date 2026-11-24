@@ -15,6 +15,7 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -102,6 +103,12 @@ class ProgramacionTurnoController extends Controller
         $semanaFin = Carbon::parse($semanaInicio)->addDays(6)->toDateString();
         $userIds   = $equipo->pluck('id')->all();
 
+        Log::info('ProgramacionTurno@data permisos debug', [
+            'semana_inicio' => $semanaInicio,
+            'semana_fin'    => $semanaFin,
+            'user_ids'      => $userIds,
+        ]);
+
         $permisosMap = Permiso::whereIn('user_id', $userIds)
             ->where('estado', 'aprobado')
             ->where(function ($q) use ($semanaInicio, $semanaFin) {
@@ -118,7 +125,21 @@ class ProgramacionTurnoController extends Controller
                 });
             })
             ->with('tipoPermiso')
-            ->get()
+            ->get();
+
+        Log::info('ProgramacionTurno@data permisos encontrados', [
+            'total'    => $permisosRaw->count(),
+            'permisos' => $permisosRaw->map(fn($p) => [
+                'user_id'      => $p->user_id,
+                'estado'       => $p->estado,
+                'fecha'        => $p->fecha?->toDateString(),
+                'fecha_inicio' => $p->fecha_inicio?->toDateTimeString(),
+                'fecha_fin'    => $p->fecha_fin?->toDateTimeString(),
+                'tipo'         => $p->tipoPermiso?->nombre,
+            ])->all(),
+        ]);
+
+        $permisosMap = $permisosRaw
             ->groupBy('user_id')
             ->map(fn($permisos) => $permisos->map(fn($p) => [
                 'tipo' => $p->tipoPermiso?->nombre ?? '—',
