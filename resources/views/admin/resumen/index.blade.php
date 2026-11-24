@@ -555,28 +555,24 @@ async function cargarResumen() {
                 }
             }
 
-            // Descuento de almuerzo usando el día específico de cada sesión
-            // Solo se descuenta si la sesión cubre al menos las horas netas programadas
-            for (const s of sessions) {
-                if (s.e && s.s) {
-                    const fechaEntrada = toDate(s.e.fecha_hora);
-                    const isoDay = fechaEntrada.getDay() === 0 ? 7 : fechaEntrada.getDay();
-                    const horario = s.e.horario;
-                    const dia = (horario?.dias || []).find(d => d.dia_semana === isoDay);
-                    if (dia?.duracion_almuerzo_min) {
-                        const durMin = Math.round((toDate(s.s.fecha_hora) - fechaEntrada) / 60000);
-                        // Calcular horas netas programadas (jornada - almuerzo)
-                        let umbralMin = dia.duracion_almuerzo_min; // fallback mínimo
-                        if (dia.hora_entrada && dia.hora_salida) {
-                            const [eH, eM] = dia.hora_entrada.split(':').map(Number);
-                            const [sH, sM] = dia.hora_salida.split(':').map(Number);
-                            const jornadaTotal = (sH * 60 + sM) - (eH * 60 + eM);
-                            umbralMin = jornadaTotal - dia.duracion_almuerzo_min;
-                        }
-                        // Solo descontar almuerzo si la sesión cubre al menos las horas netas programadas
-                        if (durMin >= umbralMin) {
-                            totalMin -= dia.duracion_almuerzo_min;
-                        }
+            // Descuento de almuerzo — una sola vez por día, comparando el TOTAL acumulado
+            // (no cada sesión individualmente, para manejar correctamente días con múltiples marcaciones)
+            const primeraSesion = sessions.find(s => s.e && s.s);
+            if (primeraSesion) {
+                const fechaEntrada = toDate(primeraSesion.e.fecha_hora);
+                const isoDay = fechaEntrada.getDay() === 0 ? 7 : fechaEntrada.getDay();
+                const horario = primeraSesion.e.horario;
+                const dia = (horario?.dias || []).find(d => d.dia_semana === isoDay);
+                if (dia?.duracion_almuerzo_min) {
+                    let umbralMin = dia.duracion_almuerzo_min;
+                    if (dia.hora_entrada && dia.hora_salida) {
+                        const [eH, eM] = dia.hora_entrada.split(':').map(Number);
+                        const [sH, sM] = dia.hora_salida.split(':').map(Number);
+                        const jornadaTotal = (sH * 60 + sM) - (eH * 60 + eM);
+                        umbralMin = jornadaTotal - dia.duracion_almuerzo_min;
+                    }
+                    if (totalMin >= umbralMin) {
+                        totalMin -= dia.duracion_almuerzo_min;
                     }
                 }
             }
