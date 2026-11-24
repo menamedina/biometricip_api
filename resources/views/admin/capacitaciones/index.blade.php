@@ -86,7 +86,11 @@
 
                     <div class="col-12">
                         <label class="form-label fw-semibold">Metodología</label>
-                        <textarea id="crearMetodologia" class="form-control" rows="2" placeholder="Describe la metodología utilizada"></textarea>
+                        <select id="crearMetodologia" class="form-select">
+                            <option value="">— Selecciona —</option>
+                            <option value="Presencial">Presencial</option>
+                            <option value="Virtual">Virtual</option>
+                        </select>
                     </div>
 
                     <div class="col-12 col-md-6">
@@ -232,7 +236,11 @@
 
                     <div class="col-12">
                         <label class="form-label fw-semibold">Metodología</label>
-                        <textarea id="editarMetodologia" class="form-control" rows="2"></textarea>
+                        <select id="editarMetodologia" class="form-select">
+                            <option value="">— Selecciona —</option>
+                            <option value="Presencial">Presencial</option>
+                            <option value="Virtual">Virtual</option>
+                        </select>
                     </div>
 
                     <div class="col-12 col-md-6">
