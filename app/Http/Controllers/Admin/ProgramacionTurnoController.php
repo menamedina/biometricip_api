@@ -8,6 +8,7 @@ use App\Models\Cargo;
 use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\Horario;
+use App\Models\Permiso;
 use App\Models\ProgramacionTurno;
 use App\Models\User;
 use Carbon\Carbon;
@@ -97,7 +98,24 @@ class ProgramacionTurnoController extends Controller
             ->get()
             ->keyBy('user_id');
 
-        $result = $equipo->map(function (User $u) use ($cargos, $deptos, $horNombres, $programaciones) {
+        // Permisos aprobados que se solapan con la semana objetivo
+        $semanaFin = Carbon::parse($semanaInicio)->addDays(6)->toDateString();
+        $userIds   = $equipo->pluck('id')->all();
+
+        $permisosMap = Permiso::whereIn('user_id', $userIds)
+            ->where('estado', 'aprobado')
+            ->where(function ($q) use ($semanaInicio, $semanaFin) {
+                $q->where('fecha_inicio', '<=', $semanaFin)
+                  ->where('fecha_fin',    '>=', $semanaInicio);
+            })
+            ->with('tipoPermiso')
+            ->get()
+            ->groupBy('user_id')
+            ->map(fn($permisos) => $permisos->map(fn($p) => [
+                'tipo' => $p->tipoPermiso?->nombre ?? '—',
+            ])->values());
+
+        $result = $equipo->map(function (User $u) use ($cargos, $deptos, $horNombres, $programaciones, $permisosMap) {
             $prog = $programaciones->get($u->id);
             return [
                 'id'                    => $u->id,
@@ -110,6 +128,7 @@ class ProgramacionTurnoController extends Controller
                 'horario_nombre'        => $horNombres[$u->horario_id] ?? '—',
                 'horario_programado_id' => $prog?->horario_id,
                 'programacion_id'       => $prog?->id,
+                'permisos'              => $permisosMap->get($u->id, collect())->all(),
             ];
         });
 

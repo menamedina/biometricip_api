@@ -327,13 +327,23 @@ async function loadEquipo() {
             tr.id = `row_${emp.id}`;
             tr.setAttribute('data-prog-id', emp.programacion_id ?? '');
 
+            const tienePermiso = emp.permisos && emp.permisos.length > 0;
+            if (tienePermiso) {
+                tr.classList.add('table-danger');
+                tr.setAttribute('title', 'Tiene permiso aprobado en esta semana');
+            }
+
+            const permisoBadge = tienePermiso
+                ? `<br>${emp.permisos.map(p => `<span class="badge bg-danger mt-1" style="font-size:10px"><i class="fa-solid fa-calendar-xmark me-1"></i>${p.tipo}</span>`).join(' ')}`
+                : '';
+
             const elimBtn = canEliminar && emp.programacion_id
                 ? `<td class="text-center"><button class="btn btn-sm btn-outline-danger p-1" onclick="eliminarProg(${emp.id}, ${emp.programacion_id})" title="Quitar programación"><i class="fa-solid fa-xmark"></i></button></td>`
                 : (canEliminar ? `<td></td>` : '');
 
             tr.innerHTML = `
                 <td class="text-center">${buildFoto(emp.foto_url, emp.name)}</td>
-                <td><strong>${emp.name}</strong></td>
+                <td><strong>${emp.name}</strong>${permisoBadge}</td>
                 <td><small class="text-muted">${emp.cargo} · ${emp.departamento}</small></td>
                 <td>
                     <span class="badge bg-light text-dark border">${emp.horario_nombre}</span>
