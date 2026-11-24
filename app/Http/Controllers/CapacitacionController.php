@@ -98,6 +98,12 @@ class CapacitacionController extends Controller
         ]);
 
         try {
+            Log::info('CapacitacionController@store: inicio', [
+                'user_id'    => Auth::id(),
+                'empresa_id' => Auth::user()->empresa_id,
+                'data'       => $data,
+            ]);
+
             $temas = [];
             if (!empty($data['temas'])) {
                 $decoded = json_decode($data['temas'], true);
@@ -145,6 +151,7 @@ class CapacitacionController extends Controller
                     'fecha_capacitacion' => $fecha,
                     'fecha_expiracion'   => $fechaExpiracion,
                 ]));
+                Log::info('CapacitacionController@store: capacitación creada', ['id' => $cap->id, 'fecha' => $fecha]);
                 if (!$primera) $primera = $cap;
             }
 
@@ -160,7 +167,12 @@ class CapacitacionController extends Controller
             ]);
 
         } catch (\Throwable $e) {
-            Log::error('CapacitacionController@store: ' . $e->getMessage());
+            Log::error('CapacitacionController@store: ' . $e->getMessage(), [
+                'exception' => get_class($e),
+                'file'      => $e->getFile(),
+                'line'      => $e->getLine(),
+                'trace'     => $e->getTraceAsString(),
+            ]);
             return response()->json(['success' => false, 'message' => 'Error al crear la capacitación.'], 500);
         }
     }
