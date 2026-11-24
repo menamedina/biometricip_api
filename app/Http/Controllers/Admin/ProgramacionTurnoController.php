@@ -105,8 +105,17 @@ class ProgramacionTurnoController extends Controller
         $permisosMap = Permiso::whereIn('user_id', $userIds)
             ->where('estado', 'aprobado')
             ->where(function ($q) use ($semanaInicio, $semanaFin) {
-                $q->where('fecha_inicio', '<=', $semanaFin)
-                  ->where('fecha_fin',    '>=', $semanaInicio);
+                // Permiso de rango (fecha_inicio / fecha_fin) que se solapa con la semana
+                $q->where(function ($q2) use ($semanaInicio, $semanaFin) {
+                    $q2->whereNotNull('fecha_inicio')
+                       ->where('fecha_inicio', '<=', $semanaFin . ' 23:59:59')
+                       ->where('fecha_fin',    '>=', $semanaInicio . ' 00:00:00');
+                })
+                // Permiso de día puntual (fecha) dentro de la semana
+                ->orWhere(function ($q2) use ($semanaInicio, $semanaFin) {
+                    $q2->whereNull('fecha_inicio')
+                       ->whereBetween('fecha', [$semanaInicio, $semanaFin]);
+                });
             })
             ->with('tipoPermiso')
             ->get()
