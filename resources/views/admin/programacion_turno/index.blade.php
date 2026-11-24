@@ -334,7 +334,10 @@ async function loadEquipo() {
             }
 
             const permisoBadge = tienePermiso
-                ? `<br>${emp.permisos.map(p => `<span class="badge bg-danger mt-1" style="font-size:10px"><i class="fa-solid fa-calendar-xmark me-1"></i>${p.tipo}</span>`).join(' ')}`
+                ? `<br>${emp.permisos.map(p => {
+                    const fechas = p.fecha_inicio && p.fecha_fin ? ` (${p.fecha_inicio} - ${p.fecha_fin})` : '';
+                    return `<span class="badge bg-danger mt-1" style="font-size:10px"><i class="fa-solid fa-calendar-xmark me-1"></i>${p.tipo}${fechas}</span>`;
+                }).join(' ')}`
                 : '';
 
             const elimBtn = canEliminar && emp.programacion_id

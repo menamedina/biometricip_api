@@ -99,50 +99,35 @@ class ProgramacionTurnoController extends Controller
             ->get()
             ->keyBy('user_id');
 
-        // Permisos aprobados que se solapan con la semana objetivo
+        // Permisos aprobados desde hoy hasta el fin de la semana objetivo
+        $hoy       = Carbon::today()->toDateString();
         $semanaFin = Carbon::parse($semanaInicio)->addDays(6)->toDateString();
         $userIds   = $equipo->pluck('id')->all();
 
-        Log::info('ProgramacionTurno@data permisos debug', [
-            'semana_inicio' => $semanaInicio,
-            'semana_fin'    => $semanaFin,
-            'user_ids'      => $userIds,
-        ]);
-
         $permisosRaw = Permiso::whereIn('user_id', $userIds)
             ->where('estado', 'aprobado')
-            ->where(function ($q) use ($semanaInicio, $semanaFin) {
-                // Permiso de rango (fecha_inicio / fecha_fin) que se solapa con la semana
-                $q->where(function ($q2) use ($semanaInicio, $semanaFin) {
+            ->where(function ($q) use ($hoy, $semanaFin) {
+                // Permiso de rango que se solapa con [hoy .. semanaFin]
+                $q->where(function ($q2) use ($hoy, $semanaFin) {
                     $q2->whereNotNull('fecha_inicio')
                        ->where('fecha_inicio', '<=', $semanaFin . ' 23:59:59')
-                       ->where('fecha_fin',    '>=', $semanaInicio . ' 00:00:00');
+                       ->where('fecha_fin',    '>=', $hoy . ' 00:00:00');
                 })
-                // Permiso de día puntual (fecha) dentro de la semana
-                ->orWhere(function ($q2) use ($semanaInicio, $semanaFin) {
+                // Permiso puntual dentro de [hoy .. semanaFin]
+                ->orWhere(function ($q2) use ($hoy, $semanaFin) {
                     $q2->whereNull('fecha_inicio')
-                       ->whereBetween('fecha', [$semanaInicio, $semanaFin]);
+                       ->whereBetween('fecha', [$hoy, $semanaFin]);
                 });
             })
             ->with('tipoPermiso')
             ->get();
 
-        Log::info('ProgramacionTurno@data permisos encontrados', [
-            'total'    => $permisosRaw->count(),
-            'permisos' => $permisosRaw->map(fn($p) => [
-                'user_id'      => $p->user_id,
-                'estado'       => $p->estado,
-                'fecha'        => $p->fecha?->toDateString(),
-                'fecha_inicio' => $p->fecha_inicio?->toDateTimeString(),
-                'fecha_fin'    => $p->fecha_fin?->toDateTimeString(),
-                'tipo'         => $p->tipoPermiso?->nombre,
-            ])->all(),
-        ]);
-
         $permisosMap = $permisosRaw
             ->groupBy('user_id')
             ->map(fn($permisos) => $permisos->map(fn($p) => [
-                'tipo' => $p->tipoPermiso?->nombre ?? '—',
+                'tipo'        => $p->tipoPermiso?->nombre ?? '—',
+                'fecha_inicio' => $p->fecha_inicio?->format('d/m'),
+                'fecha_fin'    => $p->fecha_fin?->format('d/m'),
             ])->values());
 
         $result = $equipo->map(function (User $u) use ($cargos, $deptos, $horNombres, $programaciones, $permisosMap) {
