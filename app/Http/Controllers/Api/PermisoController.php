@@ -23,6 +23,9 @@ class PermisoController extends Controller
             $equipoIds = $authUser->equipoIds();
             if ($authUser->ver_todos || count($equipoIds) > 1) {
                 $scopeIds = $equipoIds;
+            } else {
+                // Tiene el permiso Spatie pero no es líder ni admin total → solo los suyos
+                $scopeIds = [$authUser->id];
             }
         }
 
