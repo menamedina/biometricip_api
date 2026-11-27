@@ -1,0 +1,19 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: biometricip_php
+    restart: unless-stopped
+    working_dir: /var/www/biometricip.innovasoftip.com
+    volumes:
+      - /var/www/biometricip.innovasoftip.com:/var/www/biometricip.innovasoftip.com
+      - ./php.ini:/usr/local/etc/php/conf.d/custom.ini
+    ports:
+      - "9004:9000"
+    networks:
+      - shared_net
+
+networks:
+  shared_net:
+    external: true
