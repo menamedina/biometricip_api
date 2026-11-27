@@ -16,6 +16,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class AttendanceController extends Controller
 {
@@ -244,7 +246,7 @@ class AttendanceController extends Controller
         $fotoBase64 = null;
         $thumbBase64 = null;
         if ($request->filled('foto_evidencia')) {
-            [$fotoBase64, $thumbBase64] = $this->procesarFoto($request->foto_evidencia);
+            [$fotoBase64, $thumbBase64] = $this->procesarFoto($request->foto_evidencia, (int) $authUser->empresa_id);
         }
 
         $fechaHora = Carbon::now(config('app.timezone'));
@@ -300,7 +302,7 @@ class AttendanceController extends Controller
                 'tipo'                  => 'entrada',
                 'lat'                   => $request->lat,
                 'lng'                   => $request->lng,
-                'foto_evidencia'        => $fotoBase64 ? 'base64' : null,
+                'foto_evidencia'        => $thumbBase64 ? 'base64' : null,
                 'metodo'                => $request->metodo,
                 'qr_validado'           => $qrValidado,
                 'geocerca_validada'     => $geocercaValidada,
@@ -308,11 +310,11 @@ class AttendanceController extends Controller
                 'fecha_hora'            => $fechaHora,
             ]);
 
-            if ($fotoBase64 && $thumbBase64) {
+            if ($thumbBase64) {
                 AttendancePhoto::create([
                     'attendance_record_id' => $record->id,
-                    'foto_base64'          => $fotoBase64,
-                    'thumbnail_base64'     => $thumbBase64,
+                    // 'foto_base64'       => null, // ya no se almacena la foto completa
+                    'thumbnail_path'       => $thumbBase64,
                 ]);
             }
 
@@ -337,7 +339,7 @@ class AttendanceController extends Controller
                 'tipo'                  => 'salida',
                 'lat'                   => $request->lat,
                 'lng'                   => $request->lng,
-                'foto_evidencia'        => $fotoBase64 ? 'base64' : null,
+                'foto_evidencia'        => $thumbBase64 ? 'base64' : null,
                 'metodo'                => $request->metodo,
                 'qr_validado'           => $qrValidado,
                 'geocerca_validada'     => $geocercaValidada,
@@ -345,11 +347,11 @@ class AttendanceController extends Controller
                 'fecha_hora'            => $fechaHora,
             ]);
 
-            if ($fotoBase64 && $thumbBase64) {
+            if ($thumbBase64) {
                 AttendancePhoto::create([
                     'attendance_record_id' => $record->id,
-                    'foto_base64'          => $fotoBase64,
-                    'thumbnail_base64'     => $thumbBase64,
+                    // 'foto_base64'       => null, // ya no se almacena la foto completa
+                    'thumbnail_path'       => $thumbBase64,
                 ]);
             }
 
@@ -391,7 +393,7 @@ class AttendanceController extends Controller
             'tipo'                  => $tipoFinal,
             'lat'                   => $request->lat,
             'lng'                   => $request->lng,
-            'foto_evidencia'        => $fotoBase64 ? 'base64' : null,
+            'foto_evidencia'        => $thumbBase64 ? 'base64' : null,
             'metodo'                => $request->metodo,
             'qr_validado'           => $qrValidado,
             'geocerca_validada'     => $geocercaValidada,
@@ -399,11 +401,11 @@ class AttendanceController extends Controller
             'fecha_hora'            => $fechaHora,
         ]);
 
-        if ($fotoBase64 && $thumbBase64) {
+        if ($thumbBase64) {
             AttendancePhoto::create([
                 'attendance_record_id' => $record->id,
-                'foto_base64'          => $fotoBase64,
-                'thumbnail_base64'     => $thumbBase64,
+                // 'foto_base64'       => null, // ya no se almacena la foto completa
+                'thumbnail_path'       => $thumbBase64,
             ]);
         }
 
@@ -556,6 +558,16 @@ class AttendanceController extends Controller
             return response()->json(['message' => 'Sin foto'], 404);
         }
 
+        // Leer desde disco si tiene thumbnail_path
+        if ($photo->thumbnail_path && Storage::disk('local')->exists($photo->thumbnail_path)) {
+            $ext        = pathinfo($photo->thumbnail_path, PATHINFO_EXTENSION);
+            $mime       = match ($ext) { 'png' => 'image/png', 'webp' => 'image/webp', default => 'image/jpeg' };
+            $content    = Storage::disk('local')->get($photo->thumbnail_path);
+            $fotoBase64 = 'data:' . $mime . ';base64,' . base64_encode($content);
+            return response()->json(['foto_base64' => $fotoBase64]);
+        }
+
+        // Fallback para registros antiguos con base64 en BD
         return response()->json(['foto_base64' => $photo->foto_base64]);
     }
 
@@ -971,7 +983,7 @@ class AttendanceController extends Controller
         return $earthRadius * $c;
     }
 
-    private function procesarFoto(string $base64Data): array
+    private function procesarFoto(string $base64Data, int $empresaId): array
     {
         if (!preg_match('/^data:image\/(\w+);base64,/', $base64Data, $matches)) {
             return [null, null];
@@ -979,18 +991,19 @@ class AttendanceController extends Controller
 
         $imageType = $matches[1];
         $rawBase64 = substr($base64Data, strpos($base64Data, ',') + 1);
-        $decoded = base64_decode($rawBase64);
+        $decoded   = base64_decode($rawBase64);
 
         if ($decoded === false) {
             return [null, null];
         }
 
-        $thumbBase64 = $this->generarThumbnailBase64($decoded, $imageType, 40, 40);
+        $thumbnailPath = $this->guardarThumbnailEnDisco($decoded, $imageType, $empresaId, 450, 800);
 
-        return [$base64Data, $thumbBase64 ?? $base64Data];
+        // [null, path] — foto_base64 ya no se almacena, $thumbBase64 ahora contiene la ruta
+        return [null, $thumbnailPath];
     }
 
-    private function generarThumbnailBase64(string $imageData, string $imageType, int $width, int $height): ?string
+    private function guardarThumbnailEnDisco(string $imageData, string $imageType, int $empresaId, int $width, int $height): ?string
     {
         $src = imagecreatefromstring($imageData);
         if ($src === false) {
@@ -1018,9 +1031,18 @@ class AttendanceController extends Controller
         $output = ob_get_clean();
         imagedestroy($thumb);
 
-        if (!$output) return null;
+        if (!$output) {
+            return null;
+        }
 
-        return 'data:image/' . $imageType . ';base64,' . base64_encode($output);
+        $ext      = in_array($imageType, ['png', 'webp']) ? $imageType : 'jpg';
+        $mes      = now()->format('Ym'); // ej: 202611
+        $filename = Str::uuid() . '.' . $ext;
+        $path     = "fotos/{$empresaId}/{$mes}/{$filename}";
+
+        Storage::disk('local')->put($path, $output);
+
+        return $path;
     }
 
     public function employeesByFilter(Request $request): JsonResponse

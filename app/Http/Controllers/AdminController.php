@@ -30,6 +30,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -1387,9 +1388,24 @@ class AdminController extends Controller
     public function visitantesFoto(int $id): JsonResponse
     {
         $imgs = \App\Models\VisitanteImagen::where('visitante_id', $id)->get()->keyBy('tipo');
+
+        $resolver = function (?\App\Models\VisitanteImagen $img): ?string {
+            if (!$img) return null;
+
+            if ($img->thumbnail_path && Storage::disk('local')->exists($img->thumbnail_path)) {
+                $ext     = pathinfo($img->thumbnail_path, PATHINFO_EXTENSION);
+                $mime    = match ($ext) { 'png' => 'image/png', 'webp' => 'image/webp', default => 'image/jpeg' };
+                $content = Storage::disk('local')->get($img->thumbnail_path);
+                return 'data:' . $mime . ';base64,' . base64_encode($content);
+            }
+
+            // Fallback para registros antiguos con base64 en BD
+            return $img->foto_base64;
+        };
+
         return response()->json([
-            'entrada' => $imgs->get('entrada')?->foto_base64,
-            'salida'  => $imgs->get('salida')?->foto_base64,
+            'entrada' => $resolver($imgs->get('entrada')),
+            'salida'  => $resolver($imgs->get('salida')),
         ]);
     }
 

@@ -12,6 +12,8 @@ use App\Models\VisitanteImagen;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class PublicAttendanceController extends Controller
@@ -104,15 +106,16 @@ class PublicAttendanceController extends Controller
             }
         }
 
-        [$fotoFull, $fotoThumb] = $request->foto_evidencia
-            ? $this->procesarFoto($request->foto_evidencia)
-            : [null, null];
+        $carpeta = $request->tipo_usuario === 'visitante' ? 'fotos_visitantes' : 'fotos';
+        [$thumbnailPath] = $request->foto_evidencia
+            ? $this->procesarFoto($request->foto_evidencia, (int) $empresaId, $carpeta)
+            : [null];
 
         if ($request->tipo_usuario === 'empleado') {
-            return $this->registrarEmpleado($request, $sede, (int) $empresaId, $fotoFull, $fotoThumb, $distancia);
+            return $this->registrarEmpleado($request, $sede, (int) $empresaId, $thumbnailPath, $distancia);
         }
 
-        return $this->registrarVisitante($request, $sede, $fotoFull, $fotoThumb);
+        return $this->registrarVisitante($request, $sede, $thumbnailPath);
     }
 
     // ── Doble Registro ───────────────────────────────────────────────────────────
@@ -180,9 +183,10 @@ class PublicAttendanceController extends Controller
             ], 404);
         }
 
-        [$fotoFull, $fotoThumb] = $request->foto_evidencia
-            ? $this->procesarFoto($request->foto_evidencia)
-            : [null, null];
+        // storeDoble solo registra empleados, siempre carpeta 'fotos'
+        [$thumbnailPath] = $request->foto_evidencia
+            ? $this->procesarFoto($request->foto_evidencia, (int) $empresaId, 'fotos')
+            : [null];
 
         $fechaHora = now();
         $hoy       = now()->toDateString();
@@ -240,14 +244,14 @@ class PublicAttendanceController extends Controller
                     'qr_validado'           => true,
                     'geocerca_validada'     => true,
                     'distancia_oficina_mts' => round($distancia),
-                    'foto_evidencia'        => $fotoFull ? 'base64' : null,
+                    'foto_evidencia'        => $thumbnailPath ? 'base64' : null,
                     'fecha_hora'            => $fechaHora,
                 ]);
-                if ($fotoFull) {
+                if ($thumbnailPath) {
                     AttendancePhoto::create([
                         'attendance_record_id' => $record->id,
-                        'foto_base64'          => $fotoFull,
-                        'thumbnail_base64'     => $fotoThumb ?? $fotoFull,
+                        // 'foto_base64'       => null, // ya no se almacena la foto completa
+                        'thumbnail_path'       => $thumbnailPath,
                     ]);
                 }
                 $mensaje = "¡Salida de {$sede->nombre} y entrada a {$sedeDestino->nombre} registradas!";
@@ -284,15 +288,15 @@ class PublicAttendanceController extends Controller
             'qr_validado'           => true,
             'geocerca_validada'     => true,
             'distancia_oficina_mts' => round($distancia),
-            'foto_evidencia'        => $fotoFull ? 'base64' : null,
+            'foto_evidencia'        => $thumbnailPath ? 'base64' : null,
             'fecha_hora'            => $fechaHora,
         ]);
 
-        if ($fotoFull) {
+        if ($thumbnailPath) {
             AttendancePhoto::create([
                 'attendance_record_id' => $record->id,
-                'foto_base64'          => $fotoFull,
-                'thumbnail_base64'     => $fotoThumb ?? $fotoFull,
+                // 'foto_base64'       => null, // ya no se almacena la foto completa
+                'thumbnail_path'       => $thumbnailPath,
             ]);
         }
 
@@ -339,7 +343,7 @@ class PublicAttendanceController extends Controller
 
     // ── Empleado ────────────────────────────────────────────────────────────────
 
-    private function registrarEmpleado(Request $request, Sede $sede, int $empresaId, ?string $fotoFull, ?string $fotoThumb, float $distancia = 0): JsonResponse
+    private function registrarEmpleado(Request $request, Sede $sede, int $empresaId, ?string $thumbnailPath, float $distancia = 0): JsonResponse
     {
         $user = User::where('cedula', $request->cedula)
             ->where('empresa_id', $empresaId)
@@ -362,15 +366,15 @@ class PublicAttendanceController extends Controller
             'qr_validado'           => true,
             'geocerca_validada'     => true,
             'distancia_oficina_mts' => round($distancia),
-            'foto_evidencia'        => $fotoFull ? 'base64' : null,
+            'foto_evidencia'        => $thumbnailPath ? 'base64' : null,
             'fecha_hora'            => now(),
         ]);
 
-        if ($fotoFull) {
+        if ($thumbnailPath) {
             AttendancePhoto::create([
                 'attendance_record_id' => $record->id,
-                'foto_base64'          => $fotoFull,
-                'thumbnail_base64'     => $fotoThumb ?? $fotoFull,
+                // 'foto_base64'       => null, // ya no se almacena la foto completa
+                'thumbnail_path'       => $thumbnailPath,
             ]);
         }
 
@@ -399,7 +403,7 @@ class PublicAttendanceController extends Controller
         return \Carbon\Carbon::parse($ultimaInduccion)->lt(now()->subMonths(12));
     }
 
-    private function registrarVisitante(Request $request, Sede $sede, ?string $fotoFull, ?string $fotoThumb): JsonResponse
+    private function registrarVisitante(Request $request, Sede $sede, ?string $thumbnailPath): JsonResponse
     {
         if ($request->tipo === 'entrada') {
             $visitante = Visitante::create([
@@ -417,12 +421,12 @@ class PublicAttendanceController extends Controller
                 'induccion_requerida' => $this->induccionRequerida($request->cedula, $sede->id),
             ]);
 
-            if ($fotoFull) {
+            if ($thumbnailPath) {
                 VisitanteImagen::create([
-                    'visitante_id'     => $visitante->id,
-                    'tipo'             => 'entrada',
-                    'foto_base64'      => $fotoFull,
-                    'thumbnail_base64' => $fotoThumb ?? $fotoFull,
+                    'visitante_id'  => $visitante->id,
+                    'tipo'          => 'entrada',
+                    // 'foto_base64' => null, // ya no se almacena la foto completa
+                    'thumbnail_path' => $thumbnailPath,
                 ]);
             }
 
@@ -449,12 +453,12 @@ class PublicAttendanceController extends Controller
 
         $visitante->update(['hora_salida' => now()]);
 
-        if ($fotoFull) {
+        if ($thumbnailPath) {
             VisitanteImagen::create([
-                'visitante_id'     => $visitante->id,
-                'tipo'             => 'salida',
-                'foto_base64'      => $fotoFull,
-                'thumbnail_base64' => $fotoThumb ?? $fotoFull,
+                'visitante_id'   => $visitante->id,
+                'tipo'           => 'salida',
+                // 'foto_base64' => null, // ya no se almacena la foto completa
+                'thumbnail_path' => $thumbnailPath,
             ]);
         }
 
@@ -467,10 +471,10 @@ class PublicAttendanceController extends Controller
 
     // ── Helpers de imagen ────────────────────────────────────────────────────────
 
-    private function procesarFoto(string $base64Data): array
+    private function procesarFoto(string $base64Data, int $empresaId, string $carpeta = 'fotos'): array
     {
         if (!preg_match('/^data:image\/(\w+);base64,/', $base64Data, $matches)) {
-            return [null, null];
+            return [null, null, null];
         }
 
         $imageType = $matches[1];
@@ -478,12 +482,22 @@ class PublicAttendanceController extends Controller
         $decoded   = base64_decode($rawBase64);
 
         if ($decoded === false) {
-            return [null, null];
+            return [null, null, null];
         }
 
-        $thumbBase64 = $this->generarThumbnailBase64($decoded, $imageType, 40, 40);
+        $thumbBytes = $this->generarThumbnailBytes($decoded, $imageType, 450, 800);
+        if (!$thumbBytes) {
+            return [null, null, null];
+        }
 
-        return [$base64Data, $thumbBase64 ?? $base64Data];
+        $ext      = in_array($imageType, ['png', 'webp']) ? $imageType : 'jpg';
+        $mes      = now()->format('Ym');
+        $filename = Str::uuid() . '.' . $ext;
+        $path     = "{$carpeta}/{$empresaId}/{$mes}/{$filename}";
+        Storage::disk('local')->put($path, $thumbBytes);
+
+        // Retorna: [thumbnailPath, thumbBase64(unused), fotoFull(unused)]
+        return [$path, null, null];
     }
 
     private function haversineDistance(float $lat1, float $lng1, float $lat2, float $lng2): float
@@ -510,7 +524,7 @@ class PublicAttendanceController extends Controller
         }
     }
 
-    private function generarThumbnailBase64(string $imageData, string $imageType, int $width, int $height): ?string
+    private function generarThumbnailBytes(string $imageData, string $imageType, int $width, int $height): ?string
     {
         $src = imagecreatefromstring($imageData);
         if ($src === false) {
@@ -538,8 +552,6 @@ class PublicAttendanceController extends Controller
         $output = ob_get_clean();
         imagedestroy($thumb);
 
-        if (!$output) return null;
-
-        return 'data:image/' . $imageType . ';base64,' . base64_encode($output);
+        return $output ?: null;
     }
 }
