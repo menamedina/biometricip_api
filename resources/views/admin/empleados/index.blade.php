@@ -828,7 +828,8 @@ async function loadEmpleados() {
                         var foto = row.foto_perfil_thumbnail
                             ? '<img src="' + row.foto_perfil_thumbnail + '" onclick="verFotoPerfilEmp(\'' + (row.name||'').replace(/'/g,'') + '\',' + row.id + ')" style="width:32px;height:32px;object-fit:cover;border-radius:50%;border:2px solid #1ab394;flex-shrink:0;cursor:pointer;" title="Ver foto" alt="">'
                             : '<span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#e9ecef;color:#adb5bd;font-size:15px;flex-shrink:0;"><i class="fa-solid fa-user"></i></span>';
-                        return '<div class="d-flex align-items-center gap-2">' + foto + '<strong>' + (d || 'N/A') + '</strong></div>';
+                        var lider = row.lider_nombre ? '<div class="text-muted" style="font-size:.75rem;"><i class="fa-solid fa-user-tie me-1"></i>' + row.lider_nombre + '</div>' : '';
+                        return '<div class="d-flex align-items-center gap-2">' + foto + '<div><strong>' + (d || 'N/A') + '</strong>' + lider + '</div></div>';
                     }
                 },
                 { title: 'Cédula',    data: 'cedula',   className: 'col-emp-cedula',   render: function(d) { return d || '—'; } },

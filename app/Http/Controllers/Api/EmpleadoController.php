@@ -127,7 +127,11 @@ class EmpleadoController extends Controller
             ->get(['user_id', 'imagen_thumbnail'])
             ->keyBy('user_id');
 
-        $empleados->getCollection()->transform(function ($user) use ($nombresPorEmpresa, $thumbnails) {
+        // Nombres de líderes (1 sola consulta)
+        $liderIds    = $empleados->pluck('lider_id')->filter()->unique()->values()->all();
+        $liderNombres = !empty($liderIds) ? User::whereIn('id', $liderIds)->pluck('name', 'id') : collect();
+
+        $empleados->getCollection()->transform(function ($user) use ($nombresPorEmpresa, $thumbnails, $liderNombres) {
             $data  = $user->toArray();
             $data['sede_ids']            = $user->userSedes->pluck('sede_id')->values()->all();
             $data['encrypted_id']        = Crypt::encryptString((string) $user->id);
@@ -136,6 +140,7 @@ class EmpleadoController extends Controller
             $data['departamento_nombre'] = $maps['deptos']->get($user->departamento_id);
             $data['sede_nombres']        = collect($data['sede_ids'])->map(fn($id) => $maps['sedes']->get($id))->filter()->values()->all();
             $data['foto_perfil_thumbnail'] = $thumbnails->get($user->id)?->imagen_thumbnail;
+            $data['lider_nombre']          = $liderNombres->get($user->lider_id);
             $data['spatie_role']           = $user->getRoleNames()->first();
             return $data;
         });
