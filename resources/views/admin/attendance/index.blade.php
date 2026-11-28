@@ -573,6 +573,19 @@ async function loadRecords() {
                         }
                     },
                     {
+                        title: 'Ubicación',
+                        data: 'lat',
+                        className: 'col-att-ubicacion',
+                        orderable: false,
+                        render: function(data, type, r) {
+                            if (type !== 'display') return data || '';
+                            if (!r.lat || !r.lng || (r.lat == 0 && r.lng == 0)) return '<span class="text-muted">—</span>';
+                            var url = 'https://www.google.com/maps?q=' + r.lat + ',' + r.lng;
+                            return '<a href="' + url + '" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary" title="' + r.lat + ', ' + r.lng + '">' +
+                                '<i class="fa-solid fa-location-dot"></i></a>';
+                        }
+                    },
+                    {
                         title: 'Foto',
                         data: 'foto_evidencia',
                         className: 'col-att-foto',
@@ -681,7 +694,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ── Visibilidad de columnas (attendance) ─────────────────────────────────────
-var COL_VIS_KEY_ATT = 'attendance_col_vis';
+var COL_VIS_KEY_ATT = 'attendance_col_vis_v2';
 var COL_VIS_DEFS_ATT = [
     { cls: 'col-att-empleado',  label: 'Empleado',   default: true  },
     { cls: 'col-att-codigo',    label: 'Código',      default: true  },
@@ -693,6 +706,7 @@ var COL_VIS_DEFS_ATT = [
     { cls: 'col-att-qr',        label: 'QR',          default: false },
     { cls: 'col-att-geocerca',  label: 'Geocerca',    default: false },
     { cls: 'col-att-distancia', label: 'Distancia',   default: false },
+    { cls: 'col-att-ubicacion', label: 'Ubicación',   default: true  },
     { cls: 'col-att-foto',      label: 'Foto',        default: true  },
 ];
 

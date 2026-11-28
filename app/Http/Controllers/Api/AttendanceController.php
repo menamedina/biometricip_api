@@ -36,7 +36,8 @@ class AttendanceController extends Controller
         $scopeUserIds = $this->attendanceScopeUserIds($request->user());
         $query = AttendanceRecord::select(
                 'id','user_id','sede_id','horario_id','tipo','fecha_hora','metodo',
-                'qr_validado','geocerca_validada','distancia_oficina_mts','observacion','foto_evidencia'
+                'qr_validado','geocerca_validada','distancia_oficina_mts','observacion','foto_evidencia',
+                'lat','lng'
             )
             ->with([
                 'user:id,name,cedula,codigo_empleado,role,departamento_id,cargo_id,empresa_id',
