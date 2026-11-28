@@ -328,6 +328,107 @@
             </div>
         </div>
     </div>
+
+    {{-- Guía Power Query --}}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h6 class="fw-semibold mb-0"><i class="fa-solid fa-file-excel me-2 text-success"></i>Conectar con Excel — Power Query</h6>
+                        <span class="badge bg-light text-dark border" style="font-size:.75rem;">Guía</span>
+                    </div>
+                    <p class="small text-muted mb-3">
+                        Guía paso a paso para importar todos los endpoints directamente en Excel.
+                    </p>
+
+                    <div class="alert alert-light border small py-2 mb-4">
+                        La idea es tener una <strong>configuración centralizada</strong>: creas dos parámetros globales (<code>pToken</code> y <code>pBaseUrl</code>) y todos los endpoints los reutilizan. Si cambias el token o el servidor, solo lo cambias en un lugar.
+                    </div>
+
+                    {{-- Paso 1 --}}
+                    <div class="d-flex align-items-start gap-2 mb-3">
+                        <span class="badge bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width:28px;height:28px;flex-shrink:0;">1</span>
+                        <div class="flex-grow-1">
+                            <p class="fw-semibold mb-2">Crear los parámetros globales</p>
+                            <p class="small text-muted mb-2">En el Editor de Power Query: ve a <strong>Inicio → Administrar parámetros → Nuevo parámetro</strong> y crea estos dos:</p>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="card bg-light border small">
+                                        <div class="card-body py-2 px-3">
+                                            <p class="fw-semibold mb-1 text-uppercase" style="font-size:.7rem;letter-spacing:.5px;">Parámetro 1</p>
+                                            <p class="mb-0">Nombre: <code>pToken</code></p>
+                                            <p class="mb-0">Tipo: Texto</p>
+                                            <p class="mb-0">Valor: <span class="text-muted">tu token de BiometricIP</span></p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card bg-light border small">
+                                        <div class="card-body py-2 px-3">
+                                            <p class="fw-semibold mb-1 text-uppercase" style="font-size:.7rem;letter-spacing:.5px;">Parámetro 2</p>
+                                            <p class="mb-0">Nombre: <code>pBaseUrl</code></p>
+                                            <p class="mb-0">Tipo: Texto</p>
+                                            <p class="mb-0">Valor: <code>{{ rtrim(config('app.url'), '/') }}/api/external</code></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Paso 2 --}}
+                    <div class="d-flex align-items-start gap-2 mb-3">
+                        <span class="badge bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width:28px;height:28px;flex-shrink:0;">2</span>
+                        <div class="flex-grow-1">
+                            <p class="fw-semibold mb-2">Crear la primera consulta (Empleados)</p>
+                            <p class="small text-muted mb-2">Crea una <u>consulta nueva</u> → abre el <strong>Editor avanzado</strong> y pega:</p>
+                            <pre class="rounded p-3 small" style="background:#1e1e2e;color:#cdd6f4;overflow-x:auto;">let
+    Respuesta = Web.Contents(
+        pBaseUrl,
+        [
+            RelativePath = "/employees",
+            Headers = [
+                Authorization = "Bearer " & pToken,
+                Accept = "application/json"
+            ]
+        ]
+    ),
+    Datos = Json.Document(Respuesta),
+    Tabla = Table.FromRecords(Datos)
+in
+    Tabla</pre>
+                            <p class="small text-muted mt-2">Esta consulta usa los dos parámetros que creaste. Nómbrala <strong>Empleados</strong>.</p>
+                        </div>
+                    </div>
+
+                    {{-- Paso 3 --}}
+                    <div class="d-flex align-items-start gap-2 mb-3">
+                        <span class="badge bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width:28px;height:28px;flex-shrink:0;">3</span>
+                        <div class="flex-grow-1">
+                            <p class="fw-semibold mb-2">Duplicar para los demás endpoints</p>
+                            <p class="small text-muted mb-2">Clic derecho sobre la consulta → <strong>Duplicar</strong>. Solo cambia el valor de <code>RelativePath</code>. Usa estos nombres:</p>
+                            <table class="table table-sm table-bordered small mb-2">
+                                <thead class="table-light">
+                                    <tr><th>Nombre de consulta</th><th>RelativePath</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td><strong>Empleados</strong></td><td><code>/employees</code></td></tr>
+                                    <tr><td><strong>Asistencia</strong></td><td><code>/attendance</code></td></tr>
+                                </tbody>
+                            </table>
+                            <p class="small text-muted">... repite el mismo patrón para los demás endpoints listados en la documentación de arriba.</p>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-success small py-2 mb-0">
+                        <i class="fa-solid fa-lightbulb me-1"></i>
+                        <strong>Consejo:</strong> Si cambias tu token de API, solo actualiza el parámetro <code>pToken</code> y todas las consultas se actualizarán automáticamente al refrescar.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 {{-- Modal confirmar regenerar --}}
