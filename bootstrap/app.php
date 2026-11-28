@@ -34,6 +34,13 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withSchedule(function (Schedule $schedule): void {
+        // Recordatorio de marcación de salida – cada minuto, 15 min antes de la hora de salida
+        $schedule->command('recordatorio:salida --minutos=15')
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->appendOutputTo(storage_path('logs/recordatorio-salida.log'));
+
         // Reporte diario de personal para líderes – todos los días a las 8:00 AM
         $schedule->command('reporte:lideres')
             ->dailyAt('08:00')
