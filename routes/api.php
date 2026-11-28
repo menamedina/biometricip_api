@@ -19,7 +19,20 @@ use App\Http\Controllers\Api\VisitanteController;
 use App\Http\Controllers\Api\DeviceTokenController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\WhatsAppAttendanceController;
+use App\Http\Controllers\Api\ExternalApiController;
 use Illuminate\Support\Facades\Route;
+
+// API externa por token de usuario
+Route::middleware('user.api.token')->prefix('external')->group(function () {
+    Route::get('/attendance',  [ExternalApiController::class, 'attendance']);
+    Route::get('/employees',   [ExternalApiController::class, 'employees']);
+    Route::get('/summary',     [ExternalApiController::class, 'summary']);
+    Route::get('/monthly',     [ExternalApiController::class, 'monthly']);
+});
+
+// Fotos — públicas (sirven imagen directamente desde storage)
+Route::get('/external/employees/{id}/photo',  [ExternalApiController::class, 'employeePhoto']);
+Route::get('/external/attendance/photo',      [ExternalApiController::class, 'attendancePhoto']);
 
 // Integraciones externas — token validado dentro del controlador
 Route::post('/ext/attendance/clock', [WhatsAppAttendanceController::class, 'clock']);

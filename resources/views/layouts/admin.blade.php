@@ -311,7 +311,7 @@
                         @endcan
 
                         {{-- ── Configuración ───────────────────────────────── --}}
-                        @canany(['horarios.ver','festivos.ver','recargos.configurar','permisos.ver','roles.ver','ia.ver'])
+                        @canany(['horarios.ver','festivos.ver','recargos.configurar','permisos.ver','roles.ver','ia.ver','api.ver'])
                         <li class="side-nav-title mt-2">Configuración</li>
                         @endcanany
                         @can('horarios.ver')
@@ -359,6 +359,14 @@
                             <a href="{{ route('admin.ai.config') }}" class="side-nav-link {{ request()->routeIs('admin.ai.*') ? 'active' : '' }}">
                                 <span class="menu-icon"><i class="ti ti-robot"></i></span>
                                 <span class="menu-text">Asistente IA</span>
+                            </a>
+                        </li>
+                        @endcan
+                        @can('api.ver')
+                        <li class="side-nav-item">
+                            <a href="{{ route('admin.api.index') }}" class="side-nav-link {{ request()->routeIs('admin.api.*') ? 'active' : '' }}">
+                                <span class="menu-icon"><i class="ti ti-api"></i></span>
+                                <span class="menu-text">API Tokens</span>
                             </a>
                         </li>
                         @endcan

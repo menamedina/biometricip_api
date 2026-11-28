@@ -49,6 +49,8 @@ class User extends Authenticatable
         'dias_tratamiento_dato',
         'ver_todos',
         'marcacion_global',
+        'api_token',
+        'scope_registros',
     ];
 
     protected $hidden = [
@@ -71,6 +73,7 @@ class User extends Authenticatable
             'dias_tratamiento_dato' => 'integer',
             'ver_todos'             => 'boolean',
             'marcacion_global'      => 'boolean',
+            'scope_registros'       => 'string',
         ];
     }
 
@@ -84,6 +87,11 @@ class User extends Authenticatable
         return $this->hasMany(UserSede::class, 'user_id');
     }
 
+    public function imagenPerfil(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(UserImagen::class, 'user_id')->select(['user_id', 'imagen_thumbnail']);
+    }
+
 
     public function sendPasswordResetNotification($token): void
     {
@@ -91,27 +99,32 @@ class User extends Authenticatable
     }
 
     /**
-     * Devuelve los IDs del equipo visible para este usuario.
-     * Si ver_todos=true devuelve todos los empleados de la empresa.
-     * Si es líder devuelve su equipo + él mismo.
-     * Si es empleado regular devuelve solo su propio ID.
+     * Devuelve los IDs del equipo visible para este usuario según su scope_registros.
+     * empresa  → todos los empleados activos de la empresa.
+     * equipo   → sus subordinados directos + él mismo.
+     * personal → solo su propio ID.
      */
     public function equipoIds(): array
     {
-        if ($this->ver_todos) {
+        $scope = $this->scope_registros ?? ($this->ver_todos ? 'empresa' : 'personal');
+
+        if ($scope === 'empresa') {
             return User::where('empresa_id', $this->empresa_id)
                 ->where('is_active', true)
                 ->pluck('id')
                 ->toArray();
         }
 
-        $equipo = User::where('lider_id', $this->id)
-            ->where('empresa_id', $this->empresa_id)
-            ->where('is_active', true)
-            ->pluck('id')
-            ->toArray();
+        if ($scope === 'equipo') {
+            $equipo = User::where('lider_id', $this->id)
+                ->where('empresa_id', $this->empresa_id)
+                ->where('is_active', true)
+                ->pluck('id')
+                ->toArray();
+            return array_unique(array_merge($equipo, [$this->id]));
+        }
 
-        return empty($equipo) ? [$this->id] : array_merge($equipo, [$this->id]);
+        return [$this->id];
     }
 
     /**
@@ -121,7 +134,9 @@ class User extends Authenticatable
     {
         $query = User::where('empresa_id', $this->empresa_id)->where('is_active', true);
 
-        if (!$this->ver_todos) {
+        $scope = $this->scope_registros ?? ($this->ver_todos ? 'empresa' : 'personal');
+
+        if ($scope !== 'empresa') {
             $query->where('lider_id', $this->id);
         }
 

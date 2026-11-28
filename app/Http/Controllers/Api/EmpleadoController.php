@@ -617,10 +617,21 @@ class EmpleadoController extends Controller
 
         $imagen = UserImagen::where('user_id', $id)->first();
 
+        if ($imagen) {
+            return response()->json([
+                'tiene_imagen'     => true,
+                'imagen_thumbnail' => $imagen->imagen_thumbnail,
+                'imagen_base64'    => $imagen->imagen_base64,
+            ]);
+        }
+
+        // Fallback: foto_url del usuario
+        $fotoUrl = User::on('mysql')->where('id', $id)->value('foto_url');
+
         return response()->json([
-            'tiene_imagen'     => (bool) $imagen,
-            'imagen_thumbnail' => $imagen?->imagen_thumbnail,
-            'imagen_base64'    => $imagen?->imagen_base64,
+            'tiene_imagen'     => (bool) $fotoUrl,
+            'imagen_thumbnail' => $fotoUrl,
+            'imagen_base64'    => null,
         ]);
     }
 

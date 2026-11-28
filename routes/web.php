@@ -16,6 +16,7 @@ use App\Http\Controllers\AiConfigController;
 use App\Http\Controllers\AiChatController;
 use App\Http\Controllers\LoginImageController;
 use App\Http\Controllers\AdminLoginImageController;
+use App\Http\Controllers\AdminApiController;
 use App\Http\Controllers\CapacitacionController;
 use App\Http\Controllers\Admin\ProgramacionTurnoController;
 use App\Http\Controllers\Admin\NovedadesNominaController;
@@ -310,6 +311,13 @@ Route::middleware(['auth', 'admin', 'tenancy.session'])->group(function () {
     Route::put   ('/admin/login-images/{id}',        [AdminLoginImageController::class, 'update']);
     Route::delete('/admin/login-images/{id}',        [AdminLoginImageController::class, 'destroy']);
     Route::patch ('/admin/login-images/{id}/toggle',  [AdminLoginImageController::class, 'toggleActive']);
+});
+
+// API Tokens — portal de integración externa
+Route::middleware(['auth', 'admin', 'tenancy.session'])->group(function () {
+    Route::get  ('/admin/api',                   [AdminApiController::class, 'index'])->name('admin.api.index');
+    Route::post ('/admin/api/regenerate-token',  [AdminApiController::class, 'regenerateToken'])->name('admin.api.regenerate');
+    Route::patch('/admin/api/scope',             [AdminApiController::class, 'updateScope'])->name('admin.api.scope');
 });
 
 // Roles y Permisos — control por permiso roles.ver dentro del controller

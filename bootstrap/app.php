@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'superadmin'      => \App\Http\Middleware\SuperAdminMiddleware::class,
             'agent.token'     => \App\Http\Middleware\ValidateAgentToken::class,
             'api.token'       => \App\Http\Middleware\ValidateApiToken::class,
+            'user.api.token'  => \App\Http\Middleware\ValidateUserApiToken::class,
         ]);
         $middleware->redirectGuestsTo('/admin/login');
         $middleware->validateCsrfTokens(except: [

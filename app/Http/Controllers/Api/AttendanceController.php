@@ -21,14 +21,21 @@ use Illuminate\Support\Str;
 
 class AttendanceController extends Controller
 {
-    private function attendanceScopeUserIds(User $user): ?\Illuminate\Support\Collection
+    private function attendanceScopeUserIds(User $user): \Illuminate\Support\Collection
     {
-        return User::where('empresa_id', $user->empresa_id)
-            ->where(function ($query) use ($user) {
-                $query->where('id', $user->id)
-                    ->orWhere('lider_id', $user->id);
-            })
-            ->pluck('id');
+        $scope = $user->scope_registros ?? ($user->ver_todos ? 'empresa' : 'personal');
+
+        if ($scope === 'empresa') {
+            return User::where('empresa_id', $user->empresa_id)->pluck('id');
+        }
+
+        if ($scope === 'equipo') {
+            return User::where('empresa_id', $user->empresa_id)
+                ->where(fn($q) => $q->where('id', $user->id)->orWhere('lider_id', $user->id))
+                ->pluck('id');
+        }
+
+        return collect([$user->id]);
     }
 
     public function index(Request $request): JsonResponse
