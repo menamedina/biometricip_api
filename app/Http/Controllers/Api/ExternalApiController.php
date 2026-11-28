@@ -467,10 +467,20 @@ class ExternalApiController extends Controller
         }
 
         if ($scope === 'equipo') {
-            return User::on('mysql')
-                ->where('empresa_id', $user->empresa_id)
-                ->where(fn($q) => $q->where('id', $user->id)->orWhere('lider_id', $user->id))
-                ->pluck('id');
+            // Buscar subordinados en cascada (todos los niveles)
+            $ids = collect([$user->id]);
+            $nuevos = collect([$user->id]);
+
+            while ($nuevos->isNotEmpty()) {
+                $nuevos = User::on('mysql')
+                    ->where('empresa_id', $user->empresa_id)
+                    ->whereIn('lider_id', $nuevos)
+                    ->whereNotIn('id', $ids)
+                    ->pluck('id');
+                $ids = $ids->merge($nuevos);
+            }
+
+            return $ids;
         }
 
         return collect([$user->id]);
